@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import api from '../../services/api.ts'
-import { Search, ClipboardList, Pencil, Trash2, MapPin, Users } from 'lucide-react'
+import { Search, ClipboardList, Pencil, Trash2, MapPin, Users, School } from 'lucide-react'
 import './Pacientes.css'
 
 interface FilaCheck {
@@ -48,12 +48,15 @@ export default function PacientesList() {
   const [checkingIn, setCheckingIn] = useState<number | null>(null)
   const [expandedRows, setExpandedRows] = useState<Record<number, boolean>>({})
   const [searched, setSearched] = useState(false)
+  const [escolaDia, setEscolaDia] = useState(false)
+  const [escolasHoje, setEscolasHoje] = useState<{ escola: string; total: number }[]>([])
 
-  const fetchPacientes = useCallback(async (page = 1, searchTerm = '') => {
+  const fetchPacientes = useCallback(async (page = 1, searchTerm = '', filterEscolaDia = escolaDia) => {
     setLoading(true)
     try {
       const params: Record<string, string | number> = { page, limit: 20 }
       if (searchTerm) params.search = searchTerm
+      if (filterEscolaDia) params.escola_dia = 1
       const res = await api.get('/pacientes', { params })
       setPacientes(res.data.data)
       setPagination(res.data.pagination)
@@ -62,7 +65,7 @@ export default function PacientesList() {
     } finally {
       setLoading(false)
     }
-  }, [])
+  }, [escolaDia])
 
   const checkFilaStatus = useCallback(async () => {
     try {
@@ -90,6 +93,10 @@ export default function PacientesList() {
 
   useEffect(() => {
     checkFilaStatus()
+    // Fetch today's schools
+    api.get('/escola-agenda/hoje').then(res => {
+      setEscolasHoje(res.data.escolas ?? [])
+    }).catch(() => {})
   }, [checkFilaStatus])
 
   useEffect(() => {
@@ -104,7 +111,7 @@ export default function PacientesList() {
   const handleLoadAll = () => {
     setSearch('')
     setSearched(true)
-    fetchPacientes(1, '')
+    fetchPacientes(1, '', escolaDia)
   }
 
   const handleSearch = () => {
@@ -115,7 +122,16 @@ export default function PacientesList() {
       return
     }
     setSearched(true)
-    fetchPacientes(1, search)
+    fetchPacientes(1, search, escolaDia)
+  }
+
+  const handleToggleEscolaDia = () => {
+    const next = !escolaDia
+    setEscolaDia(next)
+    if (searched || search.trim()) {
+      setSearched(true)
+      fetchPacientes(1, search, next)
+    }
   }
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
@@ -172,7 +188,25 @@ export default function PacientesList() {
         />
         <button onClick={handleSearch} className="btn btn-secondary">Buscar</button>
         <button onClick={handleLoadAll} className="btn btn-secondary"><Users size={14} style={{verticalAlign:'middle',marginRight:4}} />Todos Pacientes</button>
+        <button
+          onClick={handleToggleEscolaDia}
+          className={`btn btn-escola-dia ${escolaDia ? 'active' : ''}`}
+          title={escolasHoje.map(e => e.escola).join(', ') || 'Nenhuma escola agendada hoje'}
+        >
+          <School size={14} style={{verticalAlign:'middle',marginRight:4}} />
+          Escola do Dia
+        </button>
       </div>
+
+      {escolaDia && escolasHoje.length > 0 && (
+        <div className="escola-dia-info">
+          <School size={14} />
+          <span>Filtrando por escolas de hoje:</span>
+          {escolasHoje.map((e, i) => (
+            <span key={i} className="escola-dia-tag">{e.escola} ({e.total})</span>
+          ))}
+        </div>
+      )}
 
       {loading ? (
         <div className="loading">Carregando...</div>
@@ -264,7 +298,7 @@ export default function PacientesList() {
           {pagination.totalPages > 1 && (
             <div className="pagination">
               <button
-                onClick={() => fetchPacientes(pagination.page - 1, search)}
+                onClick={() => fetchPacientes(pagination.page - 1, search, escolaDia)}
                 disabled={pagination.page <= 1}
                 className="btn btn-sm btn-secondary"
               >
@@ -272,7 +306,7 @@ export default function PacientesList() {
               </button>
               <span>Página {pagination.page} de {pagination.totalPages} ({pagination.total} registros)</span>
               <button
-                onClick={() => fetchPacientes(pagination.page + 1, search)}
+                onClick={() => fetchPacientes(pagination.page + 1, search, escolaDia)}
                 disabled={pagination.page >= pagination.totalPages}
                 className="btn btn-sm btn-secondary"
               >

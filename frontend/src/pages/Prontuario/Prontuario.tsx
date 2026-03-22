@@ -2,7 +2,8 @@ import { useState, useEffect } from 'react'
 import { useParams, Link } from 'react-router-dom'
 import api from '../../services/api'
 import { useAuth } from '../../contexts/AuthContext'
-import { User, X, Pencil, ClipboardList, Bus, Save, FileText, Microscope, Glasses, CheckCircle2, BookOpen, Eye, Trash2 } from 'lucide-react'
+import { User, X, Pencil, ClipboardList, Bus, Save, FileText, Microscope, Glasses, CheckCircle2, BookOpen, Eye, Trash2, Printer } from 'lucide-react'
+import { gerarReceitaOcular, gerarAtestado, gerarReceitaMedica, gerarRelatorio } from '../../services/pdfService'
 import './Prontuario.css'
 
 interface Paciente {
@@ -131,6 +132,9 @@ export default function Prontuario() {
   const [modelos, setModelos] = useState<ModeloLaudo[]>([])
   const [showSalvarModelo, setShowSalvarModelo] = useState(false)
   const [nomeModelo, setNomeModelo] = useState('')
+  const [medicoInfo, setMedicoInfo] = useState<{ nome: string; crm?: string; uf?: string; especialidade?: string }>({ nome: user?.nome || '' })
+  const [pdfModal, setPdfModal] = useState<'atestado' | 'receita_medica' | null>(null)
+  const [pdfTexto, setPdfTexto] = useState('')
 
   // Helpers: montar form a partir de dados existentes
   function buildFormFromExisting(d: ProntuarioData) {
@@ -201,7 +205,14 @@ export default function Prontuario() {
     setShowForm(estacao)
   }
 
-  useEffect(() => { loadProntuario(); loadModelos() }, [pacienteId])
+  useEffect(() => { loadProntuario(); loadModelos(); loadMedicoPerfil() }, [pacienteId])
+
+  async function loadMedicoPerfil() {
+    try {
+      const { data: m } = await api.get('/medicos/perfil')
+      setMedicoInfo(m)
+    } catch { setMedicoInfo({ nome: user?.nome || '' }) }
+  }
 
   async function loadModelos() {
     try {
@@ -386,6 +397,61 @@ export default function Prontuario() {
           {showForm === 'onibus' ? <><X size={14} style={{verticalAlign:'middle',marginRight:4}} />Fechar</> : hasPrescricao ? <><Pencil size={14} style={{verticalAlign:'middle',marginRight:4}} />Editar Prescrição</> : <><Bus size={14} style={{verticalAlign:'middle',marginRight:4}} />Nova Prescrição</>}
         </button>
       </div>
+
+      {/* ===== BOTÕES DE IMPRESSÃO ===== */}
+      <div className="pdf-buttons">
+        <span className="pdf-buttons-label"><Printer size={14} /> Documentos:</span>
+        {prescricoes.length > 0 && (
+          <button className="btn btn-pdf" onClick={async () => gerarReceitaOcular(
+            paciente, prescricoes[0], medicoInfo
+          )}>Receita Ocular</button>
+        )}
+        <button className="btn btn-pdf" onClick={() => { setPdfTexto(''); setPdfModal('atestado') }}>Atestado</button>
+        <button className="btn btn-pdf" onClick={() => { setPdfTexto(''); setPdfModal('receita_medica') }}>Receita Médica</button>
+        <button className="btn btn-pdf" onClick={async () => gerarRelatorio(
+          paciente, medicoInfo, {
+            anamnese: anamneses[0],
+            exames,
+            prescricao: prescricoes[0],
+            laudo: laudos[0],
+            acuidade: data.acuidade_visual,
+          }
+        )}>Relatório Completo</button>
+      </div>
+
+      {/* ===== MODAL ATESTADO / RECEITA MÉDICA ===== */}
+      {pdfModal && (
+        <div className="pdf-modal-overlay" onClick={() => setPdfModal(null)}>
+          <div className="pdf-modal" onClick={e => e.stopPropagation()}>
+            <div className="pdf-modal-header">
+              <h3>{pdfModal === 'atestado' ? 'Atestado Médico' : 'Receita Médica'}</h3>
+              <button className="btn btn-icon" onClick={() => setPdfModal(null)}><X size={18} /></button>
+            </div>
+            <div className="pdf-modal-body">
+              <label>{pdfModal === 'atestado' ? 'Texto do Atestado:' : 'Prescrição / Medicamentos:'}</label>
+              <textarea
+                rows={8}
+                value={pdfTexto}
+                onChange={e => setPdfTexto(e.target.value)}
+                placeholder={pdfModal === 'atestado'
+                  ? 'Atesto para os devidos fins que o(a) paciente...'
+                  : 'Medicamento, posologia, duração...'}
+                autoFocus
+              />
+            </div>
+            <div className="pdf-modal-footer">
+              <button className="btn btn-secondary" onClick={() => setPdfModal(null)}>Cancelar</button>
+              <button className="btn btn-primary" disabled={!pdfTexto.trim()} onClick={async () => {
+                if (pdfModal === 'atestado') await gerarAtestado(paciente, pdfTexto, medicoInfo)
+                else await gerarReceitaMedica(paciente, pdfTexto, medicoInfo)
+                setPdfModal(null)
+              }}>
+                <Printer size={14} style={{verticalAlign:'middle',marginRight:4}} />Gerar PDF
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* ===== ESTAÇÃO LAUDOS ===== */}
       {showForm === 'laudos' && (

@@ -442,6 +442,50 @@
   border-top: 1px solid var(--gray-50);
 }
 
+/* ===== Escola do Dia Filter ===== */
+.btn.btn-escola-dia {
+  background: var(--bg-light);
+  border: 2px solid var(--success);
+  color: var(--success);
+  border-radius: 8px;
+  font-weight: 500;
+  transition: all 0.2s;
+}
+
+.btn.btn-escola-dia:hover {
+  border-color: var(--success);
+  background: rgba(40, 167, 69, 0.15);
+  color: var(--success);
+}
+
+.btn.btn-escola-dia.active {
+  background: var(--success);
+  color: #fff;
+  border-color: var(--success);
+}
+
+.escola-dia-info {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  padding: 0.55rem 0.9rem;
+  background: rgba(40, 167, 69, 0.08);
+  border: 1px solid rgba(40, 167, 69, 0.25);
+  border-radius: 8px;
+  font-size: 0.82rem;
+  color: var(--success);
+  margin-top: -0.25rem;
+}
+
+.escola-dia-tag {
+  background: rgba(40, 167, 69, 0.15);
+  padding: 0.15rem 0.5rem;
+  border-radius: 4px;
+  font-weight: 500;
+  color: var(--text);
+}
+
 @media (max-width: 768px) {
   .pac-drawer-grid {
     grid-template-columns: 1fr 1fr;

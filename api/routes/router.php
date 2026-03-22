@@ -7,6 +7,7 @@ require_once __DIR__ . '/../controllers/DashboardController.php';
 require_once __DIR__ . '/../controllers/UploadController.php';
 require_once __DIR__ . '/../controllers/UsuarioController.php';
 require_once __DIR__ . '/../controllers/MedicoController.php';
+require_once __DIR__ . '/../controllers/EscolaAgendaController.php';
 
 class Router {
     private array $routes = [];
@@ -100,11 +101,19 @@ $router->add('DELETE', '/api/usuarios/{id}', [UsuarioController::class, 'destroy
 
 
 // Médicos
+$router->add('GET', '/api/medicos/perfil', [MedicoController::class, 'perfil']);
 $router->add('GET', '/api/medicos', [MedicoController::class, 'index']);
 $router->add('GET', '/api/medicos/{id}', [MedicoController::class, 'show']);
 $router->add('POST', '/api/medicos', [MedicoController::class, 'store']);
 $router->add('PUT', '/api/medicos/{id}', [MedicoController::class, 'update']);
 $router->add('DELETE', '/api/medicos/{id}', [MedicoController::class, 'destroy']);
+
+// Escola Agenda
+$router->add('GET', '/api/escola-agenda', [EscolaAgendaController::class, 'index']);
+$router->add('GET', '/api/escola-agenda/hoje', [EscolaAgendaController::class, 'hoje']);
+$router->add('POST', '/api/escola-agenda', [EscolaAgendaController::class, 'store']);
+$router->add('DELETE', '/api/escola-agenda/remover', [EscolaAgendaController::class, 'destroyByEscolaData']);
+$router->add('DELETE', '/api/escola-agenda/{id}', [EscolaAgendaController::class, 'destroy']);
 
 // Logs (apenas admin)
 $router->add('GET', '/api/logs/fila', function() {

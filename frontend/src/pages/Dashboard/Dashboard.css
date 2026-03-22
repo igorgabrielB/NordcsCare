@@ -1,5 +1,5 @@
 .dashboard-welcome {
-  margin-bottom: 32px;
+  margin-bottom: 16px;
 }
 
 .dashboard-welcome h1 {
@@ -10,6 +10,85 @@
 
 .dashboard-welcome p {
   color: var(--gray-500);
+}
+
+/* ===== Filter Bar ===== */
+.dashboard-filter-bar {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.5rem 0.75rem;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  margin-bottom: 24px;
+  margin-left: auto;
+  width: fit-content;
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+}
+
+.dashboard-filter-bar label {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-weight: 500;
+  color: var(--text-muted);
+  font-size: 0.82rem;
+}
+
+.dashboard-filter-bar input[type="date"] {
+  padding: 0.35rem 0.5rem;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--bg);
+  color: var(--text);
+  font-size: 0.82rem;
+  outline: none;
+  transition: border-color 0.2s;
+}
+
+.dashboard-filter-bar input[type="date"]:focus {
+  border-color: var(--accent);
+}
+
+.btn-filter-apply {
+  background: var(--primary);
+  color: #fff;
+  border: none;
+  padding: 0.4rem 1rem;
+  border-radius: 8px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.btn-filter-apply:hover {
+  background: var(--primary-dark);
+}
+
+.btn-filter-today {
+  background: none;
+  border: 1px solid var(--border);
+  color: var(--text-secondary);
+  padding: 0.4rem 0.85rem;
+  border-radius: 8px;
+  font-size: 0.82rem;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-filter-today:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.filter-info {
+  margin-left: auto;
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  font-style: italic;
 }
 
 .dashboard-cards {
@@ -261,6 +340,94 @@
 .summary-item span:last-child {
   font-size: 0.8rem;
   color: var(--gray-500);
+}
+
+/* Dash card highlight (pacientes do dia) */
+.dash-card-highlight {
+  border: 1px solid rgba(56, 161, 105, 0.3);
+}
+
+/* Escolas de hoje */
+.escolas-hoje-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.escola-hoje-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 0.6rem;
+  background: var(--bg-elevated);
+  border-radius: 6px;
+  font-size: 0.85rem;
+  color: var(--text);
+}
+
+.escola-hoje-nome {
+  flex: 1;
+  font-weight: 500;
+}
+
+.escola-hoje-count {
+  font-size: 0.78rem;
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+
+/* Próximos Atendimentos */
+.escolas-agendadas-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.escola-agendada-item {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.45rem 0.6rem;
+  border-radius: 8px;
+  background: var(--bg-elevated);
+  font-size: 0.84rem;
+}
+
+.escola-agendada-item.agendada-hoje {
+  background: rgba(40, 167, 69, 0.1);
+  border: 1px solid rgba(40, 167, 69, 0.25);
+}
+
+.agendada-data {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  min-width: 50px;
+  font-size: 0.82rem;
+}
+
+.badge-hoje-sm {
+  background: var(--success);
+  color: #fff;
+  font-size: 0.62rem;
+  font-weight: 700;
+  padding: 1px 5px;
+  border-radius: 4px;
+  letter-spacing: 0.5px;
+}
+
+.agendada-escola {
+  flex: 1;
+  color: var(--text);
+  font-weight: 500;
+}
+
+.agendada-total {
+  font-size: 0.78rem;
+  color: var(--text-muted);
+  white-space: nowrap;
 }
 
 /* Responsive */

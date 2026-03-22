@@ -10,14 +10,21 @@ class PacienteController {
         $db = Database::getInstance();
 
         $search = $_GET['search'] ?? '';
+        $escolaDia = isset($_GET['escola_dia']) && $_GET['escola_dia'] === '1';
         $page = max(1, (int)($_GET['page'] ?? 1));
         $limit = min(100, max(1, (int)($_GET['limit'] ?? 20)));
         $offset = ($page - 1) * $limit;
 
+        // Build escola_dia sub-condition
+        $escolaCondition = '';
+        if ($escolaDia) {
+            $escolaCondition = ' AND escola IN (SELECT escola FROM escola_agenda WHERE data_atendimento = CURDATE())';
+        }
+
         if ($search !== '') {
             $stmt = $db->prepare(
-                'SELECT * FROM pacientes WHERE nome_completo LIKE :search OR cpf LIKE :search2 OR codigo LIKE :search3
-                 ORDER BY nome_completo ASC LIMIT :limit OFFSET :offset'
+                'SELECT * FROM pacientes WHERE (nome_completo LIKE :search OR cpf LIKE :search2 OR codigo LIKE :search3)' . $escolaCondition .
+                ' ORDER BY nome_completo ASC LIMIT :limit OFFSET :offset'
             );
             $searchTerm = "%$search%";
             $stmt->bindValue(':search', $searchTerm, PDO::PARAM_STR);
@@ -28,18 +35,18 @@ class PacienteController {
             $stmt->execute();
 
             $countStmt = $db->prepare(
-                'SELECT COUNT(*) FROM pacientes WHERE nome_completo LIKE :search OR cpf LIKE :search2 OR codigo LIKE :search3'
+                'SELECT COUNT(*) FROM pacientes WHERE (nome_completo LIKE :search OR cpf LIKE :search2 OR codigo LIKE :search3)' . $escolaCondition
             );
             $countStmt->execute([':search' => $searchTerm, ':search2' => $searchTerm, ':search3' => $searchTerm]);
         } else {
             $stmt = $db->prepare(
-                'SELECT * FROM pacientes ORDER BY nome_completo ASC LIMIT :limit OFFSET :offset'
+                'SELECT * FROM pacientes WHERE 1=1' . $escolaCondition . ' ORDER BY nome_completo ASC LIMIT :limit OFFSET :offset'
             );
             $stmt->bindValue(':limit', $limit, PDO::PARAM_INT);
             $stmt->bindValue(':offset', $offset, PDO::PARAM_INT);
             $stmt->execute();
 
-            $countStmt = $db->query('SELECT COUNT(*) FROM pacientes');
+            $countStmt = $db->query('SELECT COUNT(*) FROM pacientes WHERE 1=1' . $escolaCondition);
         }
 
         $pacientes = $stmt->fetchAll();
@@ -278,12 +285,6 @@ class PacienteController {
         if (empty($pacientes) || !is_array($pacientes)) {
             http_response_code(400);
             echo json_encode(['error' => 'Nenhum paciente enviado']);
-            return;
-        }
-
-        if (count($pacientes) > 500) {
-            http_response_code(400);
-            echo json_encode(['error' => 'Máximo de 500 pacientes por importação']);
             return;
         }
 

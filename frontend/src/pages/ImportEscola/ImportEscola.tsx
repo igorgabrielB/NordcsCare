@@ -2,7 +2,7 @@ import { useState, useRef } from 'react'
 import type { DragEvent, ChangeEvent } from 'react'
 import { Link } from 'react-router-dom'
 import api from '../../services/api.ts'
-import { Upload, FileSpreadsheet, ArrowLeft, X, CheckCircle2, AlertTriangle, School, Users } from 'lucide-react'
+import { Upload, FileSpreadsheet, ArrowLeft, X, CheckCircle2, AlertTriangle, School, Users, ChevronLeft, ChevronRight } from 'lucide-react'
 import '../Alunos/Alunos.css'
 import './ImportEscola.css'
 
@@ -232,6 +232,10 @@ export default function ImportEscola() {
   const [importing, setImporting] = useState(false)
   const [result, setResult] = useState<ImportResult | null>(null)
   const [searchSchool, setSearchSchool] = useState('')
+  const [importWithErrors, setImportWithErrors] = useState(false)
+  const [pageOk, setPageOk] = useState(1)
+  const [pageErr, setPageErr] = useState(1)
+  const PER_PAGE = 50
 
   const handleFile = (file: File) => {
     if (!file.name.toLowerCase().endsWith('.csv')) {
@@ -241,6 +245,8 @@ export default function ImportEscola() {
     setResult(null)
     setSelectedSchool(null)
     setSearchSchool('')
+    setPageOk(1)
+    setPageErr(1)
     const reader = new FileReader()
     reader.onload = (e) => {
       const text = e.target?.result as string
@@ -290,15 +296,25 @@ export default function ImportEscola() {
     ? allPatients.filter(p => (p.escola ?? '').trim() === selectedSchool)
     : []
   const validPatients = filteredPatients.filter(p => !p._error && !p._duplicate)
+  const errorPatients = filteredPatients.filter(p => p._error || p._duplicate)
+
+  const totalPagesOk = Math.max(1, Math.ceil(validPatients.length / PER_PAGE))
+  const totalPagesErr = Math.max(1, Math.ceil(errorPatients.length / PER_PAGE))
+  const pagedValid = validPatients.slice((pageOk - 1) * PER_PAGE, pageOk * PER_PAGE)
+  const pagedError = errorPatients.slice((pageErr - 1) * PER_PAGE, pageErr * PER_PAGE)
   const errorCount = filteredPatients.filter(p => p._error).length
   const dupCount = filteredPatients.filter(p => p._duplicate).length
 
+  const patientsToImport = importWithErrors
+    ? filteredPatients.filter(p => !p._duplicate)
+    : validPatients
+
   const handleImport = async () => {
-    if (validPatients.length === 0) return
+    if (patientsToImport.length === 0) return
     setImporting(true)
     setResult(null)
     try {
-      const payload = validPatients.map(({ _rowIndex, _error, _duplicate, ...rest }) => rest)
+      const payload = patientsToImport.map(({ _rowIndex, _error, _duplicate, ...rest }) => rest)
       const res = await api.post('/pacientes/importar', { pacientes: payload })
       const data = res.data
       if (data.erros && data.erros.length > 0) {
@@ -363,8 +379,7 @@ export default function ImportEscola() {
           {result.message}
           {result.details && (
             <ul>
-              {result.details.slice(0, 20).map((d, i) => <li key={i}>{d}</li>)}
-              {result.details.length > 20 && <li>...e mais {result.details.length - 20} erros</li>}
+              {result.details.map((d, i) => <li key={i}>{d}</li>)}
             </ul>
           )}
         </div>
@@ -464,62 +479,123 @@ export default function ImportEscola() {
             </button>
           </div>
 
+          {/* Alunos OK */}
           <div className="csv-preview">
-            <h3>Alunos da escola "{selectedSchool}" ({filteredPatients.length})</h3>
-            <div className="csv-preview-table-wrapper">
-              <table>
-                <thead>
-                  <tr>
-                    <th>#</th>
-                    <th>Nome Completo</th>
-                    <th>CPF</th>
-                    <th>Nascimento</th>
-                    <th>Sexo</th>
-                    <th>Telefone</th>
-                    <th>Status</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {filteredPatients.slice(0, 100).map((p, idx) => (
-                    <tr
-                      key={idx}
-                      className={p._error ? 'row-error' : p._duplicate ? 'row-duplicate' : ''}
-                    >
-                      <td>{p._rowIndex}</td>
-                      <td>{p.nome_completo || '—'}</td>
-                      <td>{p.cpf || '—'}</td>
-                      <td>{formatDateBR(p.data_nascimento)}</td>
-                      <td>{p.sexo || '—'}</td>
-                      <td>{p.telefone || '—'}</td>
-                      <td>
-                        {p._error && <span className="row-badge badge-error">{p._error}</span>}
-                        {p._duplicate && <span className="row-badge badge-dup">CPF duplicado</span>}
-                        {!p._error && !p._duplicate && <span style={{ color: '#68d391', fontSize: '0.75rem' }}>OK</span>}
-                      </td>
+            <h3 className="preview-section-ok">
+              <CheckCircle2 size={16} style={{ verticalAlign: 'middle', marginRight: 6 }} />
+              Alunos válidos ({validPatients.length})
+            </h3>
+            {validPatients.length === 0 ? (
+              <p className="preview-empty">Nenhum aluno válido nesta escola</p>
+            ) : (
+              <div className="csv-preview-table-wrapper">
+                <table>
+                  <thead>
+                    <tr>
+                      <th>#</th>
+                      <th>Nome Completo</th>
+                      <th>Responsável</th>
+                      <th>CPF</th>
+                      <th>Nascimento</th>
+                      <th>Sexo</th>
+                      <th>Telefone</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
-              {filteredPatients.length > 100 && (
-                <div style={{ padding: '0.75rem', color: '#bfab93', fontSize: '0.82rem', textAlign: 'center' }}>
-                  Mostrando 100 de {filteredPatients.length} alunos
-                </div>
-              )}
-            </div>
+                  </thead>
+                  <tbody>
+                    {pagedValid.map((p, idx) => (
+                      <tr key={idx}>
+                        <td>{p._rowIndex}</td>
+                        <td>{p.nome_completo || '—'}</td>
+                        <td>{p.responsavel || '—'}</td>
+                        <td>{p.cpf || '—'}</td>
+                        <td>{formatDateBR(p.data_nascimento)}</td>
+                        <td>{p.sexo || '—'}</td>
+                        <td>{p.telefone || '—'}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+                {totalPagesOk > 1 && (
+                  <div className="preview-pagination">
+                    <button disabled={pageOk <= 1} onClick={() => setPageOk(p => p - 1)}><ChevronLeft size={16} /></button>
+                    <span>Página {pageOk} de {totalPagesOk}</span>
+                    <button disabled={pageOk >= totalPagesOk} onClick={() => setPageOk(p => p + 1)}><ChevronRight size={16} /></button>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
+
+          {/* Alunos com erro */}
+          {errorPatients.length > 0 && (
+            <div className="csv-preview csv-preview-errors">
+              <h3 className="preview-section-err">
+                <AlertTriangle size={16} style={{ verticalAlign: 'middle', marginRight: 6 }} />
+                Alunos com erro ({errorPatients.length})
+              </h3>
+              <div className="csv-preview-table-wrapper">
+                <table>
+                  <thead>
+                    <tr>
+                      <th>#</th>
+                      <th>Nome Completo</th>
+                      <th>Responsável</th>
+                      <th>CPF</th>
+                      <th>Nascimento</th>
+                      <th>Sexo</th>
+                      <th>Erro</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {pagedError.map((p, idx) => (
+                      <tr key={idx} className={p._duplicate ? 'row-duplicate' : 'row-error'}>
+                        <td>{p._rowIndex}</td>
+                        <td>{p.nome_completo || '—'}</td>
+                        <td>{p.responsavel || '—'}</td>
+                        <td>{p.cpf || '—'}</td>
+                        <td>{formatDateBR(p.data_nascimento)}</td>
+                        <td>{p.sexo || '—'}</td>
+                        <td>
+                          {p._error && <span className="row-badge badge-error">{p._error}</span>}
+                          {p._duplicate && <span className="row-badge badge-dup">CPF duplicado</span>}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+                {totalPagesErr > 1 && (
+                  <div className="preview-pagination">
+                    <button disabled={pageErr <= 1} onClick={() => setPageErr(p => p - 1)}><ChevronLeft size={16} /></button>
+                    <span>Página {pageErr} de {totalPagesErr}</span>
+                    <button disabled={pageErr >= totalPagesErr} onClick={() => setPageErr(p => p + 1)}><ChevronRight size={16} /></button>
+                  </div>
+                )}
+              </div>
+
+              <label className="import-with-errors-check">
+                <input
+                  type="checkbox"
+                  checked={importWithErrors}
+                  onChange={e => setImportWithErrors(e.target.checked)}
+                />
+                Importar mesmo os alunos com erro (exceto duplicados)
+              </label>
+            </div>
+          )}
 
           <div className="csv-actions">
             <span className="import-summary">
-              {validPatients.length} alunos de "{selectedSchool}" serão importados
+              {patientsToImport.length} alunos de "{selectedSchool}" serão importados
+              {importWithErrors && errorCount > 0 && ' (incluindo com erro)'}
             </span>
             <button className="btn-cancel" onClick={() => setSelectedSchool(null)}>Voltar</button>
             <button
               className="btn-import"
               onClick={handleImport}
-              disabled={importing || validPatients.length === 0}
+              disabled={importing || patientsToImport.length === 0}
             >
               <Upload size={16} />
-              {importing ? 'Importando...' : `Importar ${validPatients.length} Alunos`}
+              {importing ? 'Importando...' : `Importar ${patientsToImport.length} Alunos`}
             </button>
           </div>
         </>

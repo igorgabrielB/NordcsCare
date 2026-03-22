@@ -181,4 +181,17 @@ class MedicoController {
 
         echo json_encode(['message' => 'Médico excluído com sucesso']);
     }
+
+    public static function perfil(): void {
+        $user = Auth::requireAuth();
+        $db = Database::getInstance();
+
+        $stmt = $db->prepare(
+            'SELECT nome, crm, uf, especialidade FROM medicos WHERE nome = :nome LIMIT 1'
+        );
+        $stmt->execute([':nome' => $user['nome']]);
+        $medico = $stmt->fetch();
+
+        echo json_encode($medico ?: ['nome' => $user['nome'], 'crm' => null, 'uf' => null, 'especialidade' => null]);
+    }
 }

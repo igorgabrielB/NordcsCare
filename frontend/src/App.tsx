@@ -14,6 +14,7 @@ import Logs from './pages/Logs/Logs.tsx'
 import Alunos from './pages/Alunos/Alunos.tsx'
 import ImportEscola from './pages/ImportEscola/ImportEscola.tsx'
 import ExclusaoEscola from './pages/ExclusaoEscola/ExclusaoEscola.tsx'
+import AgendaEscola from './pages/AgendaEscola/AgendaEscola.tsx'
 import Relatorios from './pages/Relatorios/Relatorios.tsx'
 
 export default function App() {
@@ -39,6 +40,7 @@ export default function App() {
             <Route path="/admin/alunos" element={<Alunos />} />
             <Route path="/admin/import-escola" element={<ImportEscola />} />
             <Route path="/admin/exclusao-escola" element={<ExclusaoEscola />} />
+            <Route path="/admin/agenda-escola" element={<AgendaEscola />} />
             <Route path="/relatorios" element={<Relatorios />} />
           </Route>
 

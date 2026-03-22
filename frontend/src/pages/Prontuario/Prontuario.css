@@ -1,5 +1,94 @@
 /* ========== Prontuário Page — Página Única ========== */
 
+/* ===== PDF Buttons ===== */
+.pdf-buttons {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-bottom: 1.2rem;
+  padding: 10px 14px;
+  background: var(--card-bg);
+  border-radius: var(--radius);
+  border: 1px dashed var(--border);
+}
+.pdf-buttons-label {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+  font-weight: 600;
+  margin-right: 4px;
+}
+.btn-pdf {
+  background: transparent;
+  color: var(--primary);
+  border: 1px solid var(--primary) !important;
+  font-size: 0.82rem;
+  padding: 5px 14px;
+  border-radius: var(--radius);
+  cursor: pointer;
+  transition: background 0.2s, color 0.2s;
+}
+.btn-pdf:hover {
+  background: var(--primary);
+  color: #fff;
+}
+
+/* ===== PDF Modal ===== */
+.pdf-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.55);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+}
+.pdf-modal {
+  background: var(--card-bg);
+  border-radius: var(--radius);
+  width: 95%;
+  max-width: 600px;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+  overflow: hidden;
+}
+.pdf-modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 14px 20px;
+  border-bottom: 1px solid var(--border);
+}
+.pdf-modal-header h3 {
+  margin: 0;
+  font-size: 1.1rem;
+  color: var(--primary);
+}
+.pdf-modal-body {
+  padding: 20px;
+}
+.pdf-modal-body label {
+  display: block;
+  font-size: 0.9rem;
+  margin-bottom: 8px;
+  color: var(--text-secondary);
+  font-weight: 600;
+}
+.pdf-modal-body textarea {
+  width: 100%;
+  resize: vertical;
+  min-height: 160px;
+}
+.pdf-modal-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  padding: 14px 20px;
+  border-top: 1px solid var(--border);
+}
+
 .prontuario-page {
   padding: 0;
 }

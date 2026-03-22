@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom'
-import { Users, Stethoscope, GraduationCap, FileText, School, Trash2 } from 'lucide-react'
+import { Users, Stethoscope, GraduationCap, FileText, School, Trash2, CalendarDays } from 'lucide-react'
 import './Admin.css'
 
 const adminOptions = [
@@ -50,6 +50,14 @@ const adminOptions = [
     icon: <Trash2 size={26} />,
     color: 'rgba(245,101,101,0.15)',
     iconColor: '#fc8181',
+  },
+  {
+    to: '/admin/agenda-escola',
+    label: 'Agenda de Escolas',
+    desc: 'Definir dias de atendimento por escola',
+    icon: <CalendarDays size={26} />,
+    color: 'rgba(56,161,105,0.15)',
+    iconColor: '#48bb78',
   },
 ]
 

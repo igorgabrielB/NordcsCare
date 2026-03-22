@@ -193,6 +193,18 @@ CREATE TABLE IF NOT EXISTS modelo_laudos (
 ) ENGINE=InnoDB;
 
 -- =============================================
+-- Tabela: escola_agenda
+-- =============================================
+CREATE TABLE IF NOT EXISTS escola_agenda (
+    id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    escola VARCHAR(150) NOT NULL,
+    data_atendimento DATE NOT NULL,
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE KEY uk_escola_data (escola, data_atendimento),
+    INDEX idx_data (data_atendimento)
+) ENGINE=InnoDB;
+
+-- =============================================
 -- Inserir usuário admin padrão (senha: admin123)
 -- =============================================
 INSERT INTO usuarios (nome, login, senha, role) VALUES

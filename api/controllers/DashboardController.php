@@ -8,68 +8,96 @@ class DashboardController {
         Auth::requireAuth();
         $db = Database::getInstance();
 
+        // Date range filter (defaults to today)
+        $dataInicio = $_GET['data_inicio'] ?? date('Y-m-d');
+        $dataFim = $_GET['data_fim'] ?? date('Y-m-d');
+
         // Total pacientes
         $totalPacientes = (int) $db->query('SELECT COUNT(*) FROM pacientes')->fetchColumn();
 
-        // Atendimentos hoje
-        $hoje = date('Y-m-d');
-        $atendimentosHoje = (int) $db->prepare(
-            'SELECT COUNT(*) FROM laudos WHERE DATE(created_at) = :hoje'
-        )->execute([':hoje' => $hoje]) ? $db->prepare(
-            'SELECT COUNT(*) FROM laudos WHERE DATE(created_at) = :hoje'
-        ) : 0;
-        $stmt = $db->prepare('SELECT COUNT(*) FROM laudos WHERE DATE(created_at) = :hoje');
-        $stmt->execute([':hoje' => $hoje]);
+        // Pacientes do período (escolas agendadas no intervalo)
+        $stmtDia = $db->prepare(
+            "SELECT COUNT(DISTINCT p.id) FROM pacientes p
+             INNER JOIN escola_agenda ea ON ea.escola = p.escola
+             WHERE ea.data_atendimento BETWEEN :di AND :df"
+        );
+        $stmtDia->execute([':di' => $dataInicio, ':df' => $dataFim]);
+        $pacientesDoDia = (int) $stmtDia->fetchColumn();
+
+        // Escolas agendadas no período
+        $stmtEscHoje = $db->prepare(
+            "SELECT ea.escola, COUNT(DISTINCT p.id) as total
+             FROM escola_agenda ea
+             LEFT JOIN pacientes p ON p.escola = ea.escola
+             WHERE ea.data_atendimento BETWEEN :di AND :df
+             GROUP BY ea.escola
+             ORDER BY ea.escola"
+        );
+        $stmtEscHoje->execute([':di' => $dataInicio, ':df' => $dataFim]);
+        $escolasHoje = $stmtEscHoje->fetchAll();
+
+        // Atendimentos no período
+        $stmt = $db->prepare('SELECT COUNT(*) FROM laudos WHERE DATE(created_at) BETWEEN :di AND :df');
+        $stmt->execute([':di' => $dataInicio, ':df' => $dataFim]);
         $atendimentosHoje = (int) $stmt->fetchColumn();
 
         // Pacientes na fila agora (não concluídos e não de alta/encaminhamento)
         $naFila = (int) $db->query("SELECT COUNT(*) FROM fila WHERE status != 'concluido' AND estacao NOT IN ('altas', 'encaminhamentos')")->fetchColumn();
 
-        // Total exames
-        $totalExames = (int) $db->query('SELECT COUNT(*) FROM exames')->fetchColumn();
+        // Total exames no período
+        $stmtEx = $db->prepare('SELECT COUNT(*) FROM exames WHERE DATE(created_at) BETWEEN :di AND :df');
+        $stmtEx->execute([':di' => $dataInicio, ':df' => $dataFim]);
+        $totalExames = (int) $stmtEx->fetchColumn();
 
-        // Total prescrições
-        $totalPrescricoes = (int) $db->query('SELECT COUNT(*) FROM prescricoes')->fetchColumn();
+        // Total prescrições no período
+        $stmtPr = $db->prepare('SELECT COUNT(*) FROM prescricoes WHERE DATE(created_at) BETWEEN :di AND :df');
+        $stmtPr->execute([':di' => $dataInicio, ':df' => $dataFim]);
+        $totalPrescricoes = (int) $stmtPr->fetchColumn();
 
-        // Total laudos
-        $totalLaudos = (int) $db->query('SELECT COUNT(*) FROM laudos')->fetchColumn();
+        // Total laudos no período
+        $stmtLa = $db->prepare('SELECT COUNT(*) FROM laudos WHERE DATE(created_at) BETWEEN :di AND :df');
+        $stmtLa->execute([':di' => $dataInicio, ':df' => $dataFim]);
+        $totalLaudos = (int) $stmtLa->fetchColumn();
 
-        // Condutas iniciais (distribuição)
-        $stmt = $db->query(
+        // Condutas iniciais no período
+        $stmt = $db->prepare(
             "SELECT conduta_inicial, COUNT(*) as total FROM laudos
-             WHERE conduta_inicial IS NOT NULL
+             WHERE conduta_inicial IS NOT NULL AND DATE(created_at) BETWEEN :di AND :df
              GROUP BY conduta_inicial"
         );
+        $stmt->execute([':di' => $dataInicio, ':df' => $dataFim]);
         $condutasIniciais = [];
         foreach ($stmt->fetchAll() as $row) {
             $condutasIniciais[$row['conduta_inicial']] = (int) $row['total'];
         }
 
-        // Condutas finais (distribuição)
-        $stmt = $db->query(
+        // Condutas finais no período
+        $stmt = $db->prepare(
             "SELECT conduta_final, COUNT(*) as total FROM laudos
-             WHERE conduta_final IS NOT NULL
+             WHERE conduta_final IS NOT NULL AND DATE(created_at) BETWEEN :di AND :df
              GROUP BY conduta_final"
         );
+        $stmt->execute([':di' => $dataInicio, ':df' => $dataFim]);
         $condutasFinais = [];
         foreach ($stmt->fetchAll() as $row) {
             $condutasFinais[$row['conduta_final']] = (int) $row['total'];
         }
 
-        // Atendimentos por dia (últimos 7 dias)
-        $stmt = $db->query(
+        // Atendimentos por dia no período
+        $stmt = $db->prepare(
             "SELECT DATE(created_at) as dia, COUNT(*) as total
              FROM laudos
-             WHERE created_at >= DATE_SUB(CURDATE(), INTERVAL 7 DAY)
+             WHERE DATE(created_at) BETWEEN :di AND :df
              GROUP BY DATE(created_at)
              ORDER BY dia ASC"
         );
+        $stmt->execute([':di' => $dataInicio, ':df' => $dataFim]);
         $porDia = [];
         foreach ($stmt->fetchAll() as $row) {
             $porDia[] = ['dia' => $row['dia'], 'total' => (int) $row['total']];
         }
 
-        // Fila por estação (excluindo altas e encaminhamentos)
+        // Fila por estação (sempre atual, sem filtro de data)
         $stmt = $db->query(
             "SELECT estacao, status, COUNT(*) as total
              FROM fila
@@ -85,8 +113,24 @@ class DashboardController {
             ];
         }
 
+        // Próximas escolas agendadas (a partir de hoje, máx 15)
+        $hoje = date('Y-m-d');
+        $stmtAgenda = $db->prepare(
+            "SELECT ea.escola, ea.data_atendimento, COUNT(p.id) as total_alunos
+             FROM escola_agenda ea
+             LEFT JOIN pacientes p ON p.escola = ea.escola
+             WHERE ea.data_atendimento >= :hoje
+             GROUP BY ea.escola, ea.data_atendimento
+             ORDER BY ea.data_atendimento ASC, ea.escola ASC
+             LIMIT 15"
+        );
+        $stmtAgenda->execute([':hoje' => $hoje]);
+        $escolasAgendadas = $stmtAgenda->fetchAll();
+
         echo json_encode([
             'total_pacientes' => $totalPacientes,
+            'pacientes_do_dia' => $pacientesDoDia,
+            'escolas_hoje' => $escolasHoje,
             'atendimentos_hoje' => $atendimentosHoje,
             'na_fila' => $naFila,
             'total_exames' => $totalExames,
@@ -96,6 +140,7 @@ class DashboardController {
             'condutas_finais' => $condutasFinais,
             'atendimentos_por_dia' => $porDia,
             'fila_por_estacao' => $filaPorEstacao,
+            'escolas_agendadas' => $escolasAgendadas,
         ]);
     }
 }
