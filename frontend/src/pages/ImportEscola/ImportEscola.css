@@ -1,0 +1,79 @@
+/* School selector */
+.school-selector {
+  background: var(--bg-light, #2d2a26);
+  border: 1px solid var(--border, #4a3f35);
+  border-radius: 12px;
+  padding: 1.5rem;
+  margin-top: 1rem;
+}
+
+.school-selector h3 {
+  color: var(--text, #ede0d4);
+  font-size: 1rem;
+  margin-bottom: 1rem;
+}
+
+.school-search {
+  width: 100%;
+  padding: 0.55rem 0.9rem;
+  border: 1px solid var(--border, #4a3f35);
+  border-radius: 8px;
+  background: var(--bg, #1e1b18);
+  color: var(--text, #ede0d4);
+  font-size: 0.88rem;
+  margin-bottom: 1rem;
+  outline: none;
+  transition: border-color 0.2s;
+}
+
+.school-search:focus {
+  border-color: var(--accent, #c4956a);
+}
+
+.school-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 0.75rem;
+}
+
+.school-card {
+  background: var(--bg, #1e1b18);
+  border: 1px solid var(--border, #4a3f35);
+  border-radius: 10px;
+  padding: 1rem;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.45rem;
+  text-align: center;
+  color: var(--text, #ede0d4);
+}
+
+.school-card:hover {
+  border-color: var(--accent, #c4956a);
+  background: rgba(196, 149, 106, 0.08);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+.school-card-icon {
+  color: var(--accent, #c4956a);
+  opacity: 0.8;
+}
+
+.school-card-name {
+  font-weight: 600;
+  font-size: 0.88rem;
+  line-height: 1.3;
+  word-break: break-word;
+}
+
+.school-card-count {
+  font-size: 0.78rem;
+  color: var(--text-muted, #bfab93);
+  display: flex;
+  align-items: center;
+  gap: 0.2rem;
+}

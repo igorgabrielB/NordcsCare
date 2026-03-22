@@ -1,0 +1,93 @@
+[2026-03-20 08:17:01] Conduta Inicial recebida: 'alta'
+[2026-03-20 08:17:01] Detectada conduta ALTA para paciente 1
+[2026-03-20 08:17:01] Tentando adicionar paciente 1 à fila 'altas'
+[2026-03-20 08:17:01] Deletados 0 registros de outras filas
+[2026-03-20 08:17:01] ERRO: SQLSTATE[01000]: Warning: 1265 Data truncated for column 'estacao' at row 1
+[2026-03-20 08:22:27] Conduta Inicial recebida: 'alta'
+[2026-03-20 08:22:27] Detectada conduta ALTA para paciente 2
+[2026-03-20 08:22:27] Tentando adicionar paciente 2 à fila 'altas'
+[2026-03-20 08:22:27] Deletados 0 registros de outras filas
+[2026-03-20 08:22:27] INSERT resultado: SUCCESS
+[2026-03-20 08:22:42] Conduta Inicial recebida: 'encaminhamento'
+[2026-03-20 08:22:42] Detectada conduta ENCAMINHAMENTO para paciente 1
+[2026-03-20 08:22:42] Tentando adicionar paciente 1 à fila 'encaminhamentos'
+[2026-03-20 08:22:42] Deletados 0 registros de outras filas
+[2026-03-20 08:22:42] INSERT resultado: SUCCESS
+[2026-03-20 08:24:34] Conduta Inicial recebida: 'encaminhamento'
+[2026-03-20 08:24:34] Detectada conduta ENCAMINHAMENTO para paciente 1
+[2026-03-20 08:24:34] Tentando adicionar paciente 1 à fila 'encaminhamentos'
+[2026-03-20 08:24:34] Removido paciente de 2 filas anteriores
+[2026-03-20 08:24:34] INSERT resultado: SUCCESS
+[2026-03-20 08:27:51] Conduta Inicial recebida: 'alta'
+[2026-03-20 08:27:51] Detectada conduta ALTA para paciente 1
+[2026-03-20 08:27:51] Tentando adicionar paciente 1 à fila 'altas'
+[2026-03-20 08:27:51] Removido paciente de 1 filas anteriores
+[2026-03-20 08:27:51] INSERT resultado: SUCCESS
+[2026-03-20 08:32:24] Conduta Inicial recebida: 'onibus'
+[2026-03-20 08:32:24] Nenhuma fila detectada para conduta: 'onibus'
+[2026-03-20 08:44:57] Conduta Inicial recebida: 'alta'
+[2026-03-20 08:44:57] Detectada conduta ALTA para paciente 1
+[2026-03-20 08:44:57] Tentando adicionar paciente 1 à fila 'altas'
+[2026-03-20 08:44:57] Removido paciente de 1 filas anteriores
+[2026-03-20 08:44:57] INSERT resultado: SUCCESS
+[2026-03-20 08:45:50] Conduta Inicial recebida: 'alta'
+[2026-03-20 08:45:50] Detectada conduta ALTA para paciente 1
+[2026-03-20 08:45:50] Tentando adicionar paciente 1 à fila 'altas'
+[2026-03-20 08:45:50] Removido paciente de 1 filas anteriores
+[2026-03-20 08:45:50] INSERT resultado: SUCCESS
+[2026-03-20 11:48:09] Conduta Inicial recebida: 'alta'
+[2026-03-20 11:48:09] Detectada conduta ALTA para paciente 2
+[2026-03-20 11:48:09] Tentando adicionar paciente 2 à fila 'altas'
+[2026-03-20 11:48:09] Removido paciente de 0 filas anteriores
+[2026-03-20 11:48:09] INSERT resultado: SUCCESS
+[2026-03-20 11:48:28] Conduta Inicial recebida: 'alta'
+[2026-03-20 11:48:28] Detectada conduta ALTA para paciente 2
+[2026-03-20 11:48:28] Tentando adicionar paciente 2 à fila 'altas'
+[2026-03-20 11:48:28] Removido paciente de 1 filas anteriores
+[2026-03-20 11:48:28] INSERT resultado: SUCCESS
+[2026-03-20 11:59:04] Conduta Inicial recebida: 'alta'
+[2026-03-20 11:59:04] Detectada conduta ALTA para paciente 2
+[2026-03-20 11:59:04] Tentando adicionar paciente 2 à fila 'altas'
+[2026-03-20 11:59:04] Removido paciente de 1 filas anteriores
+[2026-03-20 11:59:04] INSERT resultado: SUCCESS
+[2026-03-20 12:03:30] Conduta Inicial recebida: 'alta'
+[2026-03-20 12:03:30] Detectada conduta ALTA para paciente 2
+[2026-03-20 12:03:30] Tentando adicionar paciente 2 à fila 'altas'
+[2026-03-20 12:03:30] Removido paciente de 1 filas anteriores
+[2026-03-20 12:03:30] INSERT resultado: SUCCESS
+[2026-03-20 12:23:50] Tentando mover paciente 1 para fila 'exames' (saindo de 'acuidade')
+[2026-03-20 12:23:50] Removido de 'acuidade': 1 registros
+[2026-03-20 12:23:50] INSERT resultado: SUCCESS
+[2026-03-20 12:28:45] Conduta Inicial recebida: 'alta'
+[2026-03-20 12:28:45] Detectada conduta ALTA para paciente 1
+[2026-03-20 12:28:45] Tentando mover paciente 1 para fila 'altas'
+[2026-03-20 12:28:45] Removido paciente de 1 filas anteriores
+[2026-03-20 12:28:45] INSERT resultado: SUCCESS
+[2026-03-20 14:07:52] Tentando mover paciente 400 para fila 'exames' (saindo de 'acuidade')
+[2026-03-20 14:07:52] Removido de 'acuidade': 1 registros
+[2026-03-20 14:07:52] INSERT resultado: SUCCESS
+[2026-03-20 14:08:46] Conduta Inicial recebida: 'alta'
+[2026-03-20 14:08:46] Detectada conduta ALTA para paciente 400
+[2026-03-20 14:08:46] Tentando mover paciente 400 para fila 'altas'
+[2026-03-20 14:08:46] Removido paciente de 1 filas anteriores
+[2026-03-20 14:08:46] INSERT resultado: SUCCESS
+[2026-03-21 19:56:14] Tentando mover paciente 373 para fila 'exames' (saindo de 'acuidade')
+[2026-03-21 19:56:14] Removido de 'acuidade': 1 registros
+[2026-03-21 19:56:14] INSERT resultado: SUCCESS
+[2026-03-21 19:58:31] Conduta Inicial recebida: 'alta'
+[2026-03-21 19:58:31] Detectada conduta ALTA para paciente 373
+[2026-03-21 19:58:31] Tentando mover paciente 373 para fila 'altas'
+[2026-03-21 19:58:31] Removido paciente de 1 filas anteriores
+[2026-03-21 19:58:31] INSERT resultado: SUCCESS
+[2026-03-21 19:59:02] Conduta Inicial recebida: 'onibus'
+[2026-03-21 19:59:02] Nenhuma fila detectada para conduta: 'onibus'
+[2026-03-21 20:02:19] Conduta Inicial recebida: 'onibus'
+[2026-03-21 20:02:19] Nenhuma fila detectada para conduta: 'onibus'
+[2026-03-21 21:02:45] Tentando mover paciente 463 para fila 'exames' (saindo de 'acuidade')
+[2026-03-21 21:02:45] Removido de 'acuidade': 1 registros
+[2026-03-21 21:02:45] INSERT resultado: SUCCESS
+[2026-03-21 21:04:35] Conduta Inicial recebida: 'alta'
+[2026-03-21 21:04:35] Detectada conduta ALTA para paciente 463
+[2026-03-21 21:04:35] Tentando mover paciente 463 para fila 'altas'
+[2026-03-21 21:04:35] Removido paciente de 1 filas anteriores
+[2026-03-21 21:04:35] INSERT resultado: SUCCESS

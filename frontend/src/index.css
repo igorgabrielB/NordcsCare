@@ -1,0 +1,67 @@
+/* ===== Reset & Base ===== */
+*,
+*::before,
+*::after {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+:root {
+  --primary: #7345d6;
+  --primary-dark: #6743a5;
+  --primary-light: rgba(115, 69, 214, 0.15);
+  --secondary: #bfab93;
+  --accent: #bfab93;
+  --success: #38a169;
+  --warning: #d69e2e;
+  --danger: #e53e3e;
+  --bg: #2e2e2e;
+  --bg-card: #3a3a3a;
+  --bg-card-hover: #444444;
+  --bg-elevated: #4a4a4a;
+  --border: #594747;
+  --border-light: #4a3f3f;
+  --text: #f0ebe3;
+  --text-secondary: #bfab93;
+  --text-muted: #8a7a6a;
+  --gray-50: #383838;
+  --gray-100: #3a3a3a;
+  --gray-200: #594747;
+  --gray-300: #6a5a5a;
+  --gray-400: #8a7a6a;
+  --gray-500: #bfab93;
+  --gray-600: #d4c4ac;
+  --gray-700: #e8ddd0;
+  --gray-800: #f0ebe3;
+  --sidebar-width: 260px;
+  --header-height: 64px;
+  --radius: 8px;
+  --shadow: 0 1px 3px rgba(0, 0, 0, 0.3), 0 1px 2px rgba(0, 0, 0, 0.2);
+  --shadow-md: 0 4px 6px rgba(0, 0, 0, 0.3);
+}
+
+body {
+  font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  line-height: 1.6;
+}
+
+a {
+  color: var(--accent);
+  text-decoration: none;
+}
+
+button {
+  cursor: pointer;
+  font-family: inherit;
+}
+
+input, select, textarea {
+  font-family: inherit;
+  font-size: 0.95rem;
+  background: var(--bg-card);
+  color: var(--text);
+  border: 1px solid var(--border);
+}

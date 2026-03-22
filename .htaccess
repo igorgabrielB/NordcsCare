@@ -1,0 +1,7 @@
+RewriteEngine On
+
+# Pass Authorization header to PHP (XAMPP/Apache strips it by default)
+SetEnvIf Authorization "(.*)" HTTP_AUTHORIZATION=$1
+
+# Redirect all API requests to api/index.php
+RewriteRule ^api/(.*)$ api/index.php [QSA,L]

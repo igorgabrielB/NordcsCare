@@ -1,0 +1,383 @@
+/* ===== Kanban Board ===== */
+.kanban-board {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+  overflow-x: auto;
+  align-items: start;
+}
+
+.kanban-column {
+  background: var(--bg-card, #3a3a3a);
+  border-radius: var(--radius);
+  display: flex;
+  flex-direction: column;
+  min-width: 220px;
+  border: 1px solid var(--border, #594747);
+}
+
+.kanban-header {
+  padding: 14px 16px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  border-top: 3px solid;
+  border-radius: var(--radius) var(--radius) 0 0;
+  background: var(--bg-elevated, #4a4a4a);
+  box-shadow: var(--shadow);
+  cursor: pointer;
+  user-select: none;
+  transition: background 0.15s;
+}
+
+.kanban-header:hover {
+  background: var(--border, #594747);
+}
+
+.kanban-chevron {
+  font-size: 0.65rem;
+  color: var(--gray-400);
+  transition: transform 0.2s;
+}
+
+.kanban-chevron.chevron-collapsed {
+  transform: rotate(-90deg);
+}
+
+.kanban-column.collapsed .kanban-header {
+  border-radius: var(--radius);
+}
+
+.kanban-icon {
+  font-size: 1.1rem;
+}
+
+.kanban-title {
+  font-weight: 600;
+  font-size: 0.9rem;
+  color: var(--gray-700);
+  flex: 1;
+}
+
+.kanban-count {
+  background: var(--border, #594747);
+  color: var(--text-secondary, #bfab93);
+  font-size: 0.75rem;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 12px;
+  min-width: 24px;
+  text-align: center;
+}
+
+.kanban-cards {
+  padding: 12px;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  overflow-y: auto;
+}
+
+.kanban-empty {
+  text-align: center;
+  padding: 24px 8px;
+  color: var(--gray-400);
+  font-size: 0.8rem;
+}
+
+/* ===== Kanban Card ===== */
+.kanban-card {
+  background: var(--bg-elevated, #4a4a4a);
+  border-radius: var(--radius);
+  padding: 14px;
+  box-shadow: var(--shadow);
+  border-left: 3px solid var(--border, #594747);
+  transition: box-shadow 0.15s, border-color 0.15s;
+}
+
+.kanban-card:hover {
+  box-shadow: var(--shadow-md);
+}
+
+.kanban-card.em-atendimento {
+  border-left-color: var(--primary);
+  background: rgba(115, 69, 214, 0.15);
+}
+
+.kanban-card.concluded {
+  opacity: 0.75;
+  border-left-color: #48bb78;
+  background: rgba(72, 187, 120, 0.1);
+}
+
+.kanban-column.saida {
+  opacity: 0.9;
+}
+
+.card-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+  cursor: pointer;
+  user-select: none;
+  padding: 2px 0;
+}
+
+.card-top-left {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  flex: 1;
+}
+
+.card-top-right {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.card-chevron {
+  font-size: 0.55rem;
+  color: var(--gray-400);
+  transition: transform 0.2s;
+  flex-shrink: 0;
+}
+
+.card-chevron.chevron-collapsed {
+  transform: rotate(-90deg);
+}
+
+.card-drawer {
+  padding-top: 8px;
+  border-top: 1px solid var(--border, #594747);
+  margin-top: 8px;
+  animation: drawerSlide 0.15s ease-out;
+}
+
+@keyframes drawerSlide {
+  from { opacity: 0; max-height: 0; }
+  to { opacity: 1; max-height: 300px; }
+}
+
+.card-nome {
+  font-size: 0.85rem;
+  color: var(--gray-800);
+  line-height: 1.3;
+}
+
+.card-prioridade {
+  font-size: 0.9rem;
+  flex-shrink: 0;
+}
+
+.card-info {
+  font-size: 0.75rem;
+  color: var(--gray-500);
+  margin-bottom: 2px;
+}
+
+.card-meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin: 8px 0 6px;
+  gap: 4px;
+}
+
+.card-status {
+  font-size: 0.7rem;
+  font-weight: 600;
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+
+.status-aguardando {
+  background: rgba(214, 158, 46, 0.2);
+  color: #f6e05e;
+}
+
+.status-em_atendimento {
+  background: rgba(115, 69, 214, 0.2);
+  color: #b794f4;
+}
+
+.card-tempo {
+  font-size: 0.7rem;
+  color: var(--gray-400);
+}
+
+.card-actions {
+  display: flex;
+  gap: 6px;
+  margin-top: 8px;
+  flex-wrap: wrap;
+}
+
+.btn-card {
+  border: none;
+  padding: 4px 10px;
+  border-radius: 4px;
+  font-size: 0.72rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: opacity 0.15s;
+}
+
+.btn-card:hover {
+  opacity: 0.85;
+}
+
+.btn-atender {
+  background: var(--primary);
+  color: white;
+}
+
+.btn-avancar {
+  background: var(--success);
+  color: white;
+}
+
+.btn-prontuario {
+  background: #805ad5;
+  color: white;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+}
+
+.btn-remover {
+  background: var(--bg-card, #3a3a3a);
+  color: var(--text-muted, #8a7a6a);
+  margin-left: auto;
+}
+
+.btn-remover:hover {
+  background: rgba(229, 62, 62, 0.15);
+  color: #fc8181;
+}
+
+/* ===== Modal ===== */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.modal {
+  background: var(--bg-card, #3a3a3a);
+  border-radius: 12px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+  width: 100%;
+  max-width: 500px;
+  max-height: 80vh;
+  display: flex;
+  flex-direction: column;
+  border: 1px solid var(--border, #594747);
+}
+
+.modal-header {
+  padding: 20px 24px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid var(--border, #594747);
+}
+
+.modal-header h2 {
+  font-size: 1.1rem;
+  color: var(--gray-800);
+}
+
+.modal-close {
+  background: none;
+  border: none;
+  font-size: 1.2rem;
+  color: var(--gray-400);
+  padding: 4px 8px;
+  border-radius: 4px;
+}
+
+.modal-close:hover {
+  background: var(--bg-elevated, #4a4a4a);
+  color: var(--text, #f0ebe3);
+}
+
+.modal-body {
+  padding: 24px;
+  overflow-y: auto;
+}
+
+.loading-sm {
+  text-align: center;
+  padding: 12px;
+  color: var(--gray-400);
+  font-size: 0.85rem;
+}
+
+/* ===== Pacientes Lista (modal) ===== */
+.pacientes-lista {
+  margin-top: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.paciente-item {
+  padding: 12px 14px;
+  border-radius: var(--radius);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  transition: background 0.1s;
+}
+
+.paciente-item:hover {
+  background: var(--primary-light);
+}
+
+.paciente-item strong {
+  font-size: 0.9rem;
+  color: var(--gray-800);
+}
+
+.paciente-cpf {
+  font-size: 0.8rem;
+  color: var(--gray-500);
+}
+
+.paciente-convenio {
+  font-size: 0.75rem;
+  color: var(--gray-400);
+  background: var(--gray-100);
+  padding: 2px 8px;
+  border-radius: 4px;
+}
+
+.pacientes-empty {
+  text-align: center;
+  padding: 20px;
+  color: var(--gray-400);
+  font-size: 0.85rem;
+}
+
+/* ===== Responsive ===== */
+@media (max-width: 1200px) {
+  .kanban-board {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+@media (max-width: 768px) {
+  .kanban-board {
+    grid-template-columns: 1fr;
+  }
+}

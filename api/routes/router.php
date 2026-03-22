@@ -1,0 +1,129 @@
+<?php
+require_once __DIR__ . '/../controllers/AuthController.php';
+require_once __DIR__ . '/../controllers/PacienteController.php';
+require_once __DIR__ . '/../controllers/FilaController.php';
+require_once __DIR__ . '/../controllers/ProntuarioController.php';
+require_once __DIR__ . '/../controllers/DashboardController.php';
+require_once __DIR__ . '/../controllers/UploadController.php';
+require_once __DIR__ . '/../controllers/UsuarioController.php';
+require_once __DIR__ . '/../controllers/MedicoController.php';
+
+class Router {
+    private array $routes = [];
+
+    public function add(string $method, string $pattern, callable $handler): void {
+        $this->routes[] = [
+            'method' => strtoupper($method),
+            'pattern' => $pattern,
+            'handler' => $handler,
+        ];
+    }
+
+    public function resolve(string $method, string $uri): void {
+        $method = strtoupper($method);
+
+        foreach ($this->routes as $route) {
+            if ($route['method'] !== $method) {
+                continue;
+            }
+
+            $pattern = '#^' . preg_replace('#\{(\w+)\}#', '(?P<$1>\d+)', $route['pattern']) . '$#';
+
+            if (preg_match($pattern, $uri, $matches)) {
+                // Extract named parameters
+                $params = array_filter($matches, 'is_string', ARRAY_FILTER_USE_KEY);
+                $params = array_map('intval', $params);
+                call_user_func_array($route['handler'], $params);
+                return;
+            }
+        }
+
+        http_response_code(404);
+        echo json_encode(['error' => 'Rota não encontrada']);
+    }
+}
+
+// Registrar rotas
+$router = new Router();
+
+// Auth
+$router->add('POST', '/api/auth/login', [AuthController::class, 'login']);
+$router->add('POST', '/api/auth/register', [AuthController::class, 'register']);
+$router->add('GET', '/api/auth/me', [AuthController::class, 'me']);
+
+// Pacientes
+$router->add('GET', '/api/pacientes', [PacienteController::class, 'index']);
+$router->add('GET', '/api/pacientes/escolas', [PacienteController::class, 'escolas']);
+$router->add('GET', '/api/pacientes/escolas/contagem', [PacienteController::class, 'escolasContagem']);
+$router->add('DELETE', '/api/pacientes/escola', [PacienteController::class, 'destroyByEscola']);
+$router->add('GET', '/api/pacientes/{id}', [PacienteController::class, 'show']);
+$router->add('POST', '/api/pacientes', [PacienteController::class, 'store']);
+$router->add('POST', '/api/pacientes/importar', [PacienteController::class, 'importar']);
+$router->add('PUT', '/api/pacientes/{id}', [PacienteController::class, 'update']);
+$router->add('DELETE', '/api/pacientes/{id}', [PacienteController::class, 'destroy']);
+
+// Fila
+$router->add('GET', '/api/fila', [FilaController::class, 'index']);
+$router->add('GET', '/api/fila/pacientes-disponiveis', [FilaController::class, 'pacientesDisponiveis']);
+$router->add('POST', '/api/fila', [FilaController::class, 'store']);
+$router->add('PUT', '/api/fila/{id}/avancar', [FilaController::class, 'avancar']);
+$router->add('PUT', '/api/fila/{id}/status', [FilaController::class, 'updateStatus']);
+$router->add('PUT', '/api/fila/{id}/mover', [FilaController::class, 'mover']);
+$router->add('DELETE', '/api/fila/{id}', [FilaController::class, 'destroy']);
+
+// Prontuário
+$router->add('GET', '/api/prontuario/{pacienteId}', [ProntuarioController::class, 'completo']);
+$router->add('POST', '/api/prontuario/{pacienteId}/atendimento', [ProntuarioController::class, 'storeAtendimento']);
+$router->add('DELETE', '/api/prontuario/{pacienteId}/laudo', [ProntuarioController::class, 'excluirLaudo']);
+
+// Modelos de Laudos
+$router->add('GET', '/api/modelos-laudos', [ProntuarioController::class, 'listarModelos']);
+$router->add('POST', '/api/modelos-laudos', [ProntuarioController::class, 'criarModelo']);
+$router->add('DELETE', '/api/modelos-laudos/{id}', [ProntuarioController::class, 'excluirModelo']);
+
+// Dashboard
+$router->add('GET', '/api/dashboard/metricas', [DashboardController::class, 'metricas']);
+
+// Uploads
+$router->add('GET', '/api/pacientes/{pacienteId}/uploads', [UploadController::class, 'index']);
+$router->add('POST', '/api/pacientes/{pacienteId}/uploads', [UploadController::class, 'store']);
+$router->add('GET', '/api/uploads/{id}/download', [UploadController::class, 'download']);
+$router->add('DELETE', '/api/uploads/{id}', [UploadController::class, 'destroy']);
+
+// Usuários
+$router->add('GET', '/api/usuarios', [UsuarioController::class, 'index']);
+$router->add('GET', '/api/usuarios/{id}', [UsuarioController::class, 'show']);
+$router->add('POST', '/api/usuarios', [UsuarioController::class, 'store']);
+$router->add('PUT', '/api/usuarios/{id}', [UsuarioController::class, 'update']);
+$router->add('DELETE', '/api/usuarios/{id}', [UsuarioController::class, 'destroy']);
+
+
+
+// Médicos
+$router->add('GET', '/api/medicos', [MedicoController::class, 'index']);
+$router->add('GET', '/api/medicos/{id}', [MedicoController::class, 'show']);
+$router->add('POST', '/api/medicos', [MedicoController::class, 'store']);
+$router->add('PUT', '/api/medicos/{id}', [MedicoController::class, 'update']);
+$router->add('DELETE', '/api/medicos/{id}', [MedicoController::class, 'destroy']);
+
+// Logs (apenas admin)
+$router->add('GET', '/api/logs/fila', function() {
+    require_once __DIR__ . '/../middleware/auth.php';
+    Auth::requireRole(['admin']);
+    
+    $logFile = __DIR__ . '/../logs/fila.log';
+    if (!file_exists($logFile)) {
+        http_response_code(404);
+        echo json_encode(['error' => 'Arquivo de log não encontrado']);
+        return;
+    }
+    
+    $logs = file_get_contents($logFile);
+    $lines = array_filter(explode("\n", $logs), fn($line) => trim($line) !== '');
+    
+    echo json_encode([
+        'total_lines' => count($lines),
+        'logs' => array_slice($lines, max(0, count($lines) - 100)) // Últimas 100 linhas
+    ]);
+});
+?>

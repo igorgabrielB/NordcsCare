@@ -1,0 +1,109 @@
+<?php
+require_once __DIR__ . '/../config/database.php';
+require_once __DIR__ . '/../middleware/auth.php';
+
+class AuthController {
+
+    public static function login(): void {
+        $input = json_decode(file_get_contents('php://input'), true);
+
+        if (empty($input['login']) || empty($input['senha'])) {
+            http_response_code(400);
+            echo json_encode(['error' => 'Login e senha são obrigatórios']);
+            return;
+        }
+
+        $db = Database::getInstance();
+        $stmt = $db->prepare('SELECT id, nome, login, senha, role, ativo FROM usuarios WHERE login = :login');
+        $stmt->execute([':login' => $input['login']]);
+        $user = $stmt->fetch();
+
+        if (!$user || !password_verify($input['senha'], $user['senha'])) {
+            http_response_code(401);
+            echo json_encode(['error' => 'Credenciais inválidas']);
+            return;
+        }
+
+        if (!$user['ativo']) {
+            http_response_code(403);
+            echo json_encode(['error' => 'Usuário desativado']);
+            return;
+        }
+
+        $token = Auth::generateToken($user);
+        echo json_encode([
+            'token' => $token,
+            'user' => [
+                'id' => (int)$user['id'],
+                'nome' => $user['nome'],
+                'login' => $user['login'],
+                'role' => $user['role'],
+            ]
+        ]);
+    }
+
+    public static function register(): void {
+        Auth::requireRole(['admin']);
+
+        $input = json_decode(file_get_contents('php://input'), true);
+
+        $required = ['nome', 'login', 'senha', 'role'];
+        foreach ($required as $field) {
+            if (empty($input[$field])) {
+                http_response_code(400);
+                echo json_encode(['error' => "Campo '$field' é obrigatório"]);
+                return;
+            }
+        }
+
+        $allowedRoles = ['admin', 'medico', 'recepcionista'];
+        if (!in_array($input['role'], $allowedRoles, true)) {
+            http_response_code(400);
+            echo json_encode(['error' => 'Role inválida']);
+            return;
+        }
+
+        $db = Database::getInstance();
+
+        // Verificar login duplicado
+        $stmt = $db->prepare('SELECT COUNT(*) FROM usuarios WHERE login = :login');
+        $stmt->execute([':login' => $input['login']]);
+        if ($stmt->fetchColumn() > 0) {
+            http_response_code(409);
+            echo json_encode(['error' => 'Login já existe']);
+            return;
+        }
+
+        $senhaHash = password_hash($input['senha'], PASSWORD_BCRYPT);
+
+        $stmt = $db->prepare(
+            'INSERT INTO usuarios (nome, email, login, senha, role) VALUES (:nome, :email, :login, :senha, :role)'
+        );
+        $stmt->execute([
+            ':nome' => $input['nome'],
+            ':email' => $input['email'] ?? null,
+            ':login' => $input['login'],
+            ':senha' => $senhaHash,
+            ':role' => $input['role'],
+        ]);
+
+        http_response_code(201);
+        echo json_encode(['message' => 'Usuário cadastrado com sucesso', 'id' => (int)$db->lastInsertId()]);
+    }
+
+    public static function me(): void {
+        $user = Auth::requireAuth();
+        $db = Database::getInstance();
+        $stmt = $db->prepare('SELECT id, nome, email, login, role, created_at FROM usuarios WHERE id = :id');
+        $stmt->execute([':id' => $user['sub']]);
+        $userData = $stmt->fetch();
+
+        if (!$userData) {
+            http_response_code(404);
+            echo json_encode(['error' => 'Usuário não encontrado']);
+            return;
+        }
+
+        echo json_encode($userData);
+    }
+}

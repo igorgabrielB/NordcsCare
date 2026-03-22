@@ -1,0 +1,115 @@
+/* ===== Medicos ===== */
+.medicos-page {
+  padding: 0;
+}
+
+.medicos-page .page-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 24px;
+}
+
+.medicos-page .page-header-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.medicos-page .page-header h1 {
+  font-size: 1.4rem;
+  color: var(--text, #f0ebe3);
+}
+
+.btn-back {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.medicos-page .search-bar {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 20px;
+}
+
+.medicos-page .search-bar input {
+  flex: 1;
+  padding: 10px 14px;
+  border: 1px solid var(--gray-300);
+  border-radius: var(--radius);
+  font-size: 0.9rem;
+  outline: none;
+}
+
+.medicos-page .search-bar input:focus {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px rgba(115, 69, 214, 0.2);
+}
+
+/* Table */
+.medicos-table-container {
+  background: var(--bg-card, #3a3a3a);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  overflow-x: auto;
+  border: 1px solid var(--border, #594747);
+}
+
+.medicos-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.medicos-table th {
+  text-align: left;
+  padding: 12px 16px;
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--text-secondary, #bfab93);
+  background: var(--bg-elevated, #4a4a4a);
+  border-bottom: 2px solid var(--border, #594747);
+  white-space: nowrap;
+}
+
+.medicos-table td {
+  padding: 12px 16px;
+  font-size: 0.9rem;
+  border-bottom: 1px solid var(--border, #594747);
+  color: var(--text, #f0ebe3);
+}
+
+.medicos-table tbody tr:hover {
+  background: var(--bg-elevated, #4a4a4a);
+}
+
+.medicos-table .actions {
+  display: flex;
+  gap: 6px;
+  white-space: nowrap;
+}
+
+.medicos-table .empty-state {
+  text-align: center;
+  padding: 2rem;
+  color: var(--text-secondary, #bfab93);
+}
+
+.crm-badge {
+  display: inline-block;
+  padding: 2px 10px;
+  border-radius: 12px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  background: rgba(56, 161, 105, 0.15);
+  color: #68d391;
+  letter-spacing: 0.3px;
+}
+
+/* Modal form row */
+.form-row-modal {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}

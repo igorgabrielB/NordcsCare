@@ -1,0 +1,255 @@
+.exclusao-escola-page {
+  padding: 1.5rem;
+  max-width: 900px;
+  margin: 0 auto;
+}
+
+/* Result banner */
+.exclusao-result {
+  padding: 0.85rem 1rem;
+  border-radius: 8px;
+  margin-bottom: 1rem;
+  font-size: 0.88rem;
+  font-weight: 500;
+}
+.exclusao-result.success {
+  background: rgba(72, 187, 120, 0.12);
+  color: #68d391;
+  border: 1px solid rgba(72, 187, 120, 0.25);
+}
+.exclusao-result.error {
+  background: rgba(245, 101, 101, 0.12);
+  color: #fc8181;
+  border: 1px solid rgba(245, 101, 101, 0.25);
+}
+
+/* Summary bar */
+.exclusao-summary {
+  display: flex;
+  gap: 1.5rem;
+  color: var(--text-muted, #bfab93);
+  font-size: 0.88rem;
+  margin-bottom: 1rem;
+}
+
+/* Search */
+.exclusao-search-bar {
+  position: relative;
+  margin-bottom: 1rem;
+}
+.exclusao-search-bar .search-icon {
+  position: absolute;
+  left: 0.75rem;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--text-muted, #bfab93);
+  pointer-events: none;
+}
+.exclusao-search-bar input {
+  width: 100%;
+  padding: 0.55rem 0.9rem 0.55rem 2.2rem;
+  border: 1px solid var(--border, #4a3f35);
+  border-radius: 8px;
+  background: var(--bg-light, #2d2a26);
+  color: var(--text, #ede0d4);
+  font-size: 0.88rem;
+  outline: none;
+  transition: border-color 0.2s;
+}
+.exclusao-search-bar input:focus {
+  border-color: var(--accent, #c4956a);
+}
+
+/* School list */
+.exclusao-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.exclusao-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: var(--bg-light, #2d2a26);
+  border: 1px solid var(--border, #4a3f35);
+  border-radius: 10px;
+  padding: 0.75rem 1rem;
+  transition: border-color 0.2s;
+}
+.exclusao-row:hover {
+  border-color: rgba(245, 101, 101, 0.4);
+}
+
+.exclusao-row-info {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  flex: 1;
+  min-width: 0;
+}
+
+.exclusao-row-icon {
+  color: var(--accent, #c4956a);
+  flex-shrink: 0;
+}
+
+.exclusao-row-name {
+  font-weight: 600;
+  font-size: 0.9rem;
+  color: var(--text, #ede0d4);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.exclusao-row-count {
+  font-size: 0.78rem;
+  color: var(--text-muted, #bfab93);
+  flex-shrink: 0;
+  margin-left: 0.5rem;
+}
+
+.btn-delete-sm {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.4rem 0.75rem;
+  border: 1px solid rgba(245, 101, 101, 0.35);
+  border-radius: 6px;
+  background: rgba(245, 101, 101, 0.1);
+  color: #fc8181;
+  font-size: 0.8rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+  flex-shrink: 0;
+}
+.btn-delete-sm:hover {
+  background: rgba(245, 101, 101, 0.2);
+  border-color: rgba(245, 101, 101, 0.5);
+}
+
+/* Confirm modal */
+.exclusao-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 1rem;
+}
+
+.exclusao-modal {
+  background: var(--bg-light, #2d2a26);
+  border: 1px solid var(--border, #4a3f35);
+  border-radius: 14px;
+  padding: 2rem;
+  max-width: 440px;
+  width: 100%;
+  text-align: center;
+}
+
+.exclusao-modal-icon {
+  color: #f6ad55;
+  margin-bottom: 0.75rem;
+}
+
+.exclusao-modal h3 {
+  color: var(--text, #ede0d4);
+  font-size: 1.1rem;
+  margin-bottom: 0.5rem;
+}
+
+.exclusao-modal p {
+  color: var(--text-muted, #bfab93);
+  font-size: 0.85rem;
+  line-height: 1.5;
+  margin-bottom: 0.5rem;
+}
+
+.exclusao-modal-school {
+  background: var(--bg, #1e1b18);
+  border: 1px solid var(--border, #4a3f35);
+  border-radius: 8px;
+  padding: 0.6rem 1rem;
+  font-weight: 600;
+  color: var(--text, #ede0d4);
+  font-size: 0.95rem;
+  margin: 0.75rem 0;
+}
+
+.exclusao-modal-warning {
+  color: #fc8181 !important;
+  font-size: 0.82rem !important;
+}
+
+.exclusao-modal-label {
+  display: block;
+  color: var(--text-muted, #bfab93);
+  font-size: 0.82rem;
+  margin-bottom: 0.4rem;
+  text-align: left;
+}
+
+.exclusao-modal-input {
+  width: 100%;
+  padding: 0.5rem 0.75rem;
+  border: 1px solid var(--border, #4a3f35);
+  border-radius: 6px;
+  background: var(--bg, #1e1b18);
+  color: var(--text, #ede0d4);
+  font-size: 0.88rem;
+  outline: none;
+  margin-bottom: 1rem;
+  text-align: center;
+  letter-spacing: 2px;
+  font-weight: 600;
+}
+.exclusao-modal-input:focus {
+  border-color: #fc8181;
+}
+
+.exclusao-modal-actions {
+  display: flex;
+  gap: 0.75rem;
+  justify-content: center;
+}
+
+.exclusao-modal-actions .btn-cancel {
+  padding: 0.5rem 1.2rem;
+  border: 1px solid var(--border, #4a3f35);
+  border-radius: 8px;
+  background: transparent;
+  color: var(--text-muted, #bfab93);
+  cursor: pointer;
+  font-size: 0.85rem;
+  transition: all 0.2s;
+}
+.exclusao-modal-actions .btn-cancel:hover {
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.exclusao-modal-actions .btn-delete {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.5rem 1.2rem;
+  border: none;
+  border-radius: 8px;
+  background: #e53e3e;
+  color: #fff;
+  font-weight: 600;
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.exclusao-modal-actions .btn-delete:hover:not(:disabled) {
+  background: #c53030;
+}
+.exclusao-modal-actions .btn-delete:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
