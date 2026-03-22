@@ -3,7 +3,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  background: linear-gradient(135deg, #2e2e2e 0%, #1a1a1a 100%);
+  background: linear-gradient(135deg, var(--bg) 0%, var(--bg-card) 100%);
 }
 
 .login-card {
@@ -70,7 +70,7 @@
 
 .login-error {
   background: rgba(229, 62, 62, 0.15);
-  color: #fc8181;
+  color: var(--danger);
   padding: 10px 14px;
   border-radius: var(--radius);
   font-size: 0.85rem;

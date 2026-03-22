@@ -1,14 +1,14 @@
 /* ===== Shared Components ===== */
 
 .required-asterisk {
-  color: #e53935;
+  color: var(--danger);
   font-weight: 700;
   margin-left: 2px;
 }
 
 .required-notice {
   font-size: 0.85rem;
-  color: #666;
+  color: var(--text-muted);
   margin-bottom: 12px;
 }
 
@@ -39,7 +39,7 @@
 }
 
 .field-error label {
-  color: #e53935;
+  color: var(--danger);
   font-weight: 600;
 }
 
@@ -58,7 +58,7 @@
 
 .btn-primary {
   background: var(--primary);
-  color: white;
+  color: var(--text);
 }
 
 .btn-primary:hover {
@@ -77,13 +77,13 @@
 
 .btn-danger {
   background: rgba(229, 62, 62, 0.15);
-  color: #fc8181;
+  color: var(--danger);
   border: 1px solid rgba(229, 62, 62, 0.3);
 }
 
 .btn-danger:hover {
   background: var(--danger);
-  color: white;
+  color: var(--text);
 }
 
 .btn-sm {
@@ -251,7 +251,7 @@
 .escola-dropdown li {
   padding: 0.45rem 0.75rem;
   font-size: 0.85rem;
-  color: #f0ebe3;
+  color: var(--text);
   cursor: pointer;
   transition: background 0.1s;
 }
@@ -270,13 +270,13 @@
 /* ===== Check-in Button ===== */
 .btn-checkin {
   background: rgba(56, 161, 105, 0.2);
-  color: #68d391;
+  color: var(--success);
   border: 1px solid rgba(56, 161, 105, 0.3);
 }
 
 .btn-checkin:hover {
   background: #28a745;
-  color: white;
+  color: var(--text);
 }
 
 .btn-checkin:disabled {
@@ -363,7 +363,7 @@
 .pac-codigo {
   font-size: 0.75rem;
   font-weight: 700;
-  color: white;
+  color: var(--text);
   background: var(--primary, #7345d6);
   padding: 1px 6px;
   border-radius: 4px;
@@ -375,7 +375,7 @@
   font-size: 0.72rem;
   font-weight: 600;
   background: rgba(56, 161, 105, 0.2);
-  color: #68d391;
+  color: var(--success);
   padding: 2px 8px;
   border-radius: 10px;
   white-space: nowrap;

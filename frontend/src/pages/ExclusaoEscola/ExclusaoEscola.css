@@ -14,12 +14,12 @@
 }
 .exclusao-result.success {
   background: rgba(72, 187, 120, 0.12);
-  color: #68d391;
+  color: var(--success);
   border: 1px solid rgba(72, 187, 120, 0.25);
 }
 .exclusao-result.error {
   background: rgba(245, 101, 101, 0.12);
-  color: #fc8181;
+  color: var(--danger);
   border: 1px solid rgba(245, 101, 101, 0.25);
 }
 
@@ -118,7 +118,7 @@
   border: 1px solid rgba(245, 101, 101, 0.35);
   border-radius: 6px;
   background: rgba(245, 101, 101, 0.1);
-  color: #fc8181;
+  color: var(--danger);
   font-size: 0.8rem;
   font-weight: 500;
   cursor: pointer;
@@ -153,7 +153,7 @@
 }
 
 .exclusao-modal-icon {
-  color: #f6ad55;
+  color: var(--warning);
   margin-bottom: 0.75rem;
 }
 
@@ -182,7 +182,7 @@
 }
 
 .exclusao-modal-warning {
-  color: #fc8181 !important;
+  color: var(--danger) !important;
   font-size: 0.82rem !important;
 }
 
@@ -209,7 +209,7 @@
   font-weight: 600;
 }
 .exclusao-modal-input:focus {
-  border-color: #fc8181;
+  border-color: var(--danger);
 }
 
 .exclusao-modal-actions {
@@ -240,7 +240,7 @@
   border: none;
   border-radius: 8px;
   background: #e53e3e;
-  color: #fff;
+  color: var(--text);
   font-weight: 600;
   font-size: 0.85rem;
   cursor: pointer;

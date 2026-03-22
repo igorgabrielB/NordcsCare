@@ -59,6 +59,10 @@
   flex: 1;
 }
 
+body.light-mode .kanban-title {
+  color: var(--text);
+}
+
 .kanban-count {
   background: var(--border, #594747);
   color: var(--text-secondary, #bfab93);
@@ -197,12 +201,12 @@
 
 .status-aguardando {
   background: rgba(214, 158, 46, 0.2);
-  color: #f6e05e;
+  color: var(--warning);
 }
 
 .status-em_atendimento {
   background: rgba(115, 69, 214, 0.2);
-  color: #b794f4;
+  color: var(--primary-light);
 }
 
 .card-tempo {
@@ -233,17 +237,17 @@
 
 .btn-atender {
   background: var(--primary);
-  color: white;
+  color: var(--text);
 }
 
 .btn-avancar {
   background: var(--success);
-  color: white;
+  color: var(--text);
 }
 
 .btn-prontuario {
   background: #805ad5;
-  color: white;
+  color: var(--text);
   text-decoration: none;
   display: inline-flex;
   align-items: center;
@@ -257,7 +261,7 @@
 
 .btn-remover:hover {
   background: rgba(229, 62, 62, 0.15);
-  color: #fc8181;
+  color: var(--danger);
 }
 
 /* ===== Modal ===== */

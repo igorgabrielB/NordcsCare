@@ -83,7 +83,7 @@ class ProntuarioController {
         $stmt->execute([':pid' => $pacienteId]);
         $anamneses = $stmt->fetchAll();
 
-        // Exames
+        // Exames locais
         $stmt = $db->prepare(
             'SELECT e.*, u.nome AS medico_nome FROM exames e
              JOIN usuarios u ON u.id = e.medico_id
@@ -91,6 +91,7 @@ class ProntuarioController {
         );
         $stmt->execute([':pid' => $pacienteId]);
         $exames = $stmt->fetchAll();
+
 
         // Prescrições
         $stmt = $db->prepare(

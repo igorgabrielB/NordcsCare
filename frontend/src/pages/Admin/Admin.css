@@ -10,11 +10,11 @@
 
 .admin-page .page-header h1 {
   font-size: 1.6rem;
-  color: #f0ebe3;
+  color: var(--text);
 }
 
 .admin-page .page-header p {
-  color: #bfab93;
+  color: var(--text-secondary);
   margin-top: 0.25rem;
   font-size: 0.9rem;
 }
@@ -26,8 +26,8 @@
 }
 
 .admin-card {
-  background: #3a3a3a;
-  border: 1px solid #594747;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
   border-radius: 12px;
   padding: 1.75rem 1.5rem;
   display: flex;
@@ -35,7 +35,7 @@
   align-items: center;
   gap: 1rem;
   text-decoration: none;
-  color: #f0ebe3;
+  color: var(--text);
   transition: transform 0.15s, box-shadow 0.15s, border-color 0.15s;
   cursor: pointer;
 }
@@ -43,7 +43,7 @@
 .admin-card:hover {
   transform: translateY(-3px);
   box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3);
-  border-color: #7345d6;
+  border-color: var(--primary);
 }
 
 .admin-card-icon {
@@ -64,7 +64,7 @@
 
 .admin-card-desc {
   font-size: 0.8rem;
-  color: #bfab93;
+  color: var(--text-secondary);
   text-align: center;
   line-height: 1.4;
 }
@@ -78,13 +78,13 @@
 .admin-card.disabled:hover {
   transform: none;
   box-shadow: none;
-  border-color: #594747;
+  border-color: var(--border);
 }
 
 .admin-badge-soon {
   font-size: 0.65rem;
-  background: #594747;
-  color: #bfab93;
+  background: var(--border);
+  color: var(--text-secondary);
   padding: 2px 8px;
   border-radius: 10px;
   text-transform: uppercase;
