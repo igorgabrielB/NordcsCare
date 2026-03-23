@@ -161,4 +161,57 @@ $router->add('GET', '/api/logs/fila', function() {
         'logs' => array_slice($lines, max(0, count($lines) - 100)) // Últimas 100 linhas
     ]);
 });
+
+// Auditoria (apenas admin)
+$router->add('GET', '/api/audit', function() {
+    require_once __DIR__ . '/../middleware/auth.php';
+    require_once __DIR__ . '/../config/database.php';
+    Auth::requireRole(['admin']);
+
+    $db = Database::getInstance();
+
+    $page = max(1, (int)($_GET['page'] ?? 1));
+    $limit = min(100, max(1, (int)($_GET['limit'] ?? 50)));
+    $offset = ($page - 1) * $limit;
+
+    $where = '1=1';
+    $params = [];
+
+    if (!empty($_GET['usuario'])) {
+        $where .= ' AND usuario_nome LIKE :usuario';
+        $params[':usuario'] = '%' . $_GET['usuario'] . '%';
+    }
+    if (!empty($_GET['acao'])) {
+        $where .= ' AND acao = :acao';
+        $params[':acao'] = $_GET['acao'];
+    }
+    if (!empty($_GET['entidade'])) {
+        $where .= ' AND entidade = :entidade';
+        $params[':entidade'] = $_GET['entidade'];
+    }
+    if (!empty($_GET['data_inicio'])) {
+        $where .= ' AND created_at >= :di';
+        $params[':di'] = $_GET['data_inicio'] . ' 00:00:00';
+    }
+    if (!empty($_GET['data_fim'])) {
+        $where .= ' AND created_at <= :df';
+        $params[':df'] = $_GET['data_fim'] . ' 23:59:59';
+    }
+
+    $countStmt = $db->prepare("SELECT COUNT(*) FROM audit_log WHERE {$where}");
+    $countStmt->execute($params);
+    $total = (int)$countStmt->fetchColumn();
+
+    $stmt = $db->prepare(
+        "SELECT * FROM audit_log WHERE {$where} ORDER BY created_at DESC LIMIT {$limit} OFFSET {$offset}"
+    );
+    $stmt->execute($params);
+
+    echo json_encode([
+        'total' => $total,
+        'page' => $page,
+        'limit' => $limit,
+        'data' => $stmt->fetchAll(),
+    ]);
+});
 ?>

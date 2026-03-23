@@ -8,7 +8,17 @@ interface Laudo {
   conduta: string
   observacoes: string
   medico_nome: string
+  medico_role?: string
   created_at: string
+}
+
+function rolePrefix(role?: string) {
+  switch (role) {
+    case 'medico': return 'Dr(a).'
+    case 'administrativo': return 'Assist.'
+    case 'admin': return 'Adm.'
+    default: return ''
+  }
 }
 
 const CONDUTAS = [
@@ -103,7 +113,7 @@ export default function LaudosTab({ pacienteId }: { pacienteId: number }) {
             <div key={l.id} className="clinical-card">
               <div className="clinical-card-header">
                 <span className="clinical-date">{new Date(l.created_at).toLocaleDateString('pt-BR')} {new Date(l.created_at).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}</span>
-                <span className="clinical-medico">Dr(a). {l.medico_nome}</span>
+                <span className="clinical-medico">{rolePrefix(l.medico_role)} {l.medico_nome}</span>
               </div>
               <div className="clinical-card-body">
                 {l.diagnostico && <p><strong>Diagnóstico:</strong> <span dangerouslySetInnerHTML={{ __html: formatTexto(l.diagnostico) }} /></p>}

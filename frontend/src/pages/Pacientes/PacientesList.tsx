@@ -89,7 +89,8 @@ export default function PacientesList() {
   }
 
   const ESTACAO_LABELS: Record<string, string> = {
-    acuidade: 'Acuidade', exames: 'Exames', laudos: 'Laudos', oculos: 'Óculos'
+    acuidade: 'Acuidade', exames: 'Exames', laudos: 'Laudos', oculos: 'Óculos',
+    altas: 'Alta', encaminhamentos: 'Encaminhado'
   }
 
   useEffect(() => {
@@ -229,9 +230,10 @@ export default function PacientesList() {
                       <span className="pac-codigo">#{p.codigo}</span>
                       <strong className="pac-nome">{p.nome_completo}</strong>
                       {naFila[p.id] && fInfo && (
-                        <span className="pac-fila-badge">
+                        <span className={`pac-fila-badge${fInfo.status === 'concluido' ? ' pac-fila-concluido' : ''}`}>
                           <MapPin size={14} style={{verticalAlign:'middle',marginRight:3}} />{ESTACAO_LABELS[fInfo.estacao] || fInfo.estacao}
                           {fInfo.status === 'em_atendimento' && ' — Em atendimento'}
+                          {fInfo.status === 'concluido' && ' — Finalizado'}
                         </span>
                       )}
                       <div className="pac-drawer-right">

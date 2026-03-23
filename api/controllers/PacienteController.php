@@ -1,6 +1,7 @@
 <?php
 require_once __DIR__ . '/../config/database.php';
 require_once __DIR__ . '/../middleware/auth.php';
+require_once __DIR__ . '/../utils/AuditLog.php';
 
 class PacienteController {
 
@@ -100,7 +101,7 @@ class PacienteController {
     }
 
     public static function store(): void {
-        Auth::requireRole(['admin', 'medico', 'recepcionista']);
+        $user = Auth::requireRole(['admin', 'medico', 'administrativo']);
 
         $input = json_decode(file_get_contents('php://input'), true);
 
@@ -156,12 +157,14 @@ class PacienteController {
 
         $id = (int)$db->lastInsertId();
 
+        AuditLog::registrar('criar', 'paciente', $id, "Paciente '{$input['nome_completo']}' (código {$novoCodigo}) cadastrado", $user);
+
         http_response_code(201);
         echo json_encode(['message' => 'Paciente cadastrado com sucesso', 'id' => $id, 'codigo' => $novoCodigo]);
     }
 
     public static function update(int $id): void {
-        Auth::requireRole(['admin', 'medico', 'recepcionista']);
+        $user = Auth::requireRole(['admin', 'medico', 'administrativo']);
 
         $input = json_decode(file_get_contents('php://input'), true);
 
@@ -216,11 +219,13 @@ class PacienteController {
             ':observacoes' => $input['observacoes'] ?? null,
         ]);
 
+        AuditLog::registrar('editar', 'paciente', $id, "Paciente atualizado", $user);
+
         echo json_encode(['message' => 'Paciente atualizado com sucesso']);
     }
 
     public static function destroy(int $id): void {
-        Auth::requireRole(['admin']);
+        $user = Auth::requireRole(['admin']);
 
         $db = Database::getInstance();
         $stmt = $db->prepare('SELECT id FROM pacientes WHERE id = :id');
@@ -234,6 +239,8 @@ class PacienteController {
         $stmt = $db->prepare('DELETE FROM pacientes WHERE id = :id');
         $stmt->execute([':id' => $id]);
 
+        AuditLog::registrar('excluir', 'paciente', $id, 'Paciente excluído', $user);
+
         echo json_encode(['message' => 'Paciente removido com sucesso']);
     }
 
@@ -241,7 +248,7 @@ class PacienteController {
      * DELETE /api/pacientes/escola/{escola} — Exclusão em lote por escola
      */
     public static function destroyByEscola(): void {
-        Auth::requireRole(['admin']);
+        $user = Auth::requireRole(['admin']);
 
         $input = json_decode(file_get_contents('php://input'), true);
         $escola = trim($input['escola'] ?? '');
@@ -267,6 +274,8 @@ class PacienteController {
         $stmt = $db->prepare('DELETE FROM pacientes WHERE escola = :escola');
         $stmt->execute([':escola' => $escola]);
 
+        AuditLog::registrar('excluir_lote', 'paciente', null, "Excluído {$total} pacientes da escola '{$escola}'", $user);
+
         echo json_encode([
             'message' => "$total paciente(s) da escola \"$escola\" removidos com sucesso",
             'removidos' => $total,
@@ -277,7 +286,7 @@ class PacienteController {
      * POST /api/pacientes/importar — Importação em lote via CSV
      */
     public static function importar(): void {
-        Auth::requireRole(['admin']);
+        $user = Auth::requireRole(['admin']);
 
         $input = json_decode(file_get_contents('php://input'), true);
         $pacientes = $input['pacientes'] ?? [];
@@ -352,6 +361,8 @@ class PacienteController {
                 $erros[] = "Linha {$linha}: Erro ao inserir '{$nome}' — " . $e->getMessage();
             }
         }
+
+        AuditLog::registrar('importar', 'paciente', null, "Importação: {$importados} pacientes importados" . (count($erros) > 0 ? ", " . count($erros) . " erros" : ''), $user);
 
         http_response_code(201);
         echo json_encode([

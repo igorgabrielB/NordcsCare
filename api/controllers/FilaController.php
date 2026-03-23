@@ -1,6 +1,7 @@
 <?php
 require_once __DIR__ . '/../config/database.php';
 require_once __DIR__ . '/../middleware/auth.php';
+require_once __DIR__ . '/../utils/AuditLog.php';
 
 class FilaController {
 
@@ -24,10 +25,9 @@ class FilaController {
                  JOIN pacientes p ON p.id = f.paciente_id
                  LEFT JOIN usuarios u ON u.id = f.atendente_id
                  WHERE DATE(f.created_at) = :data
-                   AND f.status != :concluido_final
                  ORDER BY f.prioridade DESC, f.created_at ASC';
             $stmt = $db->prepare($sql);
-            $stmt->execute([':data' => $dataParam, ':concluido_final' => 'concluido']);
+            $stmt->execute([':data' => $dataParam]);
         } else {
             $sql = 'SELECT f.id, f.paciente_id, f.estacao, f.status, f.prioridade, f.observacoes,
                         f.atendente_id, f.created_at, f.updated_at,
@@ -37,10 +37,9 @@ class FilaController {
                  JOIN pacientes p ON p.id = f.paciente_id
                  LEFT JOIN usuarios u ON u.id = f.atendente_id
                  WHERE DATE(f.created_at) = CURDATE()
-                   AND f.status != :concluido_final
                  ORDER BY f.prioridade DESC, f.created_at ASC';
             $stmt = $db->prepare($sql);
-            $stmt->execute([':concluido_final' => 'concluido']);
+            $stmt->execute();
         }
         $items = $stmt->fetchAll();
 
@@ -60,7 +59,7 @@ class FilaController {
      * POST /api/fila — Adiciona paciente na fila (check-in direto para acuidade).
      */
     public static function store(): void {
-        Auth::requireRole(['admin', 'recepcionista']);
+        $user = Auth::requireRole(['admin', 'administrativo']);
 
         $input = json_decode(file_get_contents('php://input'), true);
 
@@ -81,14 +80,14 @@ class FilaController {
             return;
         }
 
-        // Verificar se já está na fila hoje (não finalizado)
+        // Verificar se já está na fila (apenas 1 registro por paciente)
         $stmt = $db->prepare(
-            'SELECT id FROM fila WHERE paciente_id = :pid AND DATE(created_at) = CURDATE() AND status != :fin'
+            'SELECT id FROM fila WHERE paciente_id = :pid LIMIT 1'
         );
-        $stmt->execute([':pid' => $input['paciente_id'], ':fin' => 'concluido']);
+        $stmt->execute([':pid' => $input['paciente_id']]);
         if ($stmt->fetch()) {
             http_response_code(409);
-            echo json_encode(['error' => 'Paciente já está na fila hoje']);
+            echo json_encode(['error' => 'Paciente já está na fila']);
             return;
         }
 
@@ -104,15 +103,19 @@ class FilaController {
             ':observacoes' => $input['observacoes'] ?? null,
         ]);
 
+        $filaId = (int)$db->lastInsertId();
+
+        AuditLog::registrar('criar', 'fila', $filaId, "Paciente {$input['paciente_id']} adicionado à fila", $user);
+
         http_response_code(201);
-        echo json_encode(['message' => 'Paciente adicionado à fila', 'id' => (int)$db->lastInsertId()]);
+        echo json_encode(['message' => 'Paciente adicionado à fila', 'id' => $filaId]);
     }
 
     /**
      * PUT /api/fila/{id}/avancar — Move paciente para a próxima estação.
      */
     public static function avancar(int $id): void {
-        Auth::requireAuth();
+        $user = Auth::requireAuth();
 
         $db = Database::getInstance();
         $stmt = $db->prepare('SELECT * FROM fila WHERE id = :id');
@@ -125,11 +128,19 @@ class FilaController {
             return;
         }
 
+        // Somente admin pode avançar pacientes que estão em altas
+        if ($fila['estacao'] === 'altas' && $user['role'] !== 'admin') {
+            http_response_code(403);
+            echo json_encode(['error' => 'Somente administradores podem alterar pacientes em alta']);
+            return;
+        }
+
         $currentIndex = array_search($fila['estacao'], self::$estacoesOrdem);
         if ($currentIndex === false || $currentIndex >= count(self::$estacoesOrdem) - 1) {
             // Última estação — marcar como concluído
             $stmt = $db->prepare('UPDATE fila SET status = :status WHERE id = :id');
             $stmt->execute([':status' => 'concluido', ':id' => $id]);
+            AuditLog::registrar('avancar', 'fila', $id, 'Paciente concluiu o atendimento', $user);
             echo json_encode(['message' => 'Paciente concluiu o atendimento', 'status' => 'concluido']);
             return;
         }
@@ -149,6 +160,7 @@ class FilaController {
             'message' => 'Paciente movido para ' . $nextEstacao,
             'estacao' => $nextEstacao,
         ]);
+        AuditLog::registrar('avancar', 'fila', $id, "Paciente avançou para {$nextEstacao}", $user);
     }
 
     /**
@@ -193,7 +205,7 @@ class FilaController {
      * PUT /api/fila/{id}/mover — Move paciente para uma estação específica.
      */
     public static function mover(int $id): void {
-        Auth::requireAuth();
+        $user = Auth::requireAuth();
 
         $input = json_decode(file_get_contents('php://input'), true);
 
@@ -205,11 +217,19 @@ class FilaController {
 
         $db = Database::getInstance();
 
-        $stmt = $db->prepare('SELECT id FROM fila WHERE id = :id');
+        $stmt = $db->prepare('SELECT id, estacao FROM fila WHERE id = :id');
         $stmt->execute([':id' => $id]);
-        if (!$stmt->fetch()) {
+        $fila = $stmt->fetch();
+        if (!$fila) {
             http_response_code(404);
             echo json_encode(['error' => 'Registro não encontrado']);
+            return;
+        }
+
+        // Somente admin pode mover pacientes que estão em altas
+        if ($fila['estacao'] === 'altas' && $user['role'] !== 'admin') {
+            http_response_code(403);
+            echo json_encode(['error' => 'Somente administradores podem alterar pacientes em alta']);
             return;
         }
 
@@ -223,26 +243,38 @@ class FilaController {
         ]);
 
         echo json_encode(['message' => 'Paciente movido para ' . $input['estacao']]);
+
+        AuditLog::registrar('mover', 'fila', $id, "Paciente movido para estação {$input['estacao']}", $user);
     }
 
     /**
      * DELETE /api/fila/{id} — Remove paciente da fila.
      */
     public static function destroy(int $id): void {
-        Auth::requireRole(['admin', 'recepcionista']);
+        $user = Auth::requireRole(['admin', 'administrativo']);
 
         $db = Database::getInstance();
 
-        $stmt = $db->prepare('SELECT id FROM fila WHERE id = :id');
+        $stmt = $db->prepare('SELECT id, estacao FROM fila WHERE id = :id');
         $stmt->execute([':id' => $id]);
-        if (!$stmt->fetch()) {
+        $fila = $stmt->fetch();
+        if (!$fila) {
             http_response_code(404);
             echo json_encode(['error' => 'Registro não encontrado']);
             return;
         }
 
+        // Somente admin pode remover pacientes que estão em altas
+        if ($fila['estacao'] === 'altas' && $user['role'] !== 'admin') {
+            http_response_code(403);
+            echo json_encode(['error' => 'Somente administradores podem alterar pacientes em alta']);
+            return;
+        }
+
         $stmt = $db->prepare('DELETE FROM fila WHERE id = :id');
         $stmt->execute([':id' => $id]);
+
+        AuditLog::registrar('excluir', 'fila', $id, 'Paciente removido da fila', $user);
 
         echo json_encode(['message' => 'Paciente removido da fila']);
     }
@@ -259,7 +291,7 @@ class FilaController {
         $sql = 'SELECT p.id, p.nome_completo, p.cpf, p.convenio
                 FROM pacientes p
                 WHERE p.id NOT IN (
-                    SELECT f.paciente_id FROM fila f WHERE DATE(f.created_at) = CURDATE() AND f.status != :fin
+                    SELECT f.paciente_id FROM fila f
                 )';
 
         if ($search !== '') {
@@ -268,7 +300,7 @@ class FilaController {
         $sql .= ' ORDER BY p.nome_completo ASC LIMIT 20';
 
         $stmt = $db->prepare($sql);
-        $params = [':fin' => 'concluido'];
+        $params = [];
         if ($search !== '') {
             $searchTerm = "%$search%";
             $params[':search'] = $searchTerm;

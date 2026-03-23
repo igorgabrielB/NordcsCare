@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom'
-import { Users, Stethoscope, GraduationCap, FileText, School, Trash2, CalendarDays, ClipboardList, BookOpen } from 'lucide-react'
+import { Users, Stethoscope, GraduationCap, FileText, School, Trash2, CalendarDays, ClipboardList, BookOpen, ShieldCheck } from 'lucide-react'
 import './Admin.css'
 
 const adminOptions = [
@@ -10,6 +10,14 @@ const adminOptions = [
     icon: <Users size={26} />,
     color: 'rgba(49,130,206,0.15)',
     iconColor: '#63b3ed',
+  },
+  {
+    to: '/admin/perfis',
+    label: 'Gerenciamento de Perfis',
+    desc: 'Visualizar permissões e alterar perfil dos usuários',
+    icon: <ShieldCheck size={26} />,
+    color: 'rgba(128,90,213,0.15)',
+    iconColor: '#b794f4',
   },
   {
     to: '/admin/medicos',

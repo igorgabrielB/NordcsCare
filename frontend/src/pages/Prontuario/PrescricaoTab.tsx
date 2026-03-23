@@ -15,7 +15,17 @@ interface Prescricao {
   dp: string
   observacoes: string
   medico_nome: string
+  medico_role?: string
   created_at: string
+}
+
+function rolePrefix(role?: string) {
+  switch (role) {
+    case 'medico': return 'Dr(a).'
+    case 'administrativo': return 'Assist.'
+    case 'admin': return 'Adm.'
+    default: return ''
+  }
 }
 
 export default function PrescricaoTab({ pacienteId }: { pacienteId: number }) {
@@ -129,7 +139,7 @@ export default function PrescricaoTab({ pacienteId }: { pacienteId: number }) {
             <div key={p.id} className="clinical-card">
               <div className="clinical-card-header">
                 <span className="clinical-date">{new Date(p.created_at).toLocaleDateString('pt-BR')} {new Date(p.created_at).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}</span>
-                <span className="clinical-medico">Dr(a). {p.medico_nome}</span>
+                <span className="clinical-medico">{rolePrefix(p.medico_role)} {p.medico_nome}</span>
               </div>
               <div className="clinical-card-body">
                 <p><strong>Tipo:</strong> {p.tipo === 'lentes_contato' ? 'Lente de Contato' : 'Óculos'}</p>

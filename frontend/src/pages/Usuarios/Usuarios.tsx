@@ -23,7 +23,7 @@ interface FormData {
   ativo: number
 }
 
-const emptyForm: FormData = { nome: '', email: '', login: '', senha: '', role: 'recepcionista', ativo: 1 }
+const emptyForm: FormData = { nome: '', email: '', login: '', senha: '', role: 'administrativo', ativo: 1 }
 
 export default function Usuarios() {
   const [usuarios, setUsuarios] = useState<Usuario[]>([])
@@ -106,7 +106,7 @@ export default function Usuarios() {
   }
 
   const roleBadge = (role: string) => {
-    const cls = role === 'admin' ? 'badge-admin' : role === 'medico' ? 'badge-medico' : 'badge-recepcionista'
+    const cls = role === 'admin' ? 'badge-admin' : role === 'medico' ? 'badge-medico' : 'badge-administrativo'
     return <span className={`badge ${cls}`}>{role}</span>
   }
 
@@ -197,7 +197,7 @@ export default function Usuarios() {
                 <select value={form.role} onChange={e => setForm({ ...form, role: e.target.value })}>
                   <option value="admin">Admin</option>
                   <option value="medico">Médico</option>
-                  <option value="recepcionista">Recepcionista</option>
+                  <option value="administrativo">Administrativo</option>
                 </select>
               </div>
               {editId && (

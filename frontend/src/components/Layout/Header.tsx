@@ -5,7 +5,7 @@ import { Settings, Menu } from 'lucide-react'
 const roleLabels: Record<string, string> = {
   admin: 'Administrador',
   medico: 'Médico',
-  recepcionista: 'Recepcionista',
+  administrativo: 'Administrativo',
 }
 
 import { ReactNode } from 'react';
@@ -33,9 +33,11 @@ export default function Header({ onToggleSidebar, sidebarOpen, children }: Heade
         <h2>Nordcs Care</h2>
       </div>
       <div className="header-right" style={{display:'flex',alignItems:'center',gap:12}}>
-        <Link to="/admin" className="header-icon-link" title="Administração">
-          <Settings size={16} />
-        </Link>
+        {user?.role === 'admin' && (
+          <Link to="/admin" className="header-icon-link" title="Administração">
+            <Settings size={16} />
+          </Link>
+        )}
         {user && (
           <div className="header-user">
             <span className="header-user-name">{user.nome}</span>

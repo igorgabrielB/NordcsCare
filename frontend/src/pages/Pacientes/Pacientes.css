@@ -382,6 +382,11 @@
   flex-shrink: 0;
 }
 
+.pac-fila-concluido {
+  background: rgba(128, 128, 128, 0.2);
+  color: var(--gray-400);
+}
+
 .pac-drawer-right {
   display: flex;
   align-items: center;

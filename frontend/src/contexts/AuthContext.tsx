@@ -5,7 +5,7 @@ interface User {
   id: number
   nome: string
   login: string
-  role: 'admin' | 'medico' | 'recepcionista'
+  role: 'admin' | 'medico' | 'administrativo'
 }
 
 interface AuthContextType {

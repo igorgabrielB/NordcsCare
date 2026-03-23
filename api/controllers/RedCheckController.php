@@ -317,7 +317,6 @@ class RedCheckController {
         $data = curl_exec($ch);
         $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
         $contentType = curl_getinfo($ch, CURLINFO_CONTENT_TYPE) ?: '';
-        curl_close($ch);
 
         if ($httpCode !== 200 || !$data) {
             http_response_code(502);
@@ -370,7 +369,6 @@ class RedCheckController {
 
         $response = curl_exec($ch);
         $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-        curl_close($ch);
 
         $body = json_decode($response, true);
 

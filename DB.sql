@@ -18,7 +18,7 @@ CREATE TABLE IF NOT EXISTS usuarios (
     email VARCHAR(100),
     login VARCHAR(30) NOT NULL UNIQUE,
     senha VARCHAR(255) NOT NULL,
-    role ENUM('admin', 'medico', 'recepcionista') NOT NULL DEFAULT 'recepcionista',
+    role ENUM('admin', 'medico', 'administrativo') NOT NULL DEFAULT 'administrativo',
     ativo TINYINT(1) NOT NULL DEFAULT 1,
     created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
@@ -143,6 +143,8 @@ CREATE TABLE IF NOT EXISTS prescricoes (
     oe_eixo INT DEFAULT NULL,
     oe_adicao DECIMAL(5,2) DEFAULT NULL,
     dp DECIMAL(4,1) DEFAULT NULL,
+    acuidade_od VARCHAR(20) DEFAULT NULL,
+    acuidade_oe VARCHAR(20) DEFAULT NULL,
     observacoes TEXT,
     created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (paciente_id) REFERENCES pacientes(id) ON DELETE CASCADE,
@@ -157,7 +159,7 @@ CREATE TABLE IF NOT EXISTS laudos (
     paciente_id INT UNSIGNED NOT NULL,
     medico_id INT UNSIGNED NOT NULL,
     diagnostico TEXT,
-    conduta_inicial ENUM('alta', 'onibus', 'encaminhamento') DEFAULT NULL,
+    conduta_inicial ENUM('alta', 'onibus', 'encaminhamento', 'onibus_encaminhamento') DEFAULT NULL,
     conduta_final ENUM('alta', 'encaminhamento') DEFAULT NULL,
     observacoes TEXT,
     created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -219,6 +221,26 @@ CREATE TABLE IF NOT EXISTS escola_agenda (
     UNIQUE KEY uk_escola_data (escola, data_atendimento),
     INDEX idx_data (data_atendimento)
 ) ENGINE=InnoDB;
+
+-- =============================================
+-- Tabela: audit_log (Registro de Auditoria)
+-- =============================================
+CREATE TABLE IF NOT EXISTS audit_log (
+    id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    usuario_id INT UNSIGNED NULL,
+    usuario_nome VARCHAR(100),
+    usuario_role VARCHAR(30),
+    acao VARCHAR(50) NOT NULL,
+    entidade VARCHAR(50) NOT NULL,
+    entidade_id INT UNSIGNED NULL,
+    detalhes TEXT,
+    ip VARCHAR(45),
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    INDEX idx_audit_created (created_at),
+    INDEX idx_audit_usuario (usuario_id),
+    INDEX idx_audit_acao (acao),
+    INDEX idx_audit_entidade (entidade, entidade_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- =============================================
 -- Inserir usuário admin padrão (senha: admin123)
