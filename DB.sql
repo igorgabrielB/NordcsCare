@@ -193,6 +193,22 @@ CREATE TABLE IF NOT EXISTS modelo_laudos (
 ) ENGINE=InnoDB;
 
 -- =============================================
+-- Tabela: laudos_prontos
+-- =============================================
+CREATE TABLE IF NOT EXISTS laudos_prontos (
+    id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    titulo VARCHAR(150) NOT NULL,
+    diagnostico TEXT NOT NULL,
+    conduta VARCHAR(50) DEFAULT NULL,
+    observacoes TEXT,
+    ativo TINYINT(1) NOT NULL DEFAULT 1,
+    usuario_id INT UNSIGNED NOT NULL,
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    FOREIGN KEY (usuario_id) REFERENCES usuarios(id) ON DELETE CASCADE
+) ENGINE=InnoDB;
+
+-- =============================================
 -- Tabela: escola_agenda
 -- =============================================
 CREATE TABLE IF NOT EXISTS escola_agenda (

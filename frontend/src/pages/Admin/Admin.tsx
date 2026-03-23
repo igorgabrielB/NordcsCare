@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom'
-import { Users, Stethoscope, GraduationCap, FileText, School, Trash2, CalendarDays, ClipboardList } from 'lucide-react'
+import { Users, Stethoscope, GraduationCap, FileText, School, Trash2, CalendarDays, ClipboardList, BookOpen } from 'lucide-react'
 import './Admin.css'
 
 const adminOptions = [
@@ -66,6 +66,14 @@ const adminOptions = [
     icon: <ClipboardList size={26} />,
     color: 'rgba(237,137,54,0.15)',
     iconColor: '#ed8936',
+  },
+  {
+    to: '/admin/laudos-prontos',
+    label: 'Laudos Prontos',
+    desc: 'Gerenciar diagnósticos pré-definidos para laudos',
+    icon: <BookOpen size={26} />,
+    color: 'rgba(115,69,214,0.15)',
+    iconColor: '#b794f4',
   },
 ]
 

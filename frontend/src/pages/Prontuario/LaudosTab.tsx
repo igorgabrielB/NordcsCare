@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import api from '../../services/api'
+import { formatTexto } from '../../services/pdfService'
 
 interface Laudo {
   id: number
@@ -105,14 +106,14 @@ export default function LaudosTab({ pacienteId }: { pacienteId: number }) {
                 <span className="clinical-medico">Dr(a). {l.medico_nome}</span>
               </div>
               <div className="clinical-card-body">
-                {l.diagnostico && <p><strong>Diagnóstico:</strong> {l.diagnostico}</p>}
+                {l.diagnostico && <p><strong>Diagnóstico:</strong> <span dangerouslySetInnerHTML={{ __html: formatTexto(l.diagnostico) }} /></p>}
                 <p>
                   <strong>Conduta:</strong>{' '}
                   <span className="conduta-badge" style={{ backgroundColor: condutaColor(l.conduta) }}>
                     {condutaLabel(l.conduta)}
                   </span>
                 </p>
-                {l.observacoes && <p><strong>Obs:</strong> {l.observacoes}</p>}
+                {l.observacoes && <p><strong>Obs:</strong> <span dangerouslySetInnerHTML={{ __html: formatTexto(l.observacoes) }} /></p>}
               </div>
             </div>
           ))}

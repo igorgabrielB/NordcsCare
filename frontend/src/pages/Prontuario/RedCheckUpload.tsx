@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useMemo } from 'react'
 import api from '../../services/api'
-import { RefreshCw, ExternalLink, Camera, CheckCircle2, Clock, XCircle, AlertCircle, Users, Search } from 'lucide-react'
+import { RefreshCw, Camera, CheckCircle2, Clock, XCircle, AlertCircle, Users, Search, Eye, X, Maximize2 } from 'lucide-react'
 
 interface RedCheckLaudo {
   id: number
@@ -10,7 +10,6 @@ interface RedCheckLaudo {
   diabetico: boolean
   observacao: string
   data: string
-  link_resultado: string | null
   public_url: string | null
   paciente_nome: string
 }
@@ -28,7 +27,7 @@ interface Props {
   onError?: (msg: string) => void
 }
 
-export default function RedCheckExames({ pacienteId, onSuccess, onError }: Props) {
+export default function RedCheckExames({ pacienteId, onSuccess }: Props) {
   const [configured, setConfigured] = useState<boolean | null>(null)
   const [laudos, setLaudos] = useState<RedCheckLaudo[]>([])
   const [loading, setLoading] = useState(false)
@@ -37,6 +36,15 @@ export default function RedCheckExames({ pacienteId, onSuccess, onError }: Props
   const [selectedDemo, setSelectedDemo] = useState<string>('')
   const [loadingDemo, setLoadingDemo] = useState(false)
   const [demoSearch, setDemoSearch] = useState('')
+  const [expandedLaudo, setExpandedLaudo] = useState<{ url: string; titulo: string } | null>(null)
+
+  // Separar laudos por tipo
+  const spotVisionLaudos = useMemo(() =>
+    laudos.filter(l => l.tipo_exame === 'Spot Vision'), [laudos])
+  const retinografiaLaudos = useMemo(() =>
+    laudos.filter(l => l.tipo_exame === 'Retinografia'), [laudos])
+  const outrosLaudos = useMemo(() =>
+    laudos.filter(l => l.tipo_exame !== 'Spot Vision' && l.tipo_exame !== 'Retinografia'), [laudos])
 
   const filteredDemoPacientes = useMemo(() => {
     if (!demoSearch.trim()) return demoPacientes
@@ -113,13 +121,9 @@ export default function RedCheckExames({ pacienteId, onSuccess, onError }: Props
     onSuccess?.('Exames atualizados')
   }
 
-  function openResult(laudo: RedCheckLaudo) {
-    const url = laudo.link_resultado || laudo.public_url
-    if (url) {
-      window.open(url, '_blank', 'noopener,noreferrer')
-    } else {
-      onError?.('Link do resultado não disponível')
-    }
+  function getProxyUrl(laudoId: number): string {
+    const token = localStorage.getItem('token') || ''
+    return `/api/redcheck/imagem/${laudoId}?token=${encodeURIComponent(token)}`
   }
 
   function statusIcon(status: string) {
@@ -152,6 +156,7 @@ export default function RedCheckExames({ pacienteId, onSuccess, onError }: Props
         </h2>
         <div className="redcheck-actions">
           <button
+            type="button"
             className="btn btn-secondary btn-sm"
             onClick={handleRefresh}
             disabled={loading || loadingDemo}
@@ -184,6 +189,7 @@ export default function RedCheckExames({ pacienteId, onSuccess, onError }: Props
             </div>
             {selectedDemo && (
               <button
+                type="button"
                 className="btn btn-secondary btn-sm"
                 onClick={() => { setSelectedDemo(''); setDemoSearch(''); loadExames() }}
                 style={{ whiteSpace: 'nowrap' }}
@@ -230,34 +236,159 @@ export default function RedCheckExames({ pacienteId, onSuccess, onError }: Props
       )}
 
       {laudos.length > 0 && (
-        <div className="redcheck-laudos">
-          {laudos.map(l => (
-            <div key={l.id} className={`redcheck-laudo-item redcheck-status-${l.status}`}>
-              <div className="redcheck-laudo-info">
+        <div className="redcheck-columns">
+          {/* Coluna SpotVision */}
+          <div className="redcheck-column">
+            <h3 className="redcheck-column-title">
+              <Eye size={16} style={{ verticalAlign: 'middle', marginRight: 6 }} />
+              Spot Vision
+            </h3>
+            {spotVisionLaudos.length === 0 ? (
+              <p className="redcheck-column-empty">Nenhum exame Spot Vision</p>
+            ) : (
+              spotVisionLaudos.map(l => (
+                <div key={l.id} className="redcheck-exam-card">
+                  <div className="redcheck-exam-meta">
+                    <span className="redcheck-exam-olho">{l.olho}</span>
+                    <span className="redcheck-exam-status">
+                      {statusIcon(l.status)} {statusLabel(l.status)}
+                    </span>
+                    {l.diabetico && <span className="redcheck-laudo-tag">Diabético</span>}
+                    <span className="redcheck-exam-data">
+                      {l.data ? new Date(l.data).toLocaleDateString('pt-BR') : ''}
+                    </span>
+                    {l.public_url && (
+                      <button
+                        type="button"
+                        className="btn btn-sm btn-secondary redcheck-expand-btn"
+                        onClick={() => setExpandedLaudo({ url: getProxyUrl(l.id), titulo: `Spot Vision — ${l.olho}` })}
+                        title="Expandir"
+                      >
+                        <Maximize2 size={13} />
+                      </button>
+                    )}
+                  </div>
+                  {l.public_url ? (
+                    <iframe
+                      src={getProxyUrl(l.id)}
+                      title={`Spot Vision — ${l.olho}`}
+                      className="redcheck-exam-iframe"
+                    />
+                  ) : (
+                    <p className="redcheck-column-empty">Laudo não disponível</p>
+                  )}
+                </div>
+              ))
+            )}
+          </div>
+
+          {/* Coluna Retinografia */}
+          <div className="redcheck-column">
+            <h3 className="redcheck-column-title">
+              <Camera size={16} style={{ verticalAlign: 'middle', marginRight: 6 }} />
+              Retinografia
+            </h3>
+            {retinografiaLaudos.length === 0 ? (
+              <p className="redcheck-column-empty">Nenhum exame de Retinografia</p>
+            ) : (
+              retinografiaLaudos.map(l => (
+                <div key={l.id} className="redcheck-exam-card">
+                  <div className="redcheck-exam-meta">
+                    <span className="redcheck-exam-olho">{l.olho}</span>
+                    <span className="redcheck-exam-status">
+                      {statusIcon(l.status)} {statusLabel(l.status)}
+                    </span>
+                    {l.diabetico && <span className="redcheck-laudo-tag">Diabético</span>}
+                    <span className="redcheck-exam-data">
+                      {l.data ? new Date(l.data).toLocaleDateString('pt-BR') : ''}
+                    </span>
+                    {l.public_url && (
+                      <button
+                        type="button"
+                        className="btn btn-sm btn-secondary redcheck-expand-btn"
+                        onClick={() => setExpandedLaudo({ url: getProxyUrl(l.id), titulo: `Retinografia — ${l.olho}` })}
+                        title="Expandir"
+                      >
+                        <Maximize2 size={13} />
+                      </button>
+                    )}
+                  </div>
+                  {l.public_url ? (
+                    <iframe
+                      src={getProxyUrl(l.id)}
+                      title={`Retinografia — ${l.olho}`}
+                      className="redcheck-exam-iframe"
+                    />
+                  ) : (
+                    <p className="redcheck-column-empty">Laudo não disponível</p>
+                  )}
+                </div>
+              ))
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Outros tipos de exame (OCT, etc) */}
+      {outrosLaudos.length > 0 && (
+        <div className="redcheck-outros" style={{ marginTop: 16 }}>
+          <h3 className="redcheck-column-title">Outros Exames</h3>
+          {outrosLaudos.map(l => (
+            <div key={l.id} className="redcheck-exam-card">
+              <div className="redcheck-exam-meta">
                 <span className="redcheck-laudo-tipo">{l.tipo_exame}</span>
-                <span className="redcheck-laudo-olho">{l.olho}</span>
-                <span className="redcheck-laudo-status">
+                <span className="redcheck-exam-olho">{l.olho}</span>
+                <span className="redcheck-exam-status">
                   {statusIcon(l.status)} {statusLabel(l.status)}
                 </span>
-                {l.diabetico && <span className="redcheck-laudo-tag">Diabético</span>}
-                <span className="redcheck-laudo-data">
+                <span className="redcheck-exam-data">
                   {l.data ? new Date(l.data).toLocaleDateString('pt-BR') : ''}
                 </span>
-              </div>
-              <div className="redcheck-laudo-actions">
-                {(l.link_resultado || l.public_url) && (
+                {l.public_url && (
                   <button
-                    className="btn btn-sm btn-primary"
-                    onClick={() => openResult(l)}
-                    title="Ver resultado na RedCheck"
+                    type="button"
+                    className="btn btn-sm btn-secondary redcheck-expand-btn"
+                    onClick={() => setExpandedLaudo({ url: getProxyUrl(l.id), titulo: `${l.tipo_exame} — ${l.olho}` })}
+                    title="Expandir"
                   >
-                    <ExternalLink size={14} style={{ verticalAlign: 'middle', marginRight: 3 }} />
-                    Ver Resultado
+                    <Maximize2 size={13} />
                   </button>
                 )}
               </div>
+              {l.public_url && (
+                <iframe
+                  src={getProxyUrl(l.id)}
+                  title={`${l.tipo_exame} — ${l.olho}`}
+                  className="redcheck-exam-iframe"
+                />
+              )}
             </div>
           ))}
+        </div>
+      )}
+
+      {/* Modal expandido */}
+      {expandedLaudo && (
+        <div className="redcheck-modal-overlay" onClick={() => setExpandedLaudo(null)}>
+          <div className="redcheck-modal redcheck-modal-pdf" onClick={e => e.stopPropagation()}>
+            <div className="redcheck-modal-header">
+              <h3>{expandedLaudo.titulo}</h3>
+              <button
+                type="button"
+                className="redcheck-modal-close"
+                onClick={() => setExpandedLaudo(null)}
+              >
+                <X size={20} />
+              </button>
+            </div>
+            <div className="redcheck-modal-body" style={{ flex: 1 }}>
+              <iframe
+                src={expandedLaudo.url}
+                title={expandedLaudo.titulo}
+                style={{ width: '100%', height: '100%', border: 'none' }}
+              />
+            </div>
+          </div>
         </div>
       )}
 

@@ -17,6 +17,7 @@ import ExclusaoEscola from './pages/ExclusaoEscola/ExclusaoEscola.tsx'
 import AgendaEscola from './pages/AgendaEscola/AgendaEscola.tsx'
 import Relatorios from './pages/Relatorios/Relatorios.tsx'
 import ModelosDocumentos from './pages/ModelosDocumentos/ModelosDocumentos.tsx'
+import LaudosProntos from './pages/LaudosProntos/LaudosProntos.tsx'
 
 export default function App() {
   return (
@@ -43,6 +44,7 @@ export default function App() {
             <Route path="/admin/exclusao-escola" element={<ExclusaoEscola />} />
             <Route path="/admin/agenda-escola" element={<AgendaEscola />} />
             <Route path="/admin/modelos-documentos" element={<ModelosDocumentos />} />
+            <Route path="/admin/laudos-prontos" element={<LaudosProntos />} />
             <Route path="/relatorios" element={<Relatorios />} />
           </Route>
 

@@ -102,8 +102,7 @@ class RedCheckController {
                 'diabetico' => (bool) ($l['diabetic'] ?? false),
                 'observacao' => $l['observation'] ?? '',
                 'data' => $l['registrationDate'] ?? $l['created_at'] ?? null,
-                'link_resultado' => $l['linkExternal'] ?? null,
-                'public_url' => $l['public_url'] ?? null,
+                'public_url' => $l['linkExternal'] ?? $l['public_url'] ?? null,
                 'paciente_nome' => $l['patient']['name'] ?? '',
             ];
         }, $laudos);
@@ -249,13 +248,111 @@ class RedCheckController {
                 'diabetico' => (bool) ($l['diabetic'] ?? false),
                 'observacao' => $l['observation'] ?? '',
                 'data' => $l['registrationDate'] ?? $l['created_at'] ?? null,
-                'link_resultado' => $l['linkExternal'] ?? null,
-                'public_url' => $l['public_url'] ?? null,
+                'public_url' => $l['linkExternal'] ?? $l['public_url'] ?? null,
                 'paciente_nome' => $l['patient']['name'] ?? '',
             ];
         }, $laudos);
 
         echo json_encode(['laudos' => $result]);
+    }
+
+    /**
+     * GET /api/redcheck/imagem/{laudoId} — Proxy do exame (imagem, PDF ou página HTML) — contorna X-Frame-Options
+     */
+    public static function imagem(int $laudoId): void {
+        Auth::requireAuth();
+
+        if (!RedCheckConfig::isConfigured()) {
+            http_response_code(503);
+            echo json_encode(['error' => 'Integração RedCheck não configurada']);
+            return;
+        }
+
+        // Buscar detalhe do laudo para obter URL
+        $response = self::apiRequest('GET', "/report/$laudoId");
+
+        if ($response['httpCode'] !== 200 || empty($response['body'])) {
+            http_response_code(404);
+            echo json_encode(['error' => 'Laudo não encontrado']);
+            return;
+        }
+
+        $body = $response['body'];
+        $url = $body['linkExternal'] ?? $body['public_url'] ?? $body['linkImage'] ?? $body['imageUrl'] ?? null;
+
+        if (!$url) {
+            http_response_code(404);
+            echo json_encode(['error' => 'Arquivo não disponível para este exame']);
+            return;
+        }
+
+        // Validar que a URL pertence a um domínio permitido
+        $parsedUrl = parse_url($url);
+        $allowedHosts = ['redcheck.com.br', 'api.redcheck.com.br', 'storage.redcheck.com.br', 'img.redcheck.com.br', 'amazonaws.com', 's3.amazonaws.com'];
+        $host = $parsedUrl['host'] ?? '';
+        $isAllowed = false;
+        foreach ($allowedHosts as $allowed) {
+            if ($host === $allowed || str_ends_with($host, '.' . $allowed)) {
+                $isAllowed = true;
+                break;
+            }
+        }
+
+        if (!$isAllowed) {
+            http_response_code(403);
+            echo json_encode(['error' => 'URL não permitida']);
+            return;
+        }
+
+        // Fazer proxy do conteúdo
+        $ch = curl_init();
+        curl_setopt($ch, CURLOPT_URL, $url);
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($ch, CURLOPT_TIMEOUT, 30);
+        curl_setopt($ch, CURLOPT_FOLLOWLOCATION, true);
+        curl_setopt($ch, CURLOPT_HTTPHEADER, [
+            'Authorization: ' . RedCheckConfig::getAuthHeader(),
+        ]);
+
+        $data = curl_exec($ch);
+        $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        $contentType = curl_getinfo($ch, CURLINFO_CONTENT_TYPE) ?: '';
+        curl_close($ch);
+
+        if ($httpCode !== 200 || !$data) {
+            http_response_code(502);
+            echo json_encode(['error' => 'Erro ao buscar conteúdo do exame']);
+            return;
+        }
+
+        // Detectar tipo de conteúdo
+        $mimeBase = strtolower(explode(';', $contentType)[0]);
+
+        if ($mimeBase === 'application/pdf' || str_starts_with($data, '%PDF')) {
+            header('Content-Type: application/pdf');
+            header('Content-Disposition: inline');
+        } elseif (str_starts_with($mimeBase, 'image/')) {
+            header('Content-Type: ' . $contentType);
+        } elseif ($mimeBase === 'text/html' || str_contains($data, '<html') || str_contains($data, '<!DOCTYPE')) {
+            // Para HTML, reescrever URLs relativas para absolutas e remover X-Frame-Options
+            $baseUrl = $parsedUrl['scheme'] . '://' . $host;
+            // Adicionar <base> tag e CSS para centralizar conteúdo
+            $centerCss = '<style>body{display:flex;flex-direction:column;align-items:center;justify-content:flex-start;min-height:100vh;margin:0 auto;max-width:100%;}</style>';
+            $data = preg_replace(
+                '/(<head[^>]*>)/i',
+                '$1<base href="' . htmlspecialchars($baseUrl, ENT_QUOTES) . '/">' . $centerCss,
+                $data,
+                1
+            );
+            header('Content-Type: text/html; charset=utf-8');
+        } else {
+            header('Content-Type: ' . ($contentType ?: 'application/octet-stream'));
+        }
+
+        header('Cache-Control: private, max-age=3600');
+        // Remover X-Frame-Options que o servidor original enviou
+        header_remove('X-Frame-Options');
+        echo $data;
     }
 
     // ===== HELPERS =====

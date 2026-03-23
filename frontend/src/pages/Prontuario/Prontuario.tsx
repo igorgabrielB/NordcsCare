@@ -3,7 +3,7 @@ import { useParams, Link } from 'react-router-dom'
 import api from '../../services/api'
 import { useAuth } from '../../contexts/AuthContext'
 import { User, X, Pencil, ClipboardList, Bus, Save, FileText, Microscope, Glasses, CheckCircle2, BookOpen, Eye, Trash2, Printer } from 'lucide-react'
-import { gerarReceitaOcular, gerarAtestado, gerarReceitaMedica, gerarRelatorio } from '../../services/pdfService'
+import { gerarReceitaOcular, gerarAtestado, gerarReceitaMedica, gerarRelatorio, formatTexto } from '../../services/pdfService'
 import RedCheckExames from './RedCheckUpload'
 import './Prontuario.css'
 
@@ -82,6 +82,10 @@ interface ModeloLaudo {
   } | null
 }
 
+interface LaudoPronto {
+  id: number; titulo: string; diagnostico: string; conduta: string | null; observacoes: string | null
+}
+
 const TIPOS_EXAME = [
   { value: 'acuidade_visual', label: 'Acuidade Visual' },
   { value: 'refracao', label: 'Refração' },
@@ -139,6 +143,7 @@ export default function Prontuario() {
   const [pdfModal, setPdfModal] = useState<'atestado' | 'receita_medica' | null>(null)
   const [pdfTexto, setPdfTexto] = useState('')
   const [modelosDoc, setModelosDoc] = useState<{ id: number; tipo: string; nome: string; conteudo: string }[]>([])
+  const [laudosProntos, setLaudosProntos] = useState<LaudoPronto[]>([])
 
   // Helpers: montar form a partir de dados existentes
   function buildFormFromExisting(d: ProntuarioData) {
@@ -216,7 +221,11 @@ export default function Prontuario() {
     try { const r = await api.get('/modelos-documentos'); setModelosDoc(r.data) } catch { /* ignore */ }
   }
 
-  useEffect(() => { loadProntuario(); loadModelos(); loadMedicoPerfil(); loadModelosDoc() }, [pacienteId])
+  async function loadLaudosProntos() {
+    try { const r = await api.get('/laudos-prontos/ativos'); setLaudosProntos(r.data) } catch { /* ignore */ }
+  }
+
+  useEffect(() => { loadProntuario(); loadModelos(); loadMedicoPerfil(); loadModelosDoc(); loadLaudosProntos() }, [pacienteId])
 
   async function loadMedicoPerfil() {
     try {
@@ -619,6 +628,29 @@ export default function Prontuario() {
           {/* --- Laudo (Conduta Inicial) --- */}
           <fieldset className="form-section">
             <legend><ClipboardList size={16} style={{verticalAlign:'middle',marginRight:6}} />Laudo</legend>
+            {laudosProntos.length > 0 && (
+              <div className="form-group" style={{maxWidth:400,marginBottom:16}}>
+                <label>Laudo</label>
+                <select onChange={e => {
+                  const lp = laudosProntos.find(x => x.id === Number(e.target.value))
+                  if (lp) {
+                    setForm(f => ({
+                      ...f,
+                      laudo: {
+                        ...f.laudo,
+                        diagnostico: lp.diagnostico,
+                        conduta_inicial: lp.conduta || f.laudo.conduta_inicial,
+                        observacoes: lp.observacoes || f.laudo.observacoes,
+                      },
+                    }))
+                  }
+                  e.target.value = ''
+                }}>
+                  <option value="">— Selecionar laudo —</option>
+                  {laudosProntos.map(lp => <option key={lp.id} value={lp.id}>{lp.titulo}</option>)}
+                </select>
+              </div>
+            )}
             <div className="form-group">
               <label>Diagnóstico</label>
               <textarea rows={2} value={form.laudo.diagnostico} onChange={e => updateLaudo('diagnostico', e.target.value)} placeholder="Descreva o diagnóstico..." />
@@ -668,7 +700,7 @@ export default function Prontuario() {
             <div className="rx-table">
               <table>
                 <thead>
-                  <tr><th></th><th>Esférico</th><th>Cilíndrico</th><th>Eixo</th><th>Adição</th></tr>
+                  <tr><th></th><th>Esférico</th><th>Cilíndrico</th><th>Eixo</th></tr>
                 </thead>
                 <tbody>
                   <tr>
@@ -676,19 +708,21 @@ export default function Prontuario() {
                     <td><input type="text" value={form.prescricao.od_esferico} onChange={e => updatePrescricao('od_esferico', e.target.value)} placeholder="+0.00" /></td>
                     <td><input type="text" value={form.prescricao.od_cilindrico} onChange={e => updatePrescricao('od_cilindrico', e.target.value)} placeholder="-0.00" /></td>
                     <td><input type="text" value={form.prescricao.od_eixo} onChange={e => updatePrescricao('od_eixo', e.target.value)} placeholder="0°" /></td>
-                    <td><input type="text" value={form.prescricao.od_adicao} onChange={e => updatePrescricao('od_adicao', e.target.value)} placeholder="+0.00" /></td>
                   </tr>
                   <tr>
                     <td className="eye-label">OE</td>
                     <td><input type="text" value={form.prescricao.oe_esferico} onChange={e => updatePrescricao('oe_esferico', e.target.value)} placeholder="+0.00" /></td>
                     <td><input type="text" value={form.prescricao.oe_cilindrico} onChange={e => updatePrescricao('oe_cilindrico', e.target.value)} placeholder="-0.00" /></td>
                     <td><input type="text" value={form.prescricao.oe_eixo} onChange={e => updatePrescricao('oe_eixo', e.target.value)} placeholder="0°" /></td>
-                    <td><input type="text" value={form.prescricao.oe_adicao} onChange={e => updatePrescricao('oe_adicao', e.target.value)} placeholder="+0.00" /></td>
                   </tr>
                 </tbody>
               </table>
             </div>
             <div className="form-row">
+              <div className="form-group" style={{ maxWidth: 120 }}>
+                <label>Adição</label>
+                <input type="text" value={form.prescricao.od_adicao} onChange={e => { updatePrescricao('od_adicao', e.target.value); updatePrescricao('oe_adicao', e.target.value) }} placeholder="+0.00" />
+              </div>
               <div className="form-group" style={{ maxWidth: 120 }}>
                 <label>DP (mm)</label>
                 <input type="text" value={form.prescricao.dp} onChange={e => updatePrescricao('dp', e.target.value)} placeholder="63" />
@@ -710,10 +744,6 @@ export default function Prontuario() {
                   <option value="">— Selecione —</option>
                   {CONDUTAS_FINAIS.map(c => <option key={c.value} value={c.value}>{c.label}</option>)}
                 </select>
-              </div>
-              <div className="form-group">
-                <label>Observações</label>
-                <input value={form.laudo.observacoes} onChange={e => updateLaudo('observacoes', e.target.value)} />
               </div>
             </div>
           </fieldset>
@@ -913,10 +943,9 @@ export default function Prontuario() {
                     return (
                       <div className="laudo-section">
                         <h4><ClipboardList size={14} style={{verticalAlign:'middle',marginRight:4}} />Diagnóstico e Conduta</h4>
-                        {l.diagnostico && <p><strong>Diagnóstico:</strong> {l.diagnostico}</p>}
+                        {l.diagnostico && <p><strong>Diagnóstico:</strong> <span dangerouslySetInnerHTML={{ __html: formatTexto(l.diagnostico) }} /></p>}
                         {l.conduta_inicial && <p><strong>Conduta Inicial:</strong> <span className="conduta-badge" style={{backgroundColor: condutaColor(l.conduta_inicial)}}>{condutaInicialLabel(l.conduta_inicial)}</span></p>}
-                        {l.conduta_final && <p><strong>Conduta Final:</strong> <span className="conduta-badge" style={{backgroundColor: condutaColor(l.conduta_final)}}>{condutaFinalLabel(l.conduta_final)}</span></p>}
-                        {l.observacoes && <p><strong>Obs:</strong> {l.observacoes}</p>}
+                        {l.observacoes && <p><strong>Obs:</strong> <span dangerouslySetInnerHTML={{ __html: formatTexto(l.observacoes) }} /></p>}
                       </div>
                     )
                   })()}
@@ -930,15 +959,17 @@ export default function Prontuario() {
                         <p><strong>Tipo:</strong> {p.tipo === 'lentes_contato' ? 'Lente de Contato' : 'Óculos'}</p>
                         <div className="rx-table rx-table-readonly">
                           <table>
-                            <thead><tr><th></th><th>Esf</th><th>Cil</th><th>Eixo</th><th>Add</th></tr></thead>
+                            <thead><tr><th></th><th>Esf</th><th>Cil</th><th>Eixo</th></tr></thead>
                             <tbody>
-                              <tr><td className="eye-label">OD</td><td>{p.od_esferico||'—'}</td><td>{p.od_cilindrico||'—'}</td><td>{p.od_eixo||'—'}</td><td>{p.od_adicao||'—'}</td></tr>
-                              <tr><td className="eye-label">OE</td><td>{p.oe_esferico||'—'}</td><td>{p.oe_cilindrico||'—'}</td><td>{p.oe_eixo||'—'}</td><td>{p.oe_adicao||'—'}</td></tr>
+                              <tr><td className="eye-label">OD</td><td>{p.od_esferico||'—'}</td><td>{p.od_cilindrico||'—'}</td><td>{p.od_eixo||'—'}</td></tr>
+                              <tr><td className="eye-label">OE</td><td>{p.oe_esferico||'—'}</td><td>{p.oe_cilindrico||'—'}</td><td>{p.oe_eixo||'—'}</td></tr>
                             </tbody>
                           </table>
                         </div>
+                        {p.od_adicao && <p><strong>Adição:</strong> {p.od_adicao}</p>}
                         {p.dp && <p><strong>DP:</strong> {p.dp} mm</p>}
                         {p.observacoes && <p><strong>Obs:</strong> {p.observacoes}</p>}
+                        {laudos[0]?.conduta_final && <p><strong>Conduta Final:</strong> <span className="conduta-badge" style={{backgroundColor: condutaColor(laudos[0].conduta_final)}}>{condutaFinalLabel(laudos[0].conduta_final)}</span></p>}
                       </div>
                     )
                   })()}

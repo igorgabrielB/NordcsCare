@@ -82,21 +82,43 @@ function tipoExameLabel(val: string): string {
 const CSS_BASE = `
   @page { size: A4; margin: 20mm 15mm; }
   * { margin: 0; padding: 0; box-sizing: border-box; }
-  body {
+  html, body {
     font-family: 'Segoe UI', Arial, Helvetica, sans-serif;
     font-size: 12pt;
     color: #1a1a1a;
     line-height: 1.5;
     padding: 0;
+    background: #fff;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
   }
   .doc-container { max-width: 760px; margin: 0 auto; padding: 10px 20px; }
+  .doc-container.doc-centered {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+  }
+  .doc-container.doc-centered .doc-content {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+  }
   
   /* Header */
   .doc-header {
-    text-align: center;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
     border-bottom: 2px solid #6743a5;
     padding-bottom: 12px;
     margin-bottom: 20px;
+  }
+  .doc-header .logo-cerof {
+    max-height: 70px;
+  }
+  .doc-header .header-brand {
+    text-align: right;
   }
   .doc-header h1 {
     font-size: 18pt;
@@ -132,7 +154,7 @@ const CSS_BASE = `
   .paciente-info strong { color: #333; }
   
   /* Conteúdo genérico */
-  .doc-body { margin: 20px 0; min-height: 300px; }
+  .doc-body { margin: 20px 0; }
   .doc-body p { margin-bottom: 8px; }
   .doc-body .texto-livre {
     white-space: pre-wrap;
@@ -142,18 +164,79 @@ const CSS_BASE = `
   }
   
   /* Tabela RX */
-  .rx-table { width: 100%; border-collapse: collapse; margin: 16px 0; }
-  .rx-table th, .rx-table td {
-    border: 1px solid #bbb;
-    padding: 8px 12px;
+  .rx-table {
+    width: 80%;
+    margin: 16px auto;
+    border-collapse: separate;
+    border-spacing: 0;
+    border-radius: 13px;
+    overflow: hidden;
+    border: 1.5px solid #333;
+  }
+  .rx-table th {
+    background: transparent;
+    color: #1a1a1a;
+    font-weight: 700;
+    padding: 10px 14px;
+    text-align: center;
+    font-size: 10pt;
+    letter-spacing: 0.5px;
+    border-bottom: 2px solid #333;
+  }
+  .rx-table td {
+    padding: 10px 14px;
     text-align: center;
     font-size: 11pt;
+    font-weight: 500;
+    color: #1a1a1a;
+    background: #fff;
   }
-  .rx-table th { background: #6743a5; color: #fff; font-weight: 600; }
-  .rx-table .eye-label { font-weight: 700; background: #eef5f0; width: 60px; }
+  .rx-table tbody tr:not(:last-child) td {
+    border-bottom: 1px solid #ccc;
+  }
+  .rx-table .eye-label {
+    font-weight: 700;
+    background: #f0f0f0;
+    color: #1a1a1a;
+    width: 60px;
+    font-size: 13pt;
+    letter-spacing: 1px;
+  }
+  .rx-adicao {
+    width: 25%;
+    margin: 8px auto 16px;
+    border-collapse: separate;
+    border-spacing: 0;
+    border-radius: 13px;
+    overflow: hidden;
+    border: 1.5px solid #333;
+  }
+  .rx-adicao th {
+    background: transparent;
+    color: #1a1a1a;
+    font-weight: 700;
+    padding: 5px 12px;
+    text-align: center;
+    font-size: 9pt;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    border-bottom: 2px solid #333;
+  }
+  .rx-adicao td {
+    padding: 6px 12px;
+    text-align: center;
+    font-size: 11pt;
+    font-weight: 600;
+    background: #fff;
+    color: #1a1a1a;
+  }
   
   /* Seções do relatório */
-  .section { margin-bottom: 18px; }
+  .section {
+    margin-bottom: 18px;
+    page-break-inside: avoid;
+    break-inside: avoid;
+  }
   .section h3 {
     font-size: 12pt;
     color: #6743a5;
@@ -180,13 +263,12 @@ const CSS_BASE = `
   .doc-footer .data { margin-top: 16px; font-size: 10pt; color: #777; }
 
   @media print {
-    body { padding: 0; }
+    body { padding: 0; margin: 0; }
     .no-print { display: none !important; }
   }
 `
 
-async function gerarPdfReal(html: string, _titulo: string) {
-  // Abre a aba ANTES do await para não ser bloqueado como pop-up
+async function gerarPdfReal(html: string, titulo: string) {
   const win = window.open('', '_blank')
   if (!win) { alert('Permita pop-ups para gerar o documento.'); return }
   win.document.write('<html><body style="display:flex;justify-content:center;align-items:center;height:100vh;font-family:sans-serif;color:#555"><p>Gerando PDF...</p></body></html>')
@@ -197,6 +279,32 @@ async function gerarPdfReal(html: string, _titulo: string) {
   document.body.appendChild(container)
 
   try {
+    // Mede a altura do cabeçalho (header + título + paciente-info) para saber
+    // onde termina e onde começa o conteúdo real
+    const headerEl = container.querySelector('.doc-header') as HTMLElement | null
+    const titleEl = container.querySelector('.doc-title') as HTMLElement | null
+    const pacienteEl = container.querySelector('.paciente-info') as HTMLElement | null
+    const containerRect = container.getBoundingClientRect()
+
+    // O conteúdo começa após o último elemento do cabeçalho
+    let headerEndPx = 0
+    const topElements = [headerEl, titleEl, pacienteEl].filter(Boolean) as HTMLElement[]
+    for (const el of topElements) {
+      const rect = el.getBoundingClientRect()
+      const bottom = rect.bottom - containerRect.top
+      if (bottom > headerEndPx) headerEndPx = bottom
+    }
+
+    // Coleta as posições Y dos títulos de seção (pontos de quebra preferidos)
+    const breakElements = container.querySelectorAll('.section, .doc-footer')
+    const sectionTops: number[] = []
+    breakElements.forEach(el => {
+      const rect = el.getBoundingClientRect()
+      const yRelative = rect.top - containerRect.top
+      if (yRelative > headerEndPx) sectionTops.push(yRelative)
+    })
+    sectionTops.sort((a, b) => a - b)
+
     const canvas = await html2canvas(container, {
       scale: 2,
       useCORS: true,
@@ -205,28 +313,120 @@ async function gerarPdfReal(html: string, _titulo: string) {
       windowWidth: 794,
     })
 
-    const imgData = canvas.toDataURL('image/png')
     const pdf = new jsPDF('p', 'mm', 'a4')
-    const pageWidth = pdf.internal.pageSize.getWidth()
-    const pageHeight = pdf.internal.pageSize.getHeight()
-    const imgWidth = pageWidth
-    const imgHeight = (canvas.height * imgWidth) / canvas.width
+    const pageWidth = pdf.internal.pageSize.getWidth()   // 210mm
+    const pageHeight = pdf.internal.pageSize.getHeight()  // 297mm
+    const marginTop = 15  // mm — margem superior para páginas 2+
+    const marginBottom = 15 // mm — margem inferior
+    const pxPerMm = canvas.width / pageWidth
+    const scaleFactor = canvas.width / 794
 
-    if (imgHeight <= pageHeight) {
-      pdf.addImage(imgData, 'PNG', 0, 0, imgWidth, imgHeight)
-    } else {
-      let yOffset = 0
-      while (yOffset < imgHeight) {
-        if (yOffset > 0) pdf.addPage()
-        pdf.addImage(imgData, 'PNG', 0, -yOffset, imgWidth, imgHeight)
-        yOffset += pageHeight
+    // Cabeçalho em pixels do canvas
+    const headerEndCanvasPx = Math.floor(headerEndPx * scaleFactor)
+
+    // Área útil de conteúdo por página (em px do canvas)
+    const usableHeightPx = Math.floor((pageHeight - marginTop - marginBottom) * pxPerMm)
+    // Primeira página: conteúdo começa após o cabeçalho
+    const firstPageContentPx = Math.floor((pageHeight - marginBottom) * pxPerMm) - headerEndCanvasPx
+
+    // Converte posições de seção de CSS px para canvas px
+    const sectionBreaks = sectionTops.map(y => Math.floor(y * scaleFactor))
+
+    function findBreakPoint(startY: number, availableHeight: number): number {
+      const endY = Math.min(startY + availableHeight, canvas.height)
+      if (endY >= canvas.height) return canvas.height
+
+      // Procura o último título de seção que cabe nesta página
+      let bestBreak = -1
+      for (const sy of sectionBreaks) {
+        if (sy <= startY) continue
+        if (sy > endY) break
+        bestBreak = sy
       }
+
+      // Se encontrou um título nos últimos 30%, quebra antes dele
+      if (bestBreak > 0 && bestBreak > startY + availableHeight * 0.7) {
+        return bestBreak
+      }
+
+      // Fallback: procura linha branca nos últimos 15%
+      const ctx = canvas.getContext('2d')!
+      const searchRange = Math.floor(availableHeight * 0.15)
+      const scanStart = endY - searchRange
+      for (let y = endY; y >= scanStart; y--) {
+        const row = ctx.getImageData(0, y, canvas.width, 1).data
+        let isWhite = true
+        for (let i = 0; i < row.length; i += 16) {
+          if (row[i] < 250 || row[i + 1] < 250 || row[i + 2] < 250) {
+            isWhite = false
+            break
+          }
+        }
+        if (isWhite) return y
+      }
+      return endY
+    }
+
+    // ===== PÁGINA 1: Cabeçalho + início do conteúdo =====
+    // Renderiza o cabeçalho no topo
+    const headerCanvas = document.createElement('canvas')
+    headerCanvas.width = canvas.width
+    headerCanvas.height = headerEndCanvasPx
+    const hCtx = headerCanvas.getContext('2d')!
+    hCtx.fillStyle = '#ffffff'
+    hCtx.fillRect(0, 0, headerCanvas.width, headerCanvas.height)
+    hCtx.drawImage(canvas, 0, 0, canvas.width, headerEndCanvasPx, 0, 0, canvas.width, headerEndCanvasPx)
+    const headerImg = headerCanvas.toDataURL('image/png')
+    const headerHMm = headerEndCanvasPx / pxPerMm
+    pdf.addImage(headerImg, 'PNG', 0, 0, pageWidth, headerHMm)
+
+    // Conteúdo da primeira página (após cabeçalho)
+    let yOffset = headerEndCanvasPx
+    let breakY = findBreakPoint(yOffset, firstPageContentPx)
+    let sliceHeight = breakY - yOffset
+
+    if (sliceHeight > 0) {
+      const pageCanvas = document.createElement('canvas')
+      pageCanvas.width = canvas.width
+      pageCanvas.height = sliceHeight
+      const pCtx = pageCanvas.getContext('2d')!
+      pCtx.fillStyle = '#ffffff'
+      pCtx.fillRect(0, 0, pageCanvas.width, pageCanvas.height)
+      pCtx.drawImage(canvas, 0, yOffset, canvas.width, sliceHeight, 0, 0, canvas.width, sliceHeight)
+      const imgData = pageCanvas.toDataURL('image/png')
+      const imgH = sliceHeight / pxPerMm
+      pdf.addImage(imgData, 'PNG', 0, headerHMm, pageWidth, imgH)
+      yOffset = breakY
+    }
+
+    // ===== PÁGINAS SEGUINTES =====
+    while (yOffset < canvas.height) {
+      pdf.addPage()
+
+      breakY = findBreakPoint(yOffset, usableHeightPx)
+      sliceHeight = breakY - yOffset
+      if (sliceHeight <= 0) break
+
+      const pageCanvas = document.createElement('canvas')
+      pageCanvas.width = canvas.width
+      pageCanvas.height = sliceHeight
+      const pCtx = pageCanvas.getContext('2d')!
+      pCtx.fillStyle = '#ffffff'
+      pCtx.fillRect(0, 0, pageCanvas.width, pageCanvas.height)
+      pCtx.drawImage(canvas, 0, yOffset, canvas.width, sliceHeight, 0, 0, canvas.width, sliceHeight)
+
+      const imgData = pageCanvas.toDataURL('image/png')
+      const imgH = sliceHeight / pxPerMm
+      pdf.addImage(imgData, 'PNG', 0, marginTop, pageWidth, imgH)
+
+      yOffset = breakY
     }
 
     const pdfBlob = pdf.output('blob')
     const url = URL.createObjectURL(pdfBlob)
     win.location.href = url
     setTimeout(() => URL.revokeObjectURL(url), 120000)
+    document.title = titulo
   } catch {
     win.close()
   } finally {
@@ -234,20 +434,44 @@ async function gerarPdfReal(html: string, _titulo: string) {
   }
 }
 
-function formatTexto(t: string): string {
+export function formatTexto(t: string): string {
   return t
     .replace(/\|\|(.*?)\|\|/g, '<div style="text-align:center">$1</div>')
     .replace(/\-\-(.*?)\-\-/g, '<span style="font-size:9pt">$1</span>')
     .replace(/\+\+(.*?)\+\+/g, '<span style="font-size:16pt">$1</span>')
     .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
     .replace(/_(.*?)_/g, '<em>$1</em>')
+    .replace(/\n/g, '<br>')
 }
 
-function headerHtml(): string {
+let _logoBase64: string | null = null
+async function loadLogoBase64(): Promise<string> {
+  if (_logoBase64) return _logoBase64
+  return new Promise((resolve) => {
+    const img = new Image()
+    img.crossOrigin = 'anonymous'
+    img.onload = () => {
+      const c = document.createElement('canvas')
+      c.width = img.naturalWidth
+      c.height = img.naturalHeight
+      c.getContext('2d')!.drawImage(img, 0, 0)
+      _logoBase64 = c.toDataURL('image/png')
+      resolve(_logoBase64)
+    }
+    img.onerror = () => resolve('')
+    img.src = '/imagens/logo_cerof.png'
+  })
+}
+
+function headerHtml(logoSrc: string): string {
+  const logoTag = logoSrc ? `<img class="logo-cerof" src="${logoSrc}" alt="Logo CEROF" />` : '<div></div>'
   return `
     <div class="doc-header">
-      <h1>NordcsCare</h1>
-      <p class="subtitle">Saúde Ocular — Atendimento Oftalmológico</p>
+      ${logoTag}
+      <div class="header-brand">
+        <h1>NordcsCare</h1>
+        <p class="subtitle">Saúde Ocular — Atendimento Oftalmológico</p>
+      </div>
     </div>`
 }
 
@@ -298,35 +522,37 @@ function footerHtml(medico: MedicoPdf): string {
 // 1. RECEITA OCULAR
 // ===================================================================
 export async function gerarReceitaOcular(paciente: PacientePdf, rx: PrescricaoPdf, medico: MedicoPdf) {
+  const logo = await loadLogoBase64()
   const tipoLabel = rx.tipo === 'lentes_contato' ? 'Lente de Contato' : 'Óculos'
   const body = `
-    <div class="doc-container">
-      ${headerHtml()}
+    <div class="doc-container doc-centered">
+      ${headerHtml(logo)}
+      <div class="doc-content">
       <div class="doc-title">Receita Ocular</div>
       ${pacienteHtml(paciente)}
       <div class="doc-body">
         <p><strong>Tipo:</strong> ${tipoLabel}</p>
         <table class="rx-table">
-          <thead><tr><th></th><th>Esférico</th><th>Cilíndrico</th><th>Eixo</th><th>Adição</th></tr></thead>
+          <thead><tr><th></th><th>Esférico</th><th>Cilíndrico</th><th>Eixo</th></tr></thead>
           <tbody>
             <tr>
               <td class="eye-label">OD</td>
               <td>${fmtEsf(rx.od_esferico)}</td>
               <td>${fmtCil(rx.od_cilindrico)}</td>
               <td>${fmtEixo(rx.od_eixo)}</td>
-              <td>${fmtEsf(rx.od_adicao)}</td>
             </tr>
             <tr>
               <td class="eye-label">OE</td>
               <td>${fmtEsf(rx.oe_esferico)}</td>
               <td>${fmtCil(rx.oe_cilindrico)}</td>
               <td>${fmtEixo(rx.oe_eixo)}</td>
-              <td>${fmtEsf(rx.oe_adicao)}</td>
             </tr>
           </tbody>
         </table>
+        ${rx.od_adicao ? `<table class="rx-adicao"><thead><tr><th>Adição</th></tr></thead><tbody><tr><td>${fmtEsf(rx.od_adicao)}</td></tr></tbody></table>` : ''}
         ${rx.dp ? `<p><strong>DP:</strong> ${rx.dp} mm</p>` : ''}
         ${rx.observacoes ? `<p><strong>Observações:</strong> ${rx.observacoes}</p>` : ''}
+      </div>
       </div>
       ${footerHtml(medico)}
     </div>`
@@ -337,12 +563,15 @@ export async function gerarReceitaOcular(paciente: PacientePdf, rx: PrescricaoPd
 // 2. ATESTADO
 // ===================================================================
 export async function gerarAtestado(paciente: PacientePdf, texto: string, medico: MedicoPdf) {
+  const logo = await loadLogoBase64()
   const body = `
-    <div class="doc-container">
-      ${headerHtml()}
+    <div class="doc-container doc-centered">
+      ${headerHtml(logo)}
+      <div class="doc-content">
       <div class="doc-title">Atestado Médico</div>
       <div class="doc-body">
         <div class="texto-livre">${formatTexto(texto)}</div>
+      </div>
       </div>
       ${footerHtml(medico)}
     </div>`
@@ -353,13 +582,16 @@ export async function gerarAtestado(paciente: PacientePdf, texto: string, medico
 // 3. RECEITA MÉDICA
 // ===================================================================
 export async function gerarReceitaMedica(paciente: PacientePdf, texto: string, medico: MedicoPdf) {
+  const logo = await loadLogoBase64()
   const body = `
-    <div class="doc-container">
-      ${headerHtml()}
+    <div class="doc-container doc-centered">
+      ${headerHtml(logo)}
+      <div class="doc-content">
       <div class="doc-title">Receita Médica</div>
       ${pacienteHtml(paciente)}
       <div class="doc-body">
         <div class="texto-livre">${formatTexto(texto)}</div>
+      </div>
       </div>
       ${footerHtml(medico)}
     </div>`
@@ -422,10 +654,9 @@ export async function gerarRelatorio(
   // Laudo
   if (laudo) {
     sections += `<div class="section"><h3>Diagnóstico e Conduta</h3>`
-    if (laudo.diagnostico) sections += `<p><strong>Diagnóstico:</strong> ${laudo.diagnostico}</p>`
+    if (laudo.diagnostico) sections += `<p><strong>Diagnóstico:</strong> ${formatTexto(laudo.diagnostico)}</p>`
     if (laudo.conduta_inicial) sections += `<p><strong>Conduta Inicial:</strong> ${condutaLabel(laudo.conduta_inicial)}</p>`
-    if (laudo.conduta_final) sections += `<p><strong>Conduta Final:</strong> ${condutaLabel(laudo.conduta_final)}</p>`
-    if (laudo.observacoes) sections += `<p><strong>Obs:</strong> ${laudo.observacoes}</p>`
+    if (laudo.observacoes) sections += `<p><strong>Obs:</strong> ${formatTexto(laudo.observacoes)}</p>`
     sections += `</div>`
   }
 
@@ -434,20 +665,23 @@ export async function gerarRelatorio(
     const tipoLabel = prescricao.tipo === 'lentes_contato' ? 'Lente de Contato' : 'Óculos'
     sections += `<div class="section"><h3>Prescrição (${tipoLabel})</h3>
       <table class="rx-table">
-        <thead><tr><th></th><th>Esférico</th><th>Cilíndrico</th><th>Eixo</th><th>Adição</th></tr></thead>
+        <thead><tr><th></th><th>Esférico</th><th>Cilíndrico</th><th>Eixo</th></tr></thead>
         <tbody>
-          <tr><td class="eye-label">OD</td><td>${fmtEsf(prescricao.od_esferico)}</td><td>${fmtCil(prescricao.od_cilindrico)}</td><td>${fmtEixo(prescricao.od_eixo)}</td><td>${fmtEsf(prescricao.od_adicao)}</td></tr>
-          <tr><td class="eye-label">OE</td><td>${fmtEsf(prescricao.oe_esferico)}</td><td>${fmtCil(prescricao.oe_cilindrico)}</td><td>${fmtEixo(prescricao.oe_eixo)}</td><td>${fmtEsf(prescricao.oe_adicao)}</td></tr>
+          <tr><td class="eye-label">OD</td><td>${fmtEsf(prescricao.od_esferico)}</td><td>${fmtCil(prescricao.od_cilindrico)}</td><td>${fmtEixo(prescricao.od_eixo)}</td></tr>
+          <tr><td class="eye-label">OE</td><td>${fmtEsf(prescricao.oe_esferico)}</td><td>${fmtCil(prescricao.oe_cilindrico)}</td><td>${fmtEixo(prescricao.oe_eixo)}</td></tr>
         </tbody>
-      </table>`
+      </table>
+      ${prescricao.od_adicao ? `<table class="rx-adicao"><thead><tr><th>Adição</th></tr></thead><tbody><tr><td>${fmtEsf(prescricao.od_adicao)}</td></tr></tbody></table>` : ''}`
     if (prescricao.dp) sections += `<p><strong>DP:</strong> ${prescricao.dp} mm</p>`
     if (prescricao.observacoes) sections += `<p><strong>Obs:</strong> ${prescricao.observacoes}</p>`
+    if (laudo?.conduta_final) sections += `<p><strong>Conduta Final:</strong> ${condutaLabel(laudo.conduta_final)}</p>`
     sections += `</div>`
   }
 
+  const logo = await loadLogoBase64()
   const body = `
     <div class="doc-container">
-      ${headerHtml()}
+      ${headerHtml(logo)}
       <div class="doc-title">Relatório do Atendimento</div>
       ${pacienteHtml(paciente)}
       <div class="doc-body">${sections}</div>

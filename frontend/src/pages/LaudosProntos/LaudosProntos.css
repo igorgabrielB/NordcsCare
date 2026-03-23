@@ -1,0 +1,185 @@
+.laudos-prontos-page {
+  padding: 2rem;
+  max-width: 1000px;
+  margin: 0 auto;
+}
+
+.laudos-prontos-page .page-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+.laudos-prontos-page .page-header-left {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.laudos-prontos-page .page-header h1 {
+  font-size: 1.4rem;
+  color: var(--text);
+  margin: 0;
+}
+
+.lp-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 1.25rem;
+}
+
+.lp-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 1.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  transition: border-color 0.15s;
+}
+
+.lp-card:hover {
+  border-color: var(--primary);
+}
+
+.lp-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.lp-status-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  padding: 3px 10px;
+  border-radius: 20px;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+
+.lp-status-ativo {
+  background: rgba(56, 161, 105, 0.15);
+  color: #68d391;
+}
+
+.lp-status-inativo {
+  background: rgba(245, 101, 101, 0.15);
+  color: #fc8181;
+}
+
+.lp-card-actions {
+  display: flex;
+  gap: 0.25rem;
+}
+
+.lp-card-titulo {
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--text);
+  margin: 0;
+}
+
+.lp-card-diagnostico {
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+  line-height: 1.5;
+  margin: 0;
+  white-space: pre-wrap;
+  max-height: 80px;
+  overflow: hidden;
+}
+
+.lp-card-conduta {
+  font-size: 0.8rem;
+}
+
+.lp-card-conduta strong {
+  color: var(--text);
+}
+
+.conduta-tag {
+  display: inline-block;
+  font-size: 0.75rem;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 12px;
+  margin-left: 4px;
+}
+
+.lp-card-footer {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+  border-top: 1px solid var(--border);
+  padding-top: 0.75rem;
+  margin-top: auto;
+}
+
+.lp-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+  padding: 3rem 2rem;
+  background: var(--bg-card);
+  border: 1px dashed var(--border);
+  border-radius: var(--radius);
+  color: var(--text-secondary);
+  text-align: center;
+}
+
+.lp-empty p {
+  margin: 0;
+  font-size: 1rem;
+}
+
+.lp-modal-lg {
+  max-width: 560px;
+}
+
+.lp-modal-lg textarea {
+  font-family: inherit;
+  resize: vertical;
+  min-height: 120px;
+}
+
+.lp-form-row {
+  display: flex;
+  gap: 1rem;
+}
+
+.lp-form-row .form-group {
+  flex: 1;
+}
+
+.lp-modal-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  padding: 14px 0 0;
+  margin-top: 1rem;
+}
+
+.laudos-prontos-page .var-inserter {
+  margin-bottom: 8px;
+  display: flex;
+  gap: 8px;
+}
+
+.laudos-prontos-page .var-inserter select {
+  flex: 1;
+  padding: 6px 10px;
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  background: var(--bg-card);
+  color: var(--text);
+  font-size: 0.85rem;
+}

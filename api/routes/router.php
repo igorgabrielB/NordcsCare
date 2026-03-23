@@ -10,6 +10,7 @@ require_once __DIR__ . '/../controllers/MedicoController.php';
 require_once __DIR__ . '/../controllers/EscolaAgendaController.php';
 require_once __DIR__ . '/../controllers/ModeloDocumentoController.php';
 require_once __DIR__ . '/../controllers/RedCheckController.php';
+require_once __DIR__ . '/../controllers/LaudoProntoController.php';
 
 class Router {
     private array $routes = [];
@@ -125,12 +126,20 @@ $router->add('GET', '/api/redcheck/exames/{pacienteId}', [RedCheckController::cl
 $router->add('GET', '/api/redcheck/laudo/{id}', [RedCheckController::class, 'laudo']);
 $router->add('GET', '/api/redcheck/recentes', [RedCheckController::class, 'recentes']);
 $router->add('GET', '/api/redcheck/exames-demo/{redcheckPatientId}', [RedCheckController::class, 'examesDemo']);
+$router->add('GET', '/api/redcheck/imagem/{laudoId}', [RedCheckController::class, 'imagem']);
 
 // Escola Agenda (cont.)
 $router->add('GET', '/api/escola-agenda/hoje', [EscolaAgendaController::class, 'hoje']);
 $router->add('POST', '/api/escola-agenda', [EscolaAgendaController::class, 'store']);
 $router->add('DELETE', '/api/escola-agenda/remover', [EscolaAgendaController::class, 'destroyByEscolaData']);
 $router->add('DELETE', '/api/escola-agenda/{id}', [EscolaAgendaController::class, 'destroy']);
+
+// Laudos Prontos
+$router->add('GET', '/api/laudos-prontos', [LaudoProntoController::class, 'index']);
+$router->add('GET', '/api/laudos-prontos/ativos', [LaudoProntoController::class, 'ativos']);
+$router->add('POST', '/api/laudos-prontos', [LaudoProntoController::class, 'store']);
+$router->add('PUT', '/api/laudos-prontos/{id}', [LaudoProntoController::class, 'update']);
+$router->add('DELETE', '/api/laudos-prontos/{id}', [LaudoProntoController::class, 'destroy']);
 
 // Logs (apenas admin)
 $router->add('GET', '/api/logs/fila', function() {

@@ -97,6 +97,12 @@ class Auth {
         if (preg_match('/Bearer\s(\S+)/', $headers, $matches)) {
             return $matches[1];
         }
+
+        // Fallback: token via query parameter (para <img> tags que não enviam headers)
+        if (isset($_GET['token']) && is_string($_GET['token']) && $_GET['token'] !== '') {
+            return $_GET['token'];
+        }
+
         return null;
     }
 
