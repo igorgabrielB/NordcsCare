@@ -13,6 +13,7 @@ interface PacientePdf {
   endereco?: string
   convenio?: string
   codigo?: string
+  responsavel?: string
 }
 
 interface MedicoPdf {
@@ -93,19 +94,19 @@ const CSS_BASE = `
   /* Header */
   .doc-header {
     text-align: center;
-    border-bottom: 2px solid #2d6a4f;
+    border-bottom: 2px solid #6743a5;
     padding-bottom: 12px;
     margin-bottom: 20px;
   }
   .doc-header h1 {
     font-size: 18pt;
-    color: #2d6a4f;
+    color: #6743a5;
     margin-bottom: 2px;
     letter-spacing: 1px;
   }
   .doc-header .subtitle {
     font-size: 10pt;
-    color: #555;
+    color: #2e2e2e;
   }
   
   /* Título do documento */
@@ -113,7 +114,7 @@ const CSS_BASE = `
     text-align: center;
     font-size: 16pt;
     font-weight: 700;
-    color: #2d6a4f;
+    color: #6743a5;
     margin: 24px 0 16px;
     text-transform: uppercase;
     letter-spacing: 2px;
@@ -148,14 +149,14 @@ const CSS_BASE = `
     text-align: center;
     font-size: 11pt;
   }
-  .rx-table th { background: #2d6a4f; color: #fff; font-weight: 600; }
+  .rx-table th { background: #6743a5; color: #fff; font-weight: 600; }
   .rx-table .eye-label { font-weight: 700; background: #eef5f0; width: 60px; }
   
   /* Seções do relatório */
   .section { margin-bottom: 18px; }
   .section h3 {
     font-size: 12pt;
-    color: #2d6a4f;
+    color: #6743a5;
     border-bottom: 1px solid #ccc;
     padding-bottom: 4px;
     margin-bottom: 8px;
@@ -185,7 +186,11 @@ const CSS_BASE = `
 `
 
 async function gerarPdfReal(html: string, _titulo: string) {
-  // Cria container temporário oculto para renderizar o HTML
+  // Abre a aba ANTES do await para não ser bloqueado como pop-up
+  const win = window.open('', '_blank')
+  if (!win) { alert('Permita pop-ups para gerar o documento.'); return }
+  win.document.write('<html><body style="display:flex;justify-content:center;align-items:center;height:100vh;font-family:sans-serif;color:#555"><p>Gerando PDF...</p></body></html>')
+
   const container = document.createElement('div')
   container.style.cssText = 'position:fixed;left:-9999px;top:0;width:794px;background:#fff;padding:0;z-index:-1;'
   container.innerHTML = `<style>${CSS_BASE}</style>${html}`
@@ -207,11 +212,9 @@ async function gerarPdfReal(html: string, _titulo: string) {
     const imgWidth = pageWidth
     const imgHeight = (canvas.height * imgWidth) / canvas.width
 
-    // Se o conteúdo cabe em uma página
     if (imgHeight <= pageHeight) {
       pdf.addImage(imgData, 'PNG', 0, 0, imgWidth, imgHeight)
     } else {
-      // Multi-página
       let yOffset = 0
       while (yOffset < imgHeight) {
         if (yOffset > 0) pdf.addPage()
@@ -220,14 +223,24 @@ async function gerarPdfReal(html: string, _titulo: string) {
       }
     }
 
-    // Abre o PDF em nova aba
     const pdfBlob = pdf.output('blob')
     const url = URL.createObjectURL(pdfBlob)
-    window.open(url, '_blank')
-    setTimeout(() => URL.revokeObjectURL(url), 60000)
+    win.location.href = url
+    setTimeout(() => URL.revokeObjectURL(url), 120000)
+  } catch {
+    win.close()
   } finally {
     document.body.removeChild(container)
   }
+}
+
+function formatTexto(t: string): string {
+  return t
+    .replace(/\|\|(.*?)\|\|/g, '<div style="text-align:center">$1</div>')
+    .replace(/\-\-(.*?)\-\-/g, '<span style="font-size:9pt">$1</span>')
+    .replace(/\+\+(.*?)\+\+/g, '<span style="font-size:16pt">$1</span>')
+    .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+    .replace(/_(.*?)_/g, '<em>$1</em>')
 }
 
 function headerHtml(): string {
@@ -241,13 +254,33 @@ function headerHtml(): string {
 function pacienteHtml(p: PacientePdf): string {
   const idade = p.data_nascimento ? `${calcIdade(p.data_nascimento)} anos` : ''
   const nascFmt = p.data_nascimento ? new Date(p.data_nascimento + 'T00:00:00').toLocaleDateString('pt-BR') : '—'
+  const cpfFmt = p.cpf ? p.cpf.replace(/\D/g, '').replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, '$1.$2.$3-$4') : ''
   return `
     <div class="paciente-info">
-      <p><strong>Paciente:</strong> ${p.nome_completo} ${p.codigo ? `<span style="color:#777">(#${p.codigo})</span>` : ''}</p>
-      ${p.data_nascimento ? `<p><strong>Nascimento:</strong> ${nascFmt} ${idade ? `(${idade})` : ''}</p>` : ''}
-      ${p.cpf ? `<p><strong>CPF:</strong> ${p.cpf}</p>` : ''}
+      <p><strong>Paciente:</strong> ${p.nome_completo} ${p.codigo ? `` : ''}</p>
+      ${p.data_nascimento ? `<p><strong>Data de nascimento:</strong> ${nascFmt} ${idade ? `(${idade})` : ''}</p>` : ''}
+      ${cpfFmt ? `<p><strong>CPF:</strong> ${cpfFmt}</p>` : ''}
       ${p.endereco ? `<p><strong>Endereço:</strong> ${p.endereco}</p>` : ''}
     </div>`
+}
+
+function fmtEsf(v: string | number | null | undefined): string {
+  if (!v && v !== 0) return '—'
+  const n = parseFloat(String(v))
+  if (isNaN(n)) return '—'
+  return (n >= 0 ? '+' : '') + n.toFixed(2)
+}
+function fmtCil(v: string | number | null | undefined): string {
+  if (!v && v !== 0) return '—'
+  const n = parseFloat(String(v))
+  if (isNaN(n)) return '—'
+  return (n > 0 ? '-' : '') + n.toFixed(2)
+}
+function fmtEixo(v: string | number | null | undefined): string {
+  if (!v && v !== 0) return '—'
+  const n = parseInt(String(v), 10)
+  if (isNaN(n)) return '—'
+  return n + '°'
 }
 
 function footerHtml(medico: MedicoPdf): string {
@@ -278,17 +311,17 @@ export async function gerarReceitaOcular(paciente: PacientePdf, rx: PrescricaoPd
           <tbody>
             <tr>
               <td class="eye-label">OD</td>
-              <td>${rx.od_esferico || '—'}</td>
-              <td>${rx.od_cilindrico || '—'}</td>
-              <td>${rx.od_eixo || '—'}</td>
-              <td>${rx.od_adicao || '—'}</td>
+              <td>${fmtEsf(rx.od_esferico)}</td>
+              <td>${fmtCil(rx.od_cilindrico)}</td>
+              <td>${fmtEixo(rx.od_eixo)}</td>
+              <td>${fmtEsf(rx.od_adicao)}</td>
             </tr>
             <tr>
               <td class="eye-label">OE</td>
-              <td>${rx.oe_esferico || '—'}</td>
-              <td>${rx.oe_cilindrico || '—'}</td>
-              <td>${rx.oe_eixo || '—'}</td>
-              <td>${rx.oe_adicao || '—'}</td>
+              <td>${fmtEsf(rx.oe_esferico)}</td>
+              <td>${fmtCil(rx.oe_cilindrico)}</td>
+              <td>${fmtEixo(rx.oe_eixo)}</td>
+              <td>${fmtEsf(rx.oe_adicao)}</td>
             </tr>
           </tbody>
         </table>
@@ -308,9 +341,8 @@ export async function gerarAtestado(paciente: PacientePdf, texto: string, medico
     <div class="doc-container">
       ${headerHtml()}
       <div class="doc-title">Atestado Médico</div>
-      ${pacienteHtml(paciente)}
       <div class="doc-body">
-        <div class="texto-livre">${texto}</div>
+        <div class="texto-livre">${formatTexto(texto)}</div>
       </div>
       ${footerHtml(medico)}
     </div>`
@@ -327,7 +359,7 @@ export async function gerarReceitaMedica(paciente: PacientePdf, texto: string, m
       <div class="doc-title">Receita Médica</div>
       ${pacienteHtml(paciente)}
       <div class="doc-body">
-        <div class="texto-livre">${texto}</div>
+        <div class="texto-livre">${formatTexto(texto)}</div>
       </div>
       ${footerHtml(medico)}
     </div>`
@@ -404,8 +436,8 @@ export async function gerarRelatorio(
       <table class="rx-table">
         <thead><tr><th></th><th>Esférico</th><th>Cilíndrico</th><th>Eixo</th><th>Adição</th></tr></thead>
         <tbody>
-          <tr><td class="eye-label">OD</td><td>${prescricao.od_esferico || '—'}</td><td>${prescricao.od_cilindrico || '—'}</td><td>${prescricao.od_eixo || '—'}</td><td>${prescricao.od_adicao || '—'}</td></tr>
-          <tr><td class="eye-label">OE</td><td>${prescricao.oe_esferico || '—'}</td><td>${prescricao.oe_cilindrico || '—'}</td><td>${prescricao.oe_eixo || '—'}</td><td>${prescricao.oe_adicao || '—'}</td></tr>
+          <tr><td class="eye-label">OD</td><td>${fmtEsf(prescricao.od_esferico)}</td><td>${fmtCil(prescricao.od_cilindrico)}</td><td>${fmtEixo(prescricao.od_eixo)}</td><td>${fmtEsf(prescricao.od_adicao)}</td></tr>
+          <tr><td class="eye-label">OE</td><td>${fmtEsf(prescricao.oe_esferico)}</td><td>${fmtCil(prescricao.oe_cilindrico)}</td><td>${fmtEixo(prescricao.oe_eixo)}</td><td>${fmtEsf(prescricao.oe_adicao)}</td></tr>
         </tbody>
       </table>`
     if (prescricao.dp) sections += `<p><strong>DP:</strong> ${prescricao.dp} mm</p>`

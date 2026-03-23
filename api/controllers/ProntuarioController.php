@@ -241,6 +241,12 @@ class ProntuarioController {
 
         // --- Prescrição (upsert — máx 1 por paciente) ---
         $prescricao = $input['prescricao'] ?? [];
+        // Sanitizar valores: remover caracteres de formatação (°, +) mantendo apenas números, ponto e sinal negativo
+        foreach (['od_esferico','od_cilindrico','od_eixo','od_adicao','oe_esferico','oe_cilindrico','oe_eixo','oe_adicao','dp'] as $rxField) {
+            if (isset($prescricao[$rxField]) && $prescricao[$rxField] !== '') {
+                $prescricao[$rxField] = preg_replace('/[^0-9.\-]/', '', $prescricao[$rxField]);
+            }
+        }
         $hasRx = !empty($prescricao['od_esferico']) || !empty($prescricao['oe_esferico'])
               || !empty($prescricao['od_cilindrico']) || !empty($prescricao['oe_cilindrico']);
         if ($hasRx) {

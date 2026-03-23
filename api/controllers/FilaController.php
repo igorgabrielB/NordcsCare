@@ -4,7 +4,7 @@ require_once __DIR__ . '/../middleware/auth.php';
 
 class FilaController {
 
-    private static array $estacoesOrdem = ['acuidade', 'exames', 'laudos', 'oculos'];
+    private static array $estacoesOrdem = ['acuidade', 'exames', 'laudos', 'oculos', 'altas', 'encaminhamentos'];
 
     /**
      * GET /api/fila — Lista toda a fila do dia, agrupada por estação.
@@ -13,21 +13,35 @@ class FilaController {
         Auth::requireAuth();
 
         $db = Database::getInstance();
-        $data = $_GET['data'] ?? date('Y-m-d');
+        $dataParam = $_GET['data'] ?? null;
 
-        $stmt = $db->prepare(
-            'SELECT f.id, f.paciente_id, f.estacao, f.status, f.prioridade, f.observacoes,
-                    f.atendente_id, f.created_at, f.updated_at,
-                    p.nome_completo, p.cpf, p.convenio,
-                    u.nome AS atendente_nome
-             FROM fila f
-             JOIN pacientes p ON p.id = f.paciente_id
-             LEFT JOIN usuarios u ON u.id = f.atendente_id
-             WHERE DATE(f.created_at) = :data
-               AND f.status != :concluido_final
-             ORDER BY f.prioridade DESC, f.created_at ASC'
-        );
-        $stmt->execute([':data' => $data, ':concluido_final' => 'finalizado']);
+        if ($dataParam) {
+            $sql = 'SELECT f.id, f.paciente_id, f.estacao, f.status, f.prioridade, f.observacoes,
+                        f.atendente_id, f.created_at, f.updated_at,
+                        p.nome_completo, p.codigo, p.convenio,
+                        u.nome AS atendente_nome
+                 FROM fila f
+                 JOIN pacientes p ON p.id = f.paciente_id
+                 LEFT JOIN usuarios u ON u.id = f.atendente_id
+                 WHERE DATE(f.created_at) = :data
+                   AND f.status != :concluido_final
+                 ORDER BY f.prioridade DESC, f.created_at ASC';
+            $stmt = $db->prepare($sql);
+            $stmt->execute([':data' => $dataParam, ':concluido_final' => 'concluido']);
+        } else {
+            $sql = 'SELECT f.id, f.paciente_id, f.estacao, f.status, f.prioridade, f.observacoes,
+                        f.atendente_id, f.created_at, f.updated_at,
+                        p.nome_completo, p.codigo, p.convenio,
+                        u.nome AS atendente_nome
+                 FROM fila f
+                 JOIN pacientes p ON p.id = f.paciente_id
+                 LEFT JOIN usuarios u ON u.id = f.atendente_id
+                 WHERE DATE(f.created_at) = CURDATE()
+                   AND f.status != :concluido_final
+                 ORDER BY f.prioridade DESC, f.created_at ASC';
+            $stmt = $db->prepare($sql);
+            $stmt->execute([':concluido_final' => 'concluido']);
+        }
         $items = $stmt->fetchAll();
 
         // Agrupar por estação

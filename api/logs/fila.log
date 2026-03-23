@@ -91,3 +91,21 @@
 [2026-03-21 21:04:35] Tentando mover paciente 463 para fila 'altas'
 [2026-03-21 21:04:35] Removido paciente de 1 filas anteriores
 [2026-03-21 21:04:35] INSERT resultado: SUCCESS
+[2026-03-22 21:29:34] Conduta Inicial recebida: 'alta'
+[2026-03-22 21:29:34] Detectada conduta ALTA para paciente 2
+[2026-03-22 21:29:34] Tentando mover paciente 2 para fila 'altas'
+[2026-03-22 21:29:34] Removido paciente de 1 filas anteriores
+[2026-03-22 21:29:34] INSERT resultado: SUCCESS
+[2026-03-22 21:42:06] Conduta Inicial recebida: 'alta'
+[2026-03-22 21:42:06] Detectada conduta ALTA para paciente 2
+[2026-03-22 21:42:06] Tentando mover paciente 2 para fila 'altas'
+[2026-03-22 21:42:06] Removido paciente de 1 filas anteriores
+[2026-03-22 21:42:06] INSERT resultado: SUCCESS
+[2026-03-22 21:42:41] Conduta Inicial recebida: 'alta'
+[2026-03-22 21:42:41] Detectada conduta ALTA para paciente 2
+[2026-03-22 21:42:41] Tentando mover paciente 2 para fila 'altas'
+[2026-03-22 21:42:41] Removido paciente de 1 filas anteriores
+[2026-03-22 21:42:41] INSERT resultado: SUCCESS
+[2026-03-23 02:04:35] Tentando mover paciente 1552 para fila 'exames' (saindo de 'acuidade')
+[2026-03-23 02:04:35] Removido de 'acuidade': 1 registros
+[2026-03-23 02:04:35] INSERT resultado: SUCCESS

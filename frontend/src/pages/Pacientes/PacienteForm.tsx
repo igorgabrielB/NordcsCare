@@ -118,7 +118,14 @@ export default function PacienteForm() {
   })()
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
-    setForm({ ...form, [e.target.name]: e.target.value })
+    let value = e.target.value
+    if (e.target.name === 'cpf') {
+      value = value.replace(/\D/g, '').slice(0, 11)
+        .replace(/(\d{3})(\d)/, '$1.$2')
+        .replace(/(\d{3})(\d)/, '$1.$2')
+        .replace(/(\d{3})(\d{1,2})$/, '$1-$2')
+    }
+    setForm({ ...form, [e.target.name]: value })
     setFieldErrors(prev => {
       const next = new Set(prev)
       next.delete(e.target.name)

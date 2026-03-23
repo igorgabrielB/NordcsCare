@@ -17,7 +17,7 @@ interface FilaItem {
   created_at: string
   updated_at: string
   nome_completo: string
-  cpf: string | null
+  codigo: string | null
   convenio: string | null
 }
 
@@ -189,7 +189,7 @@ export default function Fila() {
 
                           {isExpanded && (
                             <div className="card-drawer">
-                              {item.cpf && <div className="card-info">CPF: {item.cpf}</div>}
+                              {item.codigo && <div className="card-info">Código: #{item.codigo}</div>}
                               {item.convenio && <div className="card-info"><Building2 size={14} style={{verticalAlign:'middle',marginRight:4}} />{item.convenio}</div>}
 
                               {item.atendente_nome && (

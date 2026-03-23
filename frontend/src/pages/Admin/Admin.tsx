@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom'
-import { Users, Stethoscope, GraduationCap, FileText, School, Trash2, CalendarDays } from 'lucide-react'
+import { Users, Stethoscope, GraduationCap, FileText, School, Trash2, CalendarDays, ClipboardList } from 'lucide-react'
 import './Admin.css'
 
 const adminOptions = [
@@ -58,6 +58,14 @@ const adminOptions = [
     icon: <CalendarDays size={26} />,
     color: 'rgba(56,161,105,0.15)',
     iconColor: '#48bb78',
+  },
+  {
+    to: '/admin/modelos-documentos',
+    label: 'Modelos de Documentos',
+    desc: 'Gerenciar modelos de atestados e receitas',
+    icon: <ClipboardList size={26} />,
+    color: 'rgba(237,137,54,0.15)',
+    iconColor: '#ed8936',
   },
 ]
 

@@ -16,6 +16,7 @@ import ImportEscola from './pages/ImportEscola/ImportEscola.tsx'
 import ExclusaoEscola from './pages/ExclusaoEscola/ExclusaoEscola.tsx'
 import AgendaEscola from './pages/AgendaEscola/AgendaEscola.tsx'
 import Relatorios from './pages/Relatorios/Relatorios.tsx'
+import ModelosDocumentos from './pages/ModelosDocumentos/ModelosDocumentos.tsx'
 
 export default function App() {
   return (
@@ -41,6 +42,7 @@ export default function App() {
             <Route path="/admin/import-escola" element={<ImportEscola />} />
             <Route path="/admin/exclusao-escola" element={<ExclusaoEscola />} />
             <Route path="/admin/agenda-escola" element={<AgendaEscola />} />
+            <Route path="/admin/modelos-documentos" element={<ModelosDocumentos />} />
             <Route path="/relatorios" element={<Relatorios />} />
           </Route>
 

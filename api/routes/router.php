@@ -8,6 +8,7 @@ require_once __DIR__ . '/../controllers/UploadController.php';
 require_once __DIR__ . '/../controllers/UsuarioController.php';
 require_once __DIR__ . '/../controllers/MedicoController.php';
 require_once __DIR__ . '/../controllers/EscolaAgendaController.php';
+require_once __DIR__ . '/../controllers/ModeloDocumentoController.php';
 
 class Router {
     private array $routes = [];
@@ -81,6 +82,12 @@ $router->add('DELETE', '/api/prontuario/{pacienteId}/laudo', [ProntuarioControll
 $router->add('GET', '/api/modelos-laudos', [ProntuarioController::class, 'listarModelos']);
 $router->add('POST', '/api/modelos-laudos', [ProntuarioController::class, 'criarModelo']);
 $router->add('DELETE', '/api/modelos-laudos/{id}', [ProntuarioController::class, 'excluirModelo']);
+
+// Modelos de Documentos (atestado, receita médica)
+$router->add('GET', '/api/modelos-documentos', [ModeloDocumentoController::class, 'index']);
+$router->add('POST', '/api/modelos-documentos', [ModeloDocumentoController::class, 'store']);
+$router->add('PUT', '/api/modelos-documentos/{id}', [ModeloDocumentoController::class, 'update']);
+$router->add('DELETE', '/api/modelos-documentos/{id}', [ModeloDocumentoController::class, 'destroy']);
 
 // Dashboard
 $router->add('GET', '/api/dashboard/metricas', [DashboardController::class, 'metricas']);

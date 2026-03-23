@@ -18,6 +18,7 @@ interface Paciente {
   endereco: string
   convenio: string
   numero_convenio: string
+  responsavel: string
   observacoes: string
   created_at: string
 }
@@ -135,6 +136,7 @@ export default function Prontuario() {
   const [medicoInfo, setMedicoInfo] = useState<{ nome: string; crm?: string; uf?: string; especialidade?: string }>({ nome: user?.nome || '' })
   const [pdfModal, setPdfModal] = useState<'atestado' | 'receita_medica' | null>(null)
   const [pdfTexto, setPdfTexto] = useState('')
+  const [modelosDoc, setModelosDoc] = useState<{ id: number; tipo: string; nome: string; conteudo: string }[]>([])
 
   // Helpers: montar form a partir de dados existentes
   function buildFormFromExisting(d: ProntuarioData) {
@@ -160,16 +162,19 @@ export default function Prontuario() {
     }
     if (d.prescricoes.length > 0) {
       const p = d.prescricoes[0]
+      const fmtEsf = (v: any) => { if (!v && v !== 0) return ''; const n = parseFloat(v); return isNaN(n) ? '' : (n >= 0 ? '+' : '') + n.toFixed(2) }
+      const fmtCil = (v: any) => { if (!v && v !== 0) return ''; const n = parseFloat(v); return isNaN(n) ? '' : (n > 0 ? '-' : '') + n.toFixed(2) }
+      const fmtEixo = (v: any) => { if (!v && v !== 0) return ''; const n = parseInt(v, 10); return isNaN(n) ? '' : n + '°' }
       f.prescricao = {
         tipo: p.tipo || 'oculos',
-        od_esferico: p.od_esferico || '',
-        od_cilindrico: p.od_cilindrico || '',
-        od_eixo: p.od_eixo || '',
-        od_adicao: p.od_adicao || '',
-        oe_esferico: p.oe_esferico || '',
-        oe_cilindrico: p.oe_cilindrico || '',
-        oe_eixo: p.oe_eixo || '',
-        oe_adicao: p.oe_adicao || '',
+        od_esferico: fmtEsf(p.od_esferico),
+        od_cilindrico: fmtCil(p.od_cilindrico),
+        od_eixo: fmtEixo(p.od_eixo),
+        od_adicao: fmtEsf(p.od_adicao),
+        oe_esferico: fmtEsf(p.oe_esferico),
+        oe_cilindrico: fmtCil(p.oe_cilindrico),
+        oe_eixo: fmtEixo(p.oe_eixo),
+        oe_adicao: fmtEsf(p.oe_adicao),
         dp: p.dp || '',
         observacoes: p.observacoes || '',
       }
@@ -205,7 +210,11 @@ export default function Prontuario() {
     setShowForm(estacao)
   }
 
-  useEffect(() => { loadProntuario(); loadModelos(); loadMedicoPerfil() }, [pacienteId])
+  async function loadModelosDoc() {
+    try { const r = await api.get('/modelos-documentos'); setModelosDoc(r.data) } catch { /* ignore */ }
+  }
+
+  useEffect(() => { loadProntuario(); loadModelos(); loadMedicoPerfil(); loadModelosDoc() }, [pacienteId])
 
   async function loadMedicoPerfil() {
     try {
@@ -267,6 +276,17 @@ export default function Prontuario() {
   }
 
   function updatePrescricao(field: string, value: string) {
+    if (field.includes('esferico') || field.includes('adicao') || field.includes('cilindrico')) {
+      const sign = field.includes('cilindrico') ? '-' : '+'
+      let nums = value.replace(/[^0-9]/g, '').slice(0, 3)
+      if (nums.length >= 2) {
+        nums = nums.slice(0, -2) + '.' + nums.slice(-2)
+      }
+      value = nums ? sign + nums : ''
+    } else if (field.includes('eixo')) {
+      const nums = value.replace(/[^0-9]/g, '').slice(0, 3)
+      value = nums ? nums + '°' : ''
+    }
     setForm(f => ({ ...f, prescricao: { ...f.prescricao, [field]: value } }))
   }
 
@@ -378,6 +398,7 @@ export default function Prontuario() {
           <div><strong>Email:</strong> {paciente.email || '—'}</div>
           <div><strong>Endereço:</strong> {paciente.endereco || '—'}</div>
           <div><strong>Convênio:</strong> {paciente.convenio || '—'} {paciente.numero_convenio ? `(${paciente.numero_convenio})` : ''}</div>
+          {paciente.responsavel && <div><strong>Responsável:</strong> {paciente.responsavel}</div>}
           {paciente.observacoes && <div style={{whiteSpace:'normal'}}><strong>Observações:</strong> {paciente.observacoes}</div>}
         </div>
       </div>
@@ -408,15 +429,17 @@ export default function Prontuario() {
         )}
         <button className="btn btn-pdf" onClick={() => { setPdfTexto(''); setPdfModal('atestado') }}>Atestado</button>
         <button className="btn btn-pdf" onClick={() => { setPdfTexto(''); setPdfModal('receita_medica') }}>Receita Médica</button>
-        <button className="btn btn-pdf" onClick={async () => gerarRelatorio(
-          paciente, medicoInfo, {
-            anamnese: anamneses[0],
-            exames,
-            prescricao: prescricoes[0],
-            laudo: laudos[0],
-            acuidade: data.acuidade_visual,
-          }
-        )}>Relatório Completo</button>
+        {user?.role === 'admin' && (
+          <button className="btn btn-pdf" onClick={async () => gerarRelatorio(
+            paciente, medicoInfo, {
+              anamnese: anamneses[0],
+              exames,
+              prescricao: prescricoes[0],
+              laudo: laudos[0],
+              acuidade: data.acuidade_visual,
+            }
+          )}>Relatório Completo</button>
+        )}
       </div>
 
       {/* ===== MODAL ATESTADO / RECEITA MÉDICA ===== */}
@@ -428,6 +451,37 @@ export default function Prontuario() {
               <button className="btn btn-icon" onClick={() => setPdfModal(null)}><X size={18} /></button>
             </div>
             <div className="pdf-modal-body">
+              {modelosDoc.filter(m => m.tipo === pdfModal).length > 0 && (
+                <div className="modelo-selector">
+                  <label>Modelo:</label>
+                  <select onChange={e => {
+                    const m = modelosDoc.find(x => x.id === Number(e.target.value))
+                    if (m) {
+                      const hoje = new Date().toLocaleDateString('pt-BR')
+                      let texto = m.conteudo
+                        .replace(/\{\{nome\}\}/g, paciente.nome_completo)
+                        .replace(/\{\{cpf\}\}/g, (paciente.cpf || '').replace(/\D/g, '').replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, '$1.$2.$3-$4'))
+                        .replace(/\{\{data_nascimento\}\}/g, paciente.data_nascimento ? new Date(paciente.data_nascimento + 'T00:00:00').toLocaleDateString('pt-BR') : '')
+                        .replace(/\{\{sexo\}\}/g, paciente.sexo || '')
+                        .replace(/\{\{telefone\}\}/g, paciente.telefone || '')
+                        .replace(/\{\{email\}\}/g, paciente.email || '')
+                        .replace(/\{\{endereco\}\}/g, paciente.endereco || '')
+                        .replace(/\{\{convenio\}\}/g, paciente.convenio || '')
+                        .replace(/\{\{codigo\}\}/g, paciente.codigo || '')
+                        .replace(/\{\{data\}\}/g, hoje)
+                        .replace(/\{\{medico\}\}/g, medicoInfo.nome || '')
+                        .replace(/\{\{crm\}\}/g, medicoInfo.crm || '')
+                      setPdfTexto(texto)
+                    }
+                    e.target.value = ''
+                  }}>
+                    <option value="">Selecionar modelo...</option>
+                    {modelosDoc.filter(m => m.tipo === pdfModal).map(m => (
+                      <option key={m.id} value={m.id}>{m.nome}</option>
+                    ))}
+                  </select>
+                </div>
+              )}
               <label>{pdfModal === 'atestado' ? 'Texto do Atestado:' : 'Prescrição / Medicamentos:'}</label>
               <textarea
                 rows={8}

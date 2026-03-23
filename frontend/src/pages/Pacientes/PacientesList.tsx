@@ -23,6 +23,7 @@ interface Paciente {
   bairro: string | null
   cidade: string | null
   estado: string | null
+  responsavel: string | null
 }
 
 interface PaginationData {
@@ -234,7 +235,6 @@ export default function PacientesList() {
                         </span>
                       )}
                       <div className="pac-drawer-right">
-                        <span className="pac-info-preview">{p.cpf || ''}</span>
                         <button
                           className="btn btn-sm btn-checkin"
                           onClick={(e) => { e.stopPropagation(); handleCheckIn(p.id) }}
@@ -279,6 +279,12 @@ export default function PacientesList() {
                             <div className="pac-drawer-field">
                               <span className="pac-field-label">CEP</span>
                               <span className="pac-field-value">{p.cep}</span>
+                            </div>
+                          )}
+                          {p.responsavel && (
+                            <div className="pac-drawer-field">
+                              <span className="pac-field-label">Responsável</span>
+                              <span className="pac-field-value">{p.responsavel}</span>
                             </div>
                           )}
                         </div>
