@@ -4,6 +4,7 @@ import api from '../../services/api'
 import { useAuth } from '../../contexts/AuthContext'
 import { User, X, Pencil, ClipboardList, Bus, Save, FileText, Microscope, Glasses, CheckCircle2, BookOpen, Eye, Trash2, Printer } from 'lucide-react'
 import { gerarReceitaOcular, gerarAtestado, gerarReceitaMedica, gerarRelatorio } from '../../services/pdfService'
+import RedCheckExames from './RedCheckUpload'
 import './Prontuario.css'
 
 interface Paciente {
@@ -87,6 +88,7 @@ const TIPOS_EXAME = [
   { value: 'tonometria', label: 'Tonometria' },
   { value: 'spot_vision', label: 'Spot Vision' },
   { value: 'eyer', label: 'Eyer' },
+  { value: 'retinografia', label: 'Retinografia' },
   { value: 'outro', label: 'Outro' },
 ]
 
@@ -603,6 +605,11 @@ export default function Prontuario() {
                 </div>
               </div>
             )}
+            <RedCheckExames
+              pacienteId={Number(pacienteId)}
+              onSuccess={msg => { setSuccessMsg(msg); setTimeout(() => setSuccessMsg(''), 4000) }}
+              onError={msg => { setErrorMsg(msg); setTimeout(() => setErrorMsg(''), 6000) }}
+            />
             <div className="form-group">
               <label>Observações sobre Exames</label>
               <textarea rows={2} value={form.exames_observacoes} onChange={e => updateExamesObservacoes(e.target.value)} placeholder="Adicione qualquer observação pertinente aos exames realizados..." />
@@ -941,6 +948,7 @@ export default function Prontuario() {
           </div>
         )}
       </div>
+
     </div>
   )
 }

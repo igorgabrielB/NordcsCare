@@ -98,7 +98,7 @@ CREATE TABLE IF NOT EXISTS exames (
     id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     paciente_id INT UNSIGNED NOT NULL,
     medico_id INT UNSIGNED NOT NULL,
-    tipo_exame ENUM('acuidade_visual', 'refracao', 'tonometria', 'spot_vision', 'eyer', 'outro') NOT NULL,
+    tipo_exame ENUM('acuidade_visual', 'refracao', 'tonometria', 'spot_vision', 'eyer', 'retinografia', 'outro') NOT NULL,
     olho ENUM('OD', 'OE', 'AO') NOT NULL DEFAULT 'AO',
     resultado TEXT,
     observacoes TEXT,

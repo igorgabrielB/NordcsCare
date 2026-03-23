@@ -917,3 +917,117 @@
     grid-template-columns: 1fr;
   }
 }
+
+/* ===== RedCheck — Exames de Imagem ===== */
+.redcheck-section {
+  margin-top: 1.5rem;
+}
+
+.redcheck-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.redcheck-actions {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.redcheck-laudos {
+  margin-top: 12px;
+}
+
+.redcheck-laudo-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 14px;
+  border-radius: var(--radius);
+  margin-bottom: 6px;
+  background: var(--bg-page, #2d2d2d);
+  border-left: 3px solid var(--border);
+  gap: 10px;
+}
+
+.redcheck-status-pendente {
+  border-left-color: #d69e2e;
+}
+
+.redcheck-status-diagnosticado {
+  border-left-color: #38a169;
+}
+
+.redcheck-status-bloqueado {
+  border-left-color: #e53e3e;
+}
+
+.redcheck-laudo-info {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  flex: 1;
+  font-size: 0.88rem;
+}
+
+.redcheck-laudo-tipo {
+  font-weight: 600;
+  color: var(--primary);
+}
+
+.redcheck-laudo-olho {
+  color: var(--text-secondary);
+  font-size: 0.82rem;
+}
+
+.redcheck-laudo-status {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.82rem;
+  font-weight: 500;
+}
+
+.redcheck-laudo-tag {
+  background: #e53e3e22;
+  color: #e53e3e;
+  font-size: 0.75rem;
+  padding: 2px 8px;
+  border-radius: 10px;
+  font-weight: 600;
+}
+
+.redcheck-laudo-data {
+  color: var(--text-secondary);
+  font-size: 0.8rem;
+}
+
+.redcheck-laudo-actions {
+  display: flex;
+  gap: 6px;
+}
+
+.spin {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+@media (max-width: 600px) {
+  .redcheck-header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  .redcheck-laudo-item {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+}
