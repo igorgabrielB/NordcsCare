@@ -1,6 +1,7 @@
 <?php
 require_once __DIR__ . '/../config/database.php';
 require_once __DIR__ . '/../middleware/auth.php';
+require_once __DIR__ . '/../utils/AuditLog.php';
 
 class ProntuarioController {
     // ========== FUNÇÃO AUXILIAR: Adicionar à Fila Automaticamente ==========
@@ -11,46 +12,43 @@ class ProntuarioController {
             $logMsg = "[" . date('Y-m-d H:i:s') . "] Tentando mover paciente {$pacienteId} para fila '{$estacao}'" . ($estacaoAnterior ? " (saindo de '{$estacaoAnterior}')" : '') . "\n";
             file_put_contents($logFile, $logMsg, FILE_APPEND);
 
-            // Remove de TODAS as outras filas quando paciente recebe alta ou encaminhamento
-            if (in_array($estacao, ['altas', 'encaminhamentos'])) {
-                $stmt = $db->prepare('DELETE FROM fila WHERE paciente_id = :pid');
-                $stmt->execute([':pid' => $pacienteId]);
-                $deleted = $stmt->rowCount();
-                file_put_contents($logFile, "[" . date('Y-m-d H:i:s') . "] Removido paciente de $deleted filas anteriores\n", FILE_APPEND);
-            } elseif ($estacaoAnterior) {
-                // Remove da estação anterior específica
-                $stmt = $db->prepare('DELETE FROM fila WHERE paciente_id = :pid AND estacao = :estacao_ant');
-                $stmt->execute([':pid' => $pacienteId, ':estacao_ant' => $estacaoAnterior]);
-                $deleted = $stmt->rowCount();
-                file_put_contents($logFile, "[" . date('Y-m-d H:i:s') . "] Removido de '{$estacaoAnterior}': $deleted registros\n", FILE_APPEND);
-            } else {
-                // Para filas de processamento sem estação anterior, apenas remove de altas/encaminhamentos
-                $stmt = $db->prepare('DELETE FROM fila WHERE paciente_id = :pid AND (estacao = "altas" OR estacao = "encaminhamentos")');
-                $stmt->execute([':pid' => $pacienteId]);
-            }
+            // Preservar o created_at original (hora de entrada na fila) antes de deletar
+            $stmtOrig = $db->prepare('SELECT created_at FROM fila WHERE paciente_id = :pid ORDER BY created_at ASC LIMIT 1');
+            $stmtOrig->execute([':pid' => $pacienteId]);
+            $originalCreatedAt = $stmtOrig->fetchColumn();
 
-            // Verifica se já existe na fila desejada
-            $stmt = $db->prepare('SELECT id FROM fila WHERE paciente_id = :pid AND estacao = :estacao LIMIT 1');
-            $stmt->execute([':pid' => $pacienteId, ':estacao' => $estacao]);
-            $existing = $stmt->fetch();
-            if ($existing) {
-                file_put_contents($logFile, "[" . date('Y-m-d H:i:s') . "] Paciente já existe na fila '{$estacao}', abortando\n", FILE_APPEND);
-                return; // Já existe, não adiciona novamente
-            }
+            // Remove TODOS os registros do paciente na fila (garante apenas 1 registro por paciente)
+            $stmt = $db->prepare('DELETE FROM fila WHERE paciente_id = :pid');
+            $stmt->execute([':pid' => $pacienteId]);
+            $deleted = $stmt->rowCount();
+            file_put_contents($logFile, "[" . date('Y-m-d H:i:s') . "] Removido paciente de $deleted filas anteriores\n", FILE_APPEND);
 
-            // Adiciona à fila
-            $stmt = $db->prepare(
-                'INSERT INTO fila (paciente_id, estacao, status)
-                 VALUES (:pid, :estacao, :status)'
-            );
-            // Para filas de saída (altas/encaminhamentos), marca como concluido; demais já em atendimento
+            // Adiciona à fila na nova estação, mantendo created_at original
+            // Altas/encaminhamentos = concluido (atendimento finalizado); demais = em_atendimento
             $status = in_array($estacao, ['altas', 'encaminhamentos']) ? 'concluido' : 'em_atendimento';
-            $result = $stmt->execute([
-                ':pid' => $pacienteId,
-                ':estacao' => $estacao,
-                ':status' => $status,
-            ]);
-            file_put_contents($logFile, "[" . date('Y-m-d H:i:s') . "] INSERT resultado: " . ($result ? 'SUCCESS' : 'FAIL') . "\n", FILE_APPEND);
+            if ($originalCreatedAt) {
+                $stmt = $db->prepare(
+                    'INSERT INTO fila (paciente_id, estacao, status, created_at)
+                     VALUES (:pid, :estacao, :status, :created_at)'
+                );
+                $result = $stmt->execute([
+                    ':pid' => $pacienteId,
+                    ':estacao' => $estacao,
+                    ':status' => $status,
+                    ':created_at' => $originalCreatedAt,
+                ]);
+            } else {
+                $stmt = $db->prepare(
+                    'INSERT INTO fila (paciente_id, estacao, status)
+                     VALUES (:pid, :estacao, :status)'
+                );
+                $result = $stmt->execute([
+                    ':pid' => $pacienteId,
+                    ':estacao' => $estacao,
+                    ':status' => $status,
+                ]);
+            }
+            file_put_contents($logFile, "[" . date('Y-m-d H:i:s') . "] INSERT resultado: " . ($result ? 'SUCCESS' : 'FAIL') . " (created_at preservado: " . ($originalCreatedAt ?: 'N/A') . ")\n", FILE_APPEND);
         } catch (Exception $e) {
             $logFile = __DIR__ . '/../logs/fila.log';
             file_put_contents($logFile, "[" . date('Y-m-d H:i:s') . "] ERRO: " . $e->getMessage() . "\n", FILE_APPEND);
@@ -76,25 +74,26 @@ class ProntuarioController {
 
         // Anamneses
         $stmt = $db->prepare(
-            'SELECT a.*, u.nome AS medico_nome FROM anamneses a
+            'SELECT a.*, u.nome AS medico_nome, u.role AS medico_role FROM anamneses a
              JOIN usuarios u ON u.id = a.medico_id
              WHERE a.paciente_id = :pid ORDER BY a.created_at DESC'
         );
         $stmt->execute([':pid' => $pacienteId]);
         $anamneses = $stmt->fetchAll();
 
-        // Exames
+        // Exames locais
         $stmt = $db->prepare(
-            'SELECT e.*, u.nome AS medico_nome FROM exames e
+            'SELECT e.*, u.nome AS medico_nome, u.role AS medico_role FROM exames e
              JOIN usuarios u ON u.id = e.medico_id
              WHERE e.paciente_id = :pid ORDER BY e.created_at DESC'
         );
         $stmt->execute([':pid' => $pacienteId]);
         $exames = $stmt->fetchAll();
 
+
         // Prescrições
         $stmt = $db->prepare(
-            'SELECT p.*, u.nome AS medico_nome FROM prescricoes p
+            'SELECT p.*, u.nome AS medico_nome, u.role AS medico_role FROM prescricoes p
              JOIN usuarios u ON u.id = p.medico_id
              WHERE p.paciente_id = :pid ORDER BY p.created_at DESC'
         );
@@ -103,7 +102,7 @@ class ProntuarioController {
 
         // Laudos
         $stmt = $db->prepare(
-            'SELECT l.*, u.nome AS medico_nome FROM laudos l
+            'SELECT l.*, u.nome AS medico_nome, u.role AS medico_role FROM laudos l
              JOIN usuarios u ON u.id = l.medico_id
              WHERE l.paciente_id = :pid ORDER BY l.created_at DESC'
         );
@@ -112,7 +111,7 @@ class ProntuarioController {
 
         // Acuidade Visual
         $stmt = $db->prepare(
-            'SELECT a.*, u.nome AS medico_nome FROM acuidade_visual a
+            'SELECT a.*, u.nome AS medico_nome, u.role AS medico_role FROM acuidade_visual a
              LEFT JOIN usuarios u ON u.id = a.medico_id
              WHERE a.paciente_id = :pid ORDER BY a.created_at DESC LIMIT 1'
         );
@@ -132,7 +131,7 @@ class ProntuarioController {
     // ========== SALVAR ATENDIMENTO UNIFICADO ==========
 
     public static function storeAtendimento(int $pacienteId): void {
-        $user = Auth::requireRole(['admin', 'medico']);
+        $user = Auth::requireRole(['admin', 'medico', 'administrativo']);
         $input = json_decode(file_get_contents('php://input'), true);
         $db = Database::getInstance();
 
@@ -152,6 +151,7 @@ class ProntuarioController {
             $db->beginTransaction();
 
         // Verificar registros existentes (limite: 1 por paciente)
+        $prescricaoMoveuFila = false;
         $stmtExistAnam = $db->prepare('SELECT id FROM anamneses WHERE paciente_id = :pid LIMIT 1');
         $stmtExistAnam->execute([':pid' => $pacienteId]);
         $existingAnamnese = $stmtExistAnam->fetch();
@@ -240,6 +240,12 @@ class ProntuarioController {
 
         // --- Prescrição (upsert — máx 1 por paciente) ---
         $prescricao = $input['prescricao'] ?? [];
+        // Sanitizar valores: remover caracteres de formatação (°, +) mantendo apenas números, ponto e sinal negativo
+        foreach (['od_esferico','od_cilindrico','od_eixo','od_adicao','oe_esferico','oe_cilindrico','oe_eixo','oe_adicao','dp'] as $rxField) {
+            if (isset($prescricao[$rxField]) && $prescricao[$rxField] !== '') {
+                $prescricao[$rxField] = preg_replace('/[^0-9.\-]/', '', $prescricao[$rxField]);
+            }
+        }
         $hasRx = !empty($prescricao['od_esferico']) || !empty($prescricao['oe_esferico'])
               || !empty($prescricao['od_cilindrico']) || !empty($prescricao['oe_cilindrico']);
         if ($hasRx) {
@@ -248,7 +254,7 @@ class ProntuarioController {
                     'UPDATE prescricoes SET medico_id = :mid, tipo = :tipo,
                      od_esferico = :od_esf, od_cilindrico = :od_cil, od_eixo = :od_eixo, od_adicao = :od_add,
                      oe_esferico = :oe_esf, oe_cilindrico = :oe_cil, oe_eixo = :oe_eixo, oe_adicao = :oe_add,
-                     dp = :dp, observacoes = :obs WHERE id = :id'
+                     dp = :dp, acuidade_od = :ac_od, acuidade_oe = :ac_oe, observacoes = :obs WHERE id = :id'
                 );
                 $stmt->execute([
                     ':mid' => $medicoId,
@@ -262,6 +268,8 @@ class ProntuarioController {
                     ':oe_eixo' => $prescricao['oe_eixo'] ?: null,
                     ':oe_add' => $prescricao['oe_adicao'] ?: null,
                     ':dp' => $prescricao['dp'] ?: null,
+                    ':ac_od' => $prescricao['acuidade_od'] ?: null,
+                    ':ac_oe' => $prescricao['acuidade_oe'] ?: null,
                     ':obs' => $prescricao['observacoes'] ?? null,
                     ':id' => $existingPrescricao['id'],
                 ]);
@@ -271,11 +279,11 @@ class ProntuarioController {
                     'INSERT INTO prescricoes (paciente_id, medico_id, tipo,
                      od_esferico, od_cilindrico, od_eixo, od_adicao,
                      oe_esferico, oe_cilindrico, oe_eixo, oe_adicao,
-                     dp, observacoes)
+                     dp, acuidade_od, acuidade_oe, observacoes)
                      VALUES (:pid, :mid, :tipo,
                      :od_esf, :od_cil, :od_eixo, :od_add,
                      :oe_esf, :oe_cil, :oe_eixo, :oe_add,
-                     :dp, :obs)'
+                     :dp, :ac_od, :ac_oe, :obs)'
                 );
                 $stmt->execute([
                     ':pid' => $pacienteId,
@@ -290,10 +298,39 @@ class ProntuarioController {
                     ':oe_eixo' => $prescricao['oe_eixo'] ?: null,
                     ':oe_add' => $prescricao['oe_adicao'] ?: null,
                     ':dp' => $prescricao['dp'] ?: null,
+                    ':ac_od' => $prescricao['acuidade_od'] ?: null,
+                    ':ac_oe' => $prescricao['acuidade_oe'] ?: null,
                     ':obs' => $prescricao['observacoes'] ?? null,
                 ]);
                 $ids['prescricao_id'] = (int)$db->lastInsertId();
             }
+
+            // Após prescrição: mover paciente conforme conduta do laudo
+            // Usar conduta do input atual se disponível, senão do laudo existente no DB
+            $laudoInput = $input['laudo'] ?? [];
+            $condutaCheck = strtolower(trim($laudoInput['conduta_inicial'] ?? ($existingLaudo['conduta_inicial'] ?? '')));
+            $condutaFinal = strtolower(trim($laudoInput['conduta_final'] ?? ($existingLaudo['conduta_final'] ?? '')));
+            $logFile = __DIR__ . '/../logs/fila.log';
+
+            // Se há conduta_final definida, ela tem prioridade (usada na estação óculos)
+            // Porém se conduta_inicial inclui encaminhamento, o encaminhamento sempre prevalece sobre alta
+            if ($condutaFinal === 'encaminhamento') {
+                file_put_contents($logFile, "[" . date('Y-m-d H:i:s') . "] Prescricao salva com conduta_final encaminhamento - movendo paciente {$pacienteId} para encaminhamentos\n", FILE_APPEND);
+                self::adicionarNaFilaAutomatico($db, $pacienteId, 'encaminhamentos');
+            } elseif ($condutaFinal === 'alta' && in_array($condutaCheck, ['onibus_encaminhamento', 'encaminhamento'])) {
+                file_put_contents($logFile, "[" . date('Y-m-d H:i:s') . "] Prescricao salva com conduta_final alta mas conduta_inicial {$condutaCheck} - encaminhamento prevalece - movendo paciente {$pacienteId} para encaminhamentos\n", FILE_APPEND);
+                self::adicionarNaFilaAutomatico($db, $pacienteId, 'encaminhamentos');
+            } elseif ($condutaFinal === 'alta') {
+                file_put_contents($logFile, "[" . date('Y-m-d H:i:s') . "] Prescricao salva com conduta_final alta - movendo paciente {$pacienteId} para altas\n", FILE_APPEND);
+                self::adicionarNaFilaAutomatico($db, $pacienteId, 'altas');
+            } elseif ($condutaCheck === 'onibus_encaminhamento') {
+                file_put_contents($logFile, "[" . date('Y-m-d H:i:s') . "] Prescricao salva com conduta onibus_encaminhamento - movendo paciente {$pacienteId} para encaminhamentos\n", FILE_APPEND);
+                self::adicionarNaFilaAutomatico($db, $pacienteId, 'encaminhamentos');
+            } elseif ($condutaCheck === 'onibus') {
+                file_put_contents($logFile, "[" . date('Y-m-d H:i:s') . "] Prescricao salva com conduta onibus - movendo paciente {$pacienteId} para altas\n", FILE_APPEND);
+                self::adicionarNaFilaAutomatico($db, $pacienteId, 'altas');
+            }
+            $prescricaoMoveuFila = true;
         }
 
         // --- Laudo (upsert — máx 1 por paciente) ---
@@ -330,24 +367,37 @@ class ProntuarioController {
                 $ids['laudo_id'] = (int)$db->lastInsertId();
             }
 
-            // --- Adicionar à fila de Altas ou Encaminhamentos ---
-            $condutaInicial = trim($laudo['conduta_inicial'] ?? '');
-            $logFile = __DIR__ . '/../logs/fila.log';
-            file_put_contents($logFile, "[" . date('Y-m-d H:i:s') . "] Conduta Inicial recebida: '{$condutaInicial}'\n", FILE_APPEND);
-            
-            if (strtolower($condutaInicial) === 'alta') {
-                file_put_contents($logFile, "[" . date('Y-m-d H:i:s') . "] Detectada conduta ALTA para paciente {$pacienteId}\n", FILE_APPEND);
-                self::adicionarNaFilaAutomatico($db, $pacienteId, 'altas');
-            } elseif (strtolower($condutaInicial) === 'encaminhamento') {
-                file_put_contents($logFile, "[" . date('Y-m-d H:i:s') . "] Detectada conduta ENCAMINHAMENTO para paciente {$pacienteId}\n", FILE_APPEND);
-                self::adicionarNaFilaAutomatico($db, $pacienteId, 'encaminhamentos');
-            } else {
-                file_put_contents($logFile, "[" . date('Y-m-d H:i:s') . "] Nenhuma fila detectada para conduta: '{$condutaInicial}'\n", FILE_APPEND);
+            // --- Adicionar à fila de Altas ou Encaminhamentos (somente se a prescrição não já moveu) ---
+            if (!$prescricaoMoveuFila) {
+                $condutaInicial = trim($laudo['conduta_inicial'] ?? '');
+                $logFile = __DIR__ . '/../logs/fila.log';
+                file_put_contents($logFile, "[" . date('Y-m-d H:i:s') . "] Conduta Inicial recebida: '{$condutaInicial}'\n", FILE_APPEND);
+                
+                if (strtolower($condutaInicial) === 'alta') {
+                    file_put_contents($logFile, "[" . date('Y-m-d H:i:s') . "] Detectada conduta ALTA para paciente {$pacienteId}\n", FILE_APPEND);
+                    self::adicionarNaFilaAutomatico($db, $pacienteId, 'altas');
+                } elseif (strtolower($condutaInicial) === 'onibus') {
+                    file_put_contents($logFile, "[" . date('Y-m-d H:i:s') . "] Detectada conduta ONIBUS para paciente {$pacienteId}\n", FILE_APPEND);
+                    self::adicionarNaFilaAutomatico($db, $pacienteId, 'oculos', 'laudos');
+                } elseif (strtolower($condutaInicial) === 'encaminhamento') {
+                    file_put_contents($logFile, "[" . date('Y-m-d H:i:s') . "] Detectada conduta ENCAMINHAMENTO para paciente {$pacienteId}\n", FILE_APPEND);
+                    self::adicionarNaFilaAutomatico($db, $pacienteId, 'encaminhamentos');
+                } elseif (strtolower($condutaInicial) === 'onibus_encaminhamento') {
+                    file_put_contents($logFile, "[" . date('Y-m-d H:i:s') . "] Detectada conduta ONIBUS+ENCAMINHAMENTO para paciente {$pacienteId}\n", FILE_APPEND);
+                    self::adicionarNaFilaAutomatico($db, $pacienteId, 'oculos', 'laudos');
+                } else {
+                    file_put_contents($logFile, "[" . date('Y-m-d H:i:s') . "] Nenhuma fila detectada para conduta: '{$condutaInicial}'\n", FILE_APPEND);
+                }
             }
         }
 
         // --- Acuidade Visual (upsert — máx 1 por paciente) ---
         $acuidade = $input['acuidade'] ?? [];
+        if (!empty($acuidade) && $user['role'] === 'medico') {
+            http_response_code(403);
+            echo json_encode(['error' => 'Médicos não podem registrar acuidade visual']);
+            return;
+        }
         $hasAcuidade = !empty($acuidade['sem_oculos_od']) || !empty($acuidade['sem_oculos_oe'])
                     || !empty($acuidade['com_oculos_od']) || !empty($acuidade['com_oculos_oe'])
                     || !empty($acuidade['observacoes']) || !empty($acuidade['usa_oculos'])
@@ -394,11 +444,22 @@ class ProntuarioController {
                 $ids['acuidade_id'] = (int)$db->lastInsertId();
             }
 
-            // Mover automaticamente: acuidade → exames
-            self::adicionarNaFilaAutomatico($db, $pacienteId, 'exames', 'acuidade');
+            // Mover automaticamente: acuidade → laudos (se já tem exames) ou → exames (se não tem)
+            $stmtCheckExames = $db->prepare('SELECT COUNT(*) as total FROM exames WHERE paciente_id = :pid');
+            $stmtCheckExames->execute([':pid' => $pacienteId]);
+            $totalExames = (int)$stmtCheckExames->fetch()['total'];
+
+            if ($totalExames > 0) {
+                self::adicionarNaFilaAutomatico($db, $pacienteId, 'laudos', 'acuidade');
+            } else {
+                self::adicionarNaFilaAutomatico($db, $pacienteId, 'exames', 'acuidade');
+            }
         }
 
         $db->commit();
+
+        AuditLog::registrar('salvar', 'prontuario', $pacienteId, 'Atendimento salvo (IDs: ' . json_encode($ids) . ')', $user);
+
         http_response_code(201);
         echo json_encode(['message' => 'Atendimento salvo com sucesso', 'ids' => $ids]);
         } catch (Exception $e) {
@@ -416,7 +477,7 @@ class ProntuarioController {
         $db = Database::getInstance();
 
         $stmt = $db->prepare(
-            'SELECT m.id, m.nome, m.dados, u.nome AS autor_nome, m.created_at
+            'SELECT m.id, m.nome, m.dados, u.nome AS autor_nome, u.role AS autor_role, m.created_at
              FROM modelo_laudos m
              JOIN usuarios u ON u.id = m.usuario_id
              ORDER BY m.nome ASC'
@@ -485,7 +546,7 @@ class ProntuarioController {
     // ========== EXCLUIR LAUDO COMPLETO (somente admin) ==========
 
     public static function excluirLaudo(int $pacienteId): void {
-        Auth::requireRole(['admin']);
+        $user = Auth::requireRole(['admin']);
         $db = Database::getInstance();
 
         // Verifica se paciente existe
@@ -505,6 +566,7 @@ class ProntuarioController {
             $db->prepare('DELETE FROM laudos WHERE paciente_id = :pid')->execute([':pid' => $pacienteId]);
             $db->prepare('DELETE FROM acuidade_visual WHERE paciente_id = :pid')->execute([':pid' => $pacienteId]);
             $db->commit();
+            AuditLog::registrar('excluir', 'prontuario', $pacienteId, 'Laudo completo excluído', $user);
             echo json_encode(['message' => 'Laudo excluído com sucesso']);
         } catch (Exception $e) {
             $db->rollBack();

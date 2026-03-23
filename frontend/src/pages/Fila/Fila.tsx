@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from 'react'
 import { Link } from 'react-router-dom'
 import api from '../../services/api.ts'
 import { useAuth } from '../../contexts/AuthContext.tsx'
-import { Eye, Microscope, FileText, Glasses, Zap, Timer, Building2, User, ClipboardList, X, ArrowRight, CheckCircle2, Send } from 'lucide-react'
+import { Eye, Microscope, FileText, Glasses, Zap, Timer, Building2, User, ClipboardList, X, ArrowRight, CheckCircle2, Send, Lock } from 'lucide-react'
 import './Fila.css'
 
 interface FilaItem {
@@ -17,7 +17,7 @@ interface FilaItem {
   created_at: string
   updated_at: string
   nome_completo: string
-  cpf: string | null
+  codigo: string | null
   convenio: string | null
 }
 
@@ -114,15 +114,34 @@ export default function Fila() {
     }
   }
 
-  const getTempoEstacao = (updatedAt: string): string => {
-    const diff = Date.now() - new Date(updatedAt).getTime()
-    const mins = Math.floor(diff / 60000)
+  const formatTempo = (diffMs: number): string => {
+    const mins = Math.floor(diffMs / 60000)
     if (mins < 60) return `${mins}min`
     const hrs = Math.floor(mins / 60)
     return `${hrs}h${mins % 60}min`
   }
 
-  const canManage = user?.role === 'admin' || user?.role === 'recepcionista'
+  // Tempo na estação atual (live, conta a partir do updated_at)
+  const getTempoEstacao = (updatedAt: string): string => {
+    return formatTempo(Date.now() - new Date(updatedAt).getTime())
+  }
+
+  // Tempo total de atendimento (created_at → updated_at, congelado)
+  const getTempoTotal = (createdAt: string, updatedAt: string): string => {
+    return formatTempo(new Date(updatedAt).getTime() - new Date(createdAt).getTime())
+  }
+
+  // Média de atendimento dos pacientes finalizados (altas + encaminhamentos)
+  const getMediaAtendimento = (): string | null => {
+    const finalizados = [...(fila['altas'] || []), ...(fila['encaminhamentos'] || [])]
+    if (finalizados.length === 0) return null
+    const totalMs = finalizados.reduce((acc, item) => {
+      return acc + (new Date(item.updated_at).getTime() - new Date(item.created_at).getTime())
+    }, 0)
+    return formatTempo(totalMs / finalizados.length)
+  }
+
+  const canManage = user?.role === 'admin' || user?.role === 'administrativo'
   const [collapsedStations, setCollapsedStations] = useState<Record<string, boolean>>({})
   const [expandedCards, setExpandedCards] = useState<Record<number, boolean>>({})
 
@@ -140,11 +159,19 @@ export default function Fila() {
     <div className="fila-page">
       <div className="page-header">
         <h1>Fila de Atendimento</h1>
-        {canManage && (
-          <button className="btn btn-primary" onClick={() => setShowModal(true)}>
-            + Adicionar Paciente
-          </button>
-        )}
+        <div className="page-header-right">
+          {getMediaAtendimento() && (
+            <span className="media-atendimento">
+              <Timer size={16} style={{verticalAlign:'middle',marginRight:4}} />
+              Média: {getMediaAtendimento()}
+            </span>
+          )}
+          {canManage && (
+            <button className="btn btn-primary" onClick={() => setShowModal(true)}>
+              + Adicionar Paciente
+            </button>
+          )}
+        </div>
       </div>
 
       <div className="kanban-board">
@@ -180,16 +207,20 @@ export default function Fila() {
                             <div className="card-top-left">
                               <span className={`card-chevron ${isExpanded ? '' : 'chevron-collapsed'}`}>▼</span>
                               <strong className="card-nome">{item.nome_completo}</strong>
+                              {estacao.key === 'altas' && <Lock size={14} className="card-lock" title="Atendimento finalizado — somente admin pode alterar" />}
                             </div>
                             <div className="card-top-right">
                               {item.prioridade > 0 && <span className="card-prioridade"><Zap size={14} /></span>}
-                              <span className="card-tempo"><Timer size={14} style={{verticalAlign:'middle',marginRight:3}} />{getTempoEstacao(item.updated_at)}</span>
+                              <span className="card-tempo" title={!estacao.isAtendimento ? 'Tempo total de atendimento' : 'Tempo na estação'}>
+                                <Timer size={14} style={{verticalAlign:'middle',marginRight:3}} />
+                                {!estacao.isAtendimento ? getTempoTotal(item.created_at, item.updated_at) : getTempoEstacao(item.updated_at)}
+                              </span>
                             </div>
                           </div>
 
                           {isExpanded && (
                             <div className="card-drawer">
-                              {item.cpf && <div className="card-info">CPF: {item.cpf}</div>}
+                              {item.codigo && <div className="card-info">Código: #{item.codigo}</div>}
                               {item.convenio && <div className="card-info"><Building2 size={14} style={{verticalAlign:'middle',marginRight:4}} />{item.convenio}</div>}
 
                               {item.atendente_nome && (
@@ -226,7 +257,7 @@ export default function Fila() {
                                   </Link>
                                 )}
 
-                                {canManage && (
+                                {(estacao.key === 'altas' ? user?.role === 'admin' : canManage) && (
                                   <button
                                     className="btn-card btn-remover"
                                     onClick={() => removerDaFila(item.id, item.nome_completo)}

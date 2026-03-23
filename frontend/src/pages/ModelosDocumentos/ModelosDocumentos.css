@@ -1,0 +1,204 @@
+.modelos-page {
+  padding: 2rem;
+  max-width: 1000px;
+  margin: 0 auto;
+}
+
+.modelos-page .page-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+.modelos-page .page-header-left {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.modelos-page .page-header h1 {
+  font-size: 1.4rem;
+  color: var(--text);
+  margin: 0;
+}
+
+.modelos-filter-bar {
+  margin-bottom: 1.5rem;
+}
+
+.modelos-filter-bar select {
+  padding: 0.5rem 1rem;
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  background: var(--bg-card);
+  color: var(--text);
+  font-size: 0.9rem;
+}
+
+.modelos-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 1.25rem;
+}
+
+.modelo-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 1.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  transition: border-color 0.15s;
+}
+
+.modelo-card:hover {
+  border-color: var(--primary);
+}
+
+.modelo-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.tipo-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  padding: 3px 10px;
+  border-radius: 20px;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+
+.tipo-atestado {
+  background: rgba(49, 130, 206, 0.15);
+  color: #63b3ed;
+}
+
+.tipo-receita_medica {
+  background: rgba(56, 161, 105, 0.15);
+  color: #68d391;
+}
+
+.modelo-card-actions {
+  display: flex;
+  gap: 0.25rem;
+}
+
+.btn-icon-sm {
+  background: transparent;
+  border: none;
+  color: var(--text-secondary);
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 6px;
+  transition: background 0.15s, color 0.15s;
+}
+
+.btn-icon-sm:hover {
+  background: var(--bg-hover);
+  color: var(--primary);
+}
+
+.btn-icon-danger:hover {
+  color: #fc8181;
+}
+
+.modelo-card-nome {
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--text);
+  margin: 0;
+}
+
+.modelo-card-preview {
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+  line-height: 1.5;
+  margin: 0;
+  white-space: pre-wrap;
+}
+
+.modelo-card-footer {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+  border-top: 1px solid var(--border);
+  padding-top: 0.75rem;
+  margin-top: auto;
+}
+
+.empty-state-box {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+  padding: 3rem 2rem;
+  background: var(--bg-card);
+  border: 1px dashed var(--border);
+  border-radius: var(--radius);
+  color: var(--text-secondary);
+  text-align: center;
+}
+
+.empty-state-box p {
+  margin: 0;
+  font-size: 1rem;
+}
+
+/* Modal override for larger content */
+.modal-lg {
+  max-width: 600px;
+}
+
+.modal-lg textarea {
+  font-family: inherit;
+  resize: vertical;
+  min-height: 160px;
+}
+
+.modal-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  padding: 14px 0 0;
+  margin-top: 1rem;
+}
+
+.form-hint {
+  display: block;
+  margin-top: 0.35rem;
+  font-size: 0.78rem;
+  color: var(--text-secondary);
+}
+
+.form-hint code {
+  background: var(--bg-hover);
+  padding: 1px 5px;
+  border-radius: 4px;
+  font-size: 0.78rem;
+}
+
+.var-inserter {
+  margin-bottom: 8px;
+  display: flex;
+  gap: 8px;
+}
+
+.var-inserter select {
+  flex: 1;
+  padding: 6px 10px;
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  background: var(--bg-card);
+  color: var(--text);
+  font-size: 0.85rem;
+}

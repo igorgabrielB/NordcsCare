@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import api from '../../services/api'
+import { formatTexto } from '../../services/pdfService'
 
 interface Laudo {
   id: number
@@ -7,7 +8,17 @@ interface Laudo {
   conduta: string
   observacoes: string
   medico_nome: string
+  medico_role?: string
   created_at: string
+}
+
+function rolePrefix(role?: string) {
+  switch (role) {
+    case 'medico': return 'Dr(a).'
+    case 'administrativo': return 'Assist.'
+    case 'admin': return 'Adm.'
+    default: return ''
+  }
 }
 
 const CONDUTAS = [
@@ -102,17 +113,17 @@ export default function LaudosTab({ pacienteId }: { pacienteId: number }) {
             <div key={l.id} className="clinical-card">
               <div className="clinical-card-header">
                 <span className="clinical-date">{new Date(l.created_at).toLocaleDateString('pt-BR')} {new Date(l.created_at).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}</span>
-                <span className="clinical-medico">Dr(a). {l.medico_nome}</span>
+                <span className="clinical-medico">{rolePrefix(l.medico_role)} {l.medico_nome}</span>
               </div>
               <div className="clinical-card-body">
-                {l.diagnostico && <p><strong>Diagnóstico:</strong> {l.diagnostico}</p>}
+                {l.diagnostico && <p><strong>Diagnóstico:</strong> <span dangerouslySetInnerHTML={{ __html: formatTexto(l.diagnostico) }} /></p>}
                 <p>
                   <strong>Conduta:</strong>{' '}
                   <span className="conduta-badge" style={{ backgroundColor: condutaColor(l.conduta) }}>
                     {condutaLabel(l.conduta)}
                   </span>
                 </p>
-                {l.observacoes && <p><strong>Obs:</strong> {l.observacoes}</p>}
+                {l.observacoes && <p><strong>Obs:</strong> <span dangerouslySetInnerHTML={{ __html: formatTexto(l.observacoes) }} /></p>}
               </div>
             </div>
           ))}

@@ -1,6 +1,7 @@
 <?php
 require_once __DIR__ . '/../config/database.php';
 require_once __DIR__ . '/../middleware/auth.php';
+require_once __DIR__ . '/../utils/AuditLog.php';
 
 class AuthController {
 
@@ -31,6 +32,11 @@ class AuthController {
         }
 
         $token = Auth::generateToken($user);
+
+        AuditLog::registrar('login', 'usuario', (int)$user['id'], 'Login realizado', [
+            'sub' => (int)$user['id'], 'nome' => $user['nome'], 'role' => $user['role']
+        ]);
+
         echo json_encode([
             'token' => $token,
             'user' => [
@@ -56,7 +62,7 @@ class AuthController {
             }
         }
 
-        $allowedRoles = ['admin', 'medico', 'recepcionista'];
+        $allowedRoles = ['admin', 'medico', 'administrativo'];
         if (!in_array($input['role'], $allowedRoles, true)) {
             http_response_code(400);
             echo json_encode(['error' => 'Role inválida']);
@@ -87,8 +93,12 @@ class AuthController {
             ':role' => $input['role'],
         ]);
 
+        $newId = (int)$db->lastInsertId();
+        $adminUser = Auth::requireAuth();
+        AuditLog::registrar('criar', 'usuario', $newId, "Usuário '{$input['nome']}' ({$input['role']}) criado", $adminUser);
+
         http_response_code(201);
-        echo json_encode(['message' => 'Usuário cadastrado com sucesso', 'id' => (int)$db->lastInsertId()]);
+        echo json_encode(['message' => 'Usuário cadastrado com sucesso', 'id' => $newId]);
     }
 
     public static function me(): void {

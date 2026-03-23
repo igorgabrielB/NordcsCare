@@ -82,36 +82,45 @@ class MedicoController {
             return;
         }
 
-        // Criar usuário para o médico
-        $hash = password_hash($senha, PASSWORD_BCRYPT);
-        $stmt = $db->prepare(
-            'INSERT INTO usuarios (nome, login, senha, role, email)
-             VALUES (:nome, :login, :senha, :role, :email)'
-        );
-        $stmt->execute([
-            ':nome' => $nome,
-            ':login' => $login,
-            ':senha' => $hash,
-            ':role' => 'medico',
-            ':email' => $input['email'] ?? null,
-        ]);
+        // Criar usuário e médico em transação
+        $db->beginTransaction();
+        try {
+            $hash = password_hash($senha, PASSWORD_BCRYPT);
+            $stmt = $db->prepare(
+                'INSERT INTO usuarios (nome, login, senha, role, email)
+                 VALUES (:nome, :login, :senha, :role, :email)'
+            );
+            $stmt->execute([
+                ':nome' => $nome,
+                ':login' => $login,
+                ':senha' => $hash,
+                ':role' => 'medico',
+                ':email' => $input['email'] ?? null,
+            ]);
+            $usuarioId = (int)$db->lastInsertId();
 
-        // Criar médico
-        $stmt = $db->prepare(
-            'INSERT INTO medicos (nome, crm, uf, especialidade, telefone, email)
-             VALUES (:nome, :crm, :uf, :especialidade, :telefone, :email)'
-        );
-        $stmt->execute([
-            ':nome' => $nome,
-            ':crm' => $crm,
-            ':uf' => $input['uf'] ?? 'CE',
-            ':especialidade' => $especialidade ?: 'Oftalmologia',
-            ':telefone' => $input['telefone'] ?? null,
-            ':email' => $input['email'] ?? null,
-        ]);
+            $stmt = $db->prepare(
+                'INSERT INTO medicos (usuario_id, nome, crm, uf, especialidade, telefone, email)
+                 VALUES (:uid, :nome, :crm, :uf, :especialidade, :telefone, :email)'
+            );
+            $stmt->execute([
+                ':uid' => $usuarioId,
+                ':nome' => $nome,
+                ':crm' => $crm,
+                ':uf' => $input['uf'] ?? 'CE',
+                ':especialidade' => $especialidade ?: 'Oftalmologia',
+                ':telefone' => $input['telefone'] ?? null,
+                ':email' => $input['email'] ?? null,
+            ]);
 
-        http_response_code(201);
-        echo json_encode(['message' => 'Médico cadastrado com sucesso e usuário criado para login', 'id' => (int)$db->lastInsertId()]);
+            $db->commit();
+            http_response_code(201);
+            echo json_encode(['message' => 'Médico cadastrado com sucesso e usuário criado para login', 'id' => (int)$db->lastInsertId()]);
+        } catch (\Exception $e) {
+            $db->rollBack();
+            http_response_code(500);
+            echo json_encode(['error' => 'Erro ao cadastrar médico']);
+        }
     }
 
     public static function update(int $id): void {
@@ -180,5 +189,18 @@ class MedicoController {
         $stmt->execute([':id' => $id]);
 
         echo json_encode(['message' => 'Médico excluído com sucesso']);
+    }
+
+    public static function perfil(): void {
+        $user = Auth::requireAuth();
+        $db = Database::getInstance();
+
+        $stmt = $db->prepare(
+            'SELECT nome, crm, uf, especialidade FROM medicos WHERE usuario_id = :uid LIMIT 1'
+        );
+        $stmt->execute([':uid' => $user['sub']]);
+        $medico = $stmt->fetch();
+
+        echo json_encode($medico ?: ['nome' => $user['nome'], 'crm' => null, 'uf' => null, 'especialidade' => null]);
     }
 }

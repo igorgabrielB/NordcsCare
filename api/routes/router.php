@@ -7,6 +7,10 @@ require_once __DIR__ . '/../controllers/DashboardController.php';
 require_once __DIR__ . '/../controllers/UploadController.php';
 require_once __DIR__ . '/../controllers/UsuarioController.php';
 require_once __DIR__ . '/../controllers/MedicoController.php';
+require_once __DIR__ . '/../controllers/EscolaAgendaController.php';
+require_once __DIR__ . '/../controllers/ModeloDocumentoController.php';
+require_once __DIR__ . '/../controllers/RedCheckController.php';
+require_once __DIR__ . '/../controllers/LaudoProntoController.php';
 
 class Router {
     private array $routes = [];
@@ -81,6 +85,12 @@ $router->add('GET', '/api/modelos-laudos', [ProntuarioController::class, 'listar
 $router->add('POST', '/api/modelos-laudos', [ProntuarioController::class, 'criarModelo']);
 $router->add('DELETE', '/api/modelos-laudos/{id}', [ProntuarioController::class, 'excluirModelo']);
 
+// Modelos de Documentos (atestado, receita médica)
+$router->add('GET', '/api/modelos-documentos', [ModeloDocumentoController::class, 'index']);
+$router->add('POST', '/api/modelos-documentos', [ModeloDocumentoController::class, 'store']);
+$router->add('PUT', '/api/modelos-documentos/{id}', [ModeloDocumentoController::class, 'update']);
+$router->add('DELETE', '/api/modelos-documentos/{id}', [ModeloDocumentoController::class, 'destroy']);
+
 // Dashboard
 $router->add('GET', '/api/dashboard/metricas', [DashboardController::class, 'metricas']);
 
@@ -100,11 +110,36 @@ $router->add('DELETE', '/api/usuarios/{id}', [UsuarioController::class, 'destroy
 
 
 // Médicos
+$router->add('GET', '/api/medicos/perfil', [MedicoController::class, 'perfil']);
 $router->add('GET', '/api/medicos', [MedicoController::class, 'index']);
 $router->add('GET', '/api/medicos/{id}', [MedicoController::class, 'show']);
 $router->add('POST', '/api/medicos', [MedicoController::class, 'store']);
 $router->add('PUT', '/api/medicos/{id}', [MedicoController::class, 'update']);
 $router->add('DELETE', '/api/medicos/{id}', [MedicoController::class, 'destroy']);
+
+// Escola Agenda
+$router->add('GET', '/api/escola-agenda', [EscolaAgendaController::class, 'index']);
+
+// RedCheck (SpotVision / Retinografia) — somente leitura
+$router->add('GET', '/api/redcheck/status', [RedCheckController::class, 'status']);
+$router->add('GET', '/api/redcheck/exames/{pacienteId}', [RedCheckController::class, 'exames']);
+$router->add('GET', '/api/redcheck/laudo/{id}', [RedCheckController::class, 'laudo']);
+$router->add('GET', '/api/redcheck/recentes', [RedCheckController::class, 'recentes']);
+$router->add('GET', '/api/redcheck/exames-demo/{redcheckPatientId}', [RedCheckController::class, 'examesDemo']);
+$router->add('GET', '/api/redcheck/imagem/{laudoId}', [RedCheckController::class, 'imagem']);
+
+// Escola Agenda (cont.)
+$router->add('GET', '/api/escola-agenda/hoje', [EscolaAgendaController::class, 'hoje']);
+$router->add('POST', '/api/escola-agenda', [EscolaAgendaController::class, 'store']);
+$router->add('DELETE', '/api/escola-agenda/remover', [EscolaAgendaController::class, 'destroyByEscolaData']);
+$router->add('DELETE', '/api/escola-agenda/{id}', [EscolaAgendaController::class, 'destroy']);
+
+// Laudos Prontos
+$router->add('GET', '/api/laudos-prontos', [LaudoProntoController::class, 'index']);
+$router->add('GET', '/api/laudos-prontos/ativos', [LaudoProntoController::class, 'ativos']);
+$router->add('POST', '/api/laudos-prontos', [LaudoProntoController::class, 'store']);
+$router->add('PUT', '/api/laudos-prontos/{id}', [LaudoProntoController::class, 'update']);
+$router->add('DELETE', '/api/laudos-prontos/{id}', [LaudoProntoController::class, 'destroy']);
 
 // Logs (apenas admin)
 $router->add('GET', '/api/logs/fila', function() {
@@ -124,6 +159,59 @@ $router->add('GET', '/api/logs/fila', function() {
     echo json_encode([
         'total_lines' => count($lines),
         'logs' => array_slice($lines, max(0, count($lines) - 100)) // Últimas 100 linhas
+    ]);
+});
+
+// Auditoria (apenas admin)
+$router->add('GET', '/api/audit', function() {
+    require_once __DIR__ . '/../middleware/auth.php';
+    require_once __DIR__ . '/../config/database.php';
+    Auth::requireRole(['admin']);
+
+    $db = Database::getInstance();
+
+    $page = max(1, (int)($_GET['page'] ?? 1));
+    $limit = min(100, max(1, (int)($_GET['limit'] ?? 50)));
+    $offset = ($page - 1) * $limit;
+
+    $where = '1=1';
+    $params = [];
+
+    if (!empty($_GET['usuario'])) {
+        $where .= ' AND usuario_nome LIKE :usuario';
+        $params[':usuario'] = '%' . $_GET['usuario'] . '%';
+    }
+    if (!empty($_GET['acao'])) {
+        $where .= ' AND acao = :acao';
+        $params[':acao'] = $_GET['acao'];
+    }
+    if (!empty($_GET['entidade'])) {
+        $where .= ' AND entidade = :entidade';
+        $params[':entidade'] = $_GET['entidade'];
+    }
+    if (!empty($_GET['data_inicio'])) {
+        $where .= ' AND created_at >= :di';
+        $params[':di'] = $_GET['data_inicio'] . ' 00:00:00';
+    }
+    if (!empty($_GET['data_fim'])) {
+        $where .= ' AND created_at <= :df';
+        $params[':df'] = $_GET['data_fim'] . ' 23:59:59';
+    }
+
+    $countStmt = $db->prepare("SELECT COUNT(*) FROM audit_log WHERE {$where}");
+    $countStmt->execute($params);
+    $total = (int)$countStmt->fetchColumn();
+
+    $stmt = $db->prepare(
+        "SELECT * FROM audit_log WHERE {$where} ORDER BY created_at DESC LIMIT {$limit} OFFSET {$offset}"
+    );
+    $stmt->execute($params);
+
+    echo json_encode([
+        'total' => $total,
+        'page' => $page,
+        'limit' => $limit,
+        'data' => $stmt->fetchAll(),
     ]);
 });
 ?>

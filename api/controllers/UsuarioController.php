@@ -1,6 +1,7 @@
 <?php
 require_once __DIR__ . '/../config/database.php';
 require_once __DIR__ . '/../middleware/auth.php';
+require_once __DIR__ . '/../utils/AuditLog.php';
 
 class UsuarioController {
 
@@ -36,14 +37,14 @@ class UsuarioController {
     }
 
     public static function store(): void {
-        Auth::requireRole(['admin']);
+        $user = Auth::requireRole(['admin']);
         $input = json_decode(file_get_contents('php://input'), true);
         $db = Database::getInstance();
 
         $nome = trim($input['nome'] ?? '');
         $login = trim($input['login'] ?? '');
         $senha = $input['senha'] ?? '';
-        $role = $input['role'] ?? 'recepcionista';
+        $role = $input['role'] ?? 'administrativo';
 
         if ($nome === '' || $login === '' || $senha === '') {
             http_response_code(422);
@@ -80,12 +81,16 @@ class UsuarioController {
             ':role' => $role,
         ]);
 
+        $newId = (int)$db->lastInsertId();
+
+        AuditLog::registrar('criar', 'usuario', $newId, "Usuário '{$nome}' ({$role}) criado", $user);
+
         http_response_code(201);
-        echo json_encode(['message' => 'Usuário criado com sucesso', 'id' => (int)$db->lastInsertId()]);
+        echo json_encode(['message' => 'Usuário criado com sucesso', 'id' => $newId]);
     }
 
     public static function update(int $id): void {
-        Auth::requireRole(['admin']);
+        $user = Auth::requireRole(['admin']);
         $input = json_decode(file_get_contents('php://input'), true);
         $db = Database::getInstance();
 
@@ -99,7 +104,7 @@ class UsuarioController {
 
         $nome = trim($input['nome'] ?? '');
         $login = trim($input['login'] ?? '');
-        $role = $input['role'] ?? 'recepcionista';
+        $role = $input['role'] ?? 'administrativo';
 
         if ($nome === '' || $login === '') {
             http_response_code(422);
@@ -141,6 +146,8 @@ class UsuarioController {
             $stmt->execute([':senha' => $hash, ':id' => $id]);
         }
 
+        AuditLog::registrar('editar', 'usuario', $id, "Usuário '{$nome}' atualizado", $user);
+
         echo json_encode(['message' => 'Usuário atualizado com sucesso']);
     }
 
@@ -166,6 +173,9 @@ class UsuarioController {
 
         $stmt = $db->prepare('DELETE FROM usuarios WHERE id = :id');
         $stmt->execute([':id' => $id]);
+
+        AuditLog::registrar('excluir', 'usuario', $id, 'Usuário excluído', $user);
+
         echo json_encode(['message' => 'Usuário excluído com sucesso']);
     }
 }

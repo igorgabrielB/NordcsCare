@@ -1,6 +1,7 @@
 <?php
 require_once __DIR__ . '/../config/database.php';
 require_once __DIR__ . '/../middleware/auth.php';
+require_once __DIR__ . '/../utils/AuditLog.php';
 
 class PacienteController {
 
@@ -10,14 +11,21 @@ class PacienteController {
         $db = Database::getInstance();
 
         $search = $_GET['search'] ?? '';
+        $escolaDia = isset($_GET['escola_dia']) && $_GET['escola_dia'] === '1';
         $page = max(1, (int)($_GET['page'] ?? 1));
         $limit = min(100, max(1, (int)($_GET['limit'] ?? 20)));
         $offset = ($page - 1) * $limit;
 
+        // Build escola_dia sub-condition
+        $escolaCondition = '';
+        if ($escolaDia) {
+            $escolaCondition = ' AND escola IN (SELECT escola FROM escola_agenda WHERE data_atendimento = CURDATE())';
+        }
+
         if ($search !== '') {
             $stmt = $db->prepare(
-                'SELECT * FROM pacientes WHERE nome_completo LIKE :search OR cpf LIKE :search2 OR codigo LIKE :search3
-                 ORDER BY nome_completo ASC LIMIT :limit OFFSET :offset'
+                'SELECT * FROM pacientes WHERE (nome_completo LIKE :search OR cpf LIKE :search2 OR codigo LIKE :search3)' . $escolaCondition .
+                ' ORDER BY nome_completo ASC LIMIT :limit OFFSET :offset'
             );
             $searchTerm = "%$search%";
             $stmt->bindValue(':search', $searchTerm, PDO::PARAM_STR);
@@ -28,18 +36,18 @@ class PacienteController {
             $stmt->execute();
 
             $countStmt = $db->prepare(
-                'SELECT COUNT(*) FROM pacientes WHERE nome_completo LIKE :search OR cpf LIKE :search2 OR codigo LIKE :search3'
+                'SELECT COUNT(*) FROM pacientes WHERE (nome_completo LIKE :search OR cpf LIKE :search2 OR codigo LIKE :search3)' . $escolaCondition
             );
             $countStmt->execute([':search' => $searchTerm, ':search2' => $searchTerm, ':search3' => $searchTerm]);
         } else {
             $stmt = $db->prepare(
-                'SELECT * FROM pacientes ORDER BY nome_completo ASC LIMIT :limit OFFSET :offset'
+                'SELECT * FROM pacientes WHERE 1=1' . $escolaCondition . ' ORDER BY nome_completo ASC LIMIT :limit OFFSET :offset'
             );
             $stmt->bindValue(':limit', $limit, PDO::PARAM_INT);
             $stmt->bindValue(':offset', $offset, PDO::PARAM_INT);
             $stmt->execute();
 
-            $countStmt = $db->query('SELECT COUNT(*) FROM pacientes');
+            $countStmt = $db->query('SELECT COUNT(*) FROM pacientes WHERE 1=1' . $escolaCondition);
         }
 
         $pacientes = $stmt->fetchAll();
@@ -93,7 +101,7 @@ class PacienteController {
     }
 
     public static function store(): void {
-        Auth::requireRole(['admin', 'medico', 'recepcionista']);
+        $user = Auth::requireRole(['admin', 'medico', 'administrativo']);
 
         $input = json_decode(file_get_contents('php://input'), true);
 
@@ -149,12 +157,14 @@ class PacienteController {
 
         $id = (int)$db->lastInsertId();
 
+        AuditLog::registrar('criar', 'paciente', $id, "Paciente '{$input['nome_completo']}' (código {$novoCodigo}) cadastrado", $user);
+
         http_response_code(201);
         echo json_encode(['message' => 'Paciente cadastrado com sucesso', 'id' => $id, 'codigo' => $novoCodigo]);
     }
 
     public static function update(int $id): void {
-        Auth::requireRole(['admin', 'medico', 'recepcionista']);
+        $user = Auth::requireRole(['admin', 'medico', 'administrativo']);
 
         $input = json_decode(file_get_contents('php://input'), true);
 
@@ -209,11 +219,13 @@ class PacienteController {
             ':observacoes' => $input['observacoes'] ?? null,
         ]);
 
+        AuditLog::registrar('editar', 'paciente', $id, "Paciente atualizado", $user);
+
         echo json_encode(['message' => 'Paciente atualizado com sucesso']);
     }
 
     public static function destroy(int $id): void {
-        Auth::requireRole(['admin']);
+        $user = Auth::requireRole(['admin']);
 
         $db = Database::getInstance();
         $stmt = $db->prepare('SELECT id FROM pacientes WHERE id = :id');
@@ -227,6 +239,8 @@ class PacienteController {
         $stmt = $db->prepare('DELETE FROM pacientes WHERE id = :id');
         $stmt->execute([':id' => $id]);
 
+        AuditLog::registrar('excluir', 'paciente', $id, 'Paciente excluído', $user);
+
         echo json_encode(['message' => 'Paciente removido com sucesso']);
     }
 
@@ -234,7 +248,7 @@ class PacienteController {
      * DELETE /api/pacientes/escola/{escola} — Exclusão em lote por escola
      */
     public static function destroyByEscola(): void {
-        Auth::requireRole(['admin']);
+        $user = Auth::requireRole(['admin']);
 
         $input = json_decode(file_get_contents('php://input'), true);
         $escola = trim($input['escola'] ?? '');
@@ -260,6 +274,8 @@ class PacienteController {
         $stmt = $db->prepare('DELETE FROM pacientes WHERE escola = :escola');
         $stmt->execute([':escola' => $escola]);
 
+        AuditLog::registrar('excluir_lote', 'paciente', null, "Excluído {$total} pacientes da escola '{$escola}'", $user);
+
         echo json_encode([
             'message' => "$total paciente(s) da escola \"$escola\" removidos com sucesso",
             'removidos' => $total,
@@ -270,7 +286,7 @@ class PacienteController {
      * POST /api/pacientes/importar — Importação em lote via CSV
      */
     public static function importar(): void {
-        Auth::requireRole(['admin']);
+        $user = Auth::requireRole(['admin']);
 
         $input = json_decode(file_get_contents('php://input'), true);
         $pacientes = $input['pacientes'] ?? [];
@@ -278,12 +294,6 @@ class PacienteController {
         if (empty($pacientes) || !is_array($pacientes)) {
             http_response_code(400);
             echo json_encode(['error' => 'Nenhum paciente enviado']);
-            return;
-        }
-
-        if (count($pacientes) > 500) {
-            http_response_code(400);
-            echo json_encode(['error' => 'Máximo de 500 pacientes por importação']);
             return;
         }
 
@@ -351,6 +361,8 @@ class PacienteController {
                 $erros[] = "Linha {$linha}: Erro ao inserir '{$nome}' — " . $e->getMessage();
             }
         }
+
+        AuditLog::registrar('importar', 'paciente', null, "Importação: {$importados} pacientes importados" . (count($erros) > 0 ? ", " . count($erros) . " erros" : ''), $user);
 
         http_response_code(201);
         echo json_encode([

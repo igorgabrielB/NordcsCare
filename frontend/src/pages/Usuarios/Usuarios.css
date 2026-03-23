@@ -89,27 +89,27 @@
 
 .badge-admin {
   background: rgba(103, 67, 165, 0.2);
-  color: #b794f4;
+  color: var(--primary-light);
 }
 
 .badge-medico {
   background: rgba(56, 161, 105, 0.2);
-  color: #68d391;
+  color: var(--success);
 }
 
-.badge-recepcionista {
+.badge-administrativo {
   background: rgba(214, 158, 46, 0.2);
-  color: #f6e05e;
+  color: var(--warning);
 }
 
 .badge-ativo {
   background: rgba(56, 161, 105, 0.2);
-  color: #68d391;
+  color: var(--success);
 }
 
 .badge-inativo {
   background: rgba(229, 62, 62, 0.15);
-  color: #fc8181;
+  color: var(--danger);
 }
 
 /* Modal */
@@ -197,7 +197,7 @@
 
 .modal-actions .btn-primary {
   background: var(--primary);
-  color: white;
+  color: var(--text);
 }
 
 .modal-actions .btn-primary:hover {

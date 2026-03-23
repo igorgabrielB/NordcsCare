@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom'
-import { Users, Stethoscope, GraduationCap, FileText, School, Trash2 } from 'lucide-react'
+import { Users, Stethoscope, GraduationCap, FileText, School, Trash2, CalendarDays, ClipboardList, BookOpen, ShieldCheck } from 'lucide-react'
 import './Admin.css'
 
 const adminOptions = [
@@ -10,6 +10,14 @@ const adminOptions = [
     icon: <Users size={26} />,
     color: 'rgba(49,130,206,0.15)',
     iconColor: '#63b3ed',
+  },
+  {
+    to: '/admin/perfis',
+    label: 'Gerenciamento de Perfis',
+    desc: 'Visualizar permissões e alterar perfil dos usuários',
+    icon: <ShieldCheck size={26} />,
+    color: 'rgba(128,90,213,0.15)',
+    iconColor: '#b794f4',
   },
   {
     to: '/admin/medicos',
@@ -50,6 +58,30 @@ const adminOptions = [
     icon: <Trash2 size={26} />,
     color: 'rgba(245,101,101,0.15)',
     iconColor: '#fc8181',
+  },
+  {
+    to: '/admin/agenda-escola',
+    label: 'Agenda de Escolas',
+    desc: 'Definir dias de atendimento por escola',
+    icon: <CalendarDays size={26} />,
+    color: 'rgba(56,161,105,0.15)',
+    iconColor: '#48bb78',
+  },
+  {
+    to: '/admin/modelos-documentos',
+    label: 'Modelos de Documentos',
+    desc: 'Gerenciar modelos de atestados e receitas',
+    icon: <ClipboardList size={26} />,
+    color: 'rgba(237,137,54,0.15)',
+    iconColor: '#ed8936',
+  },
+  {
+    to: '/admin/laudos-prontos',
+    label: 'Laudos Prontos',
+    desc: 'Gerenciar diagnósticos pré-definidos para laudos',
+    icon: <BookOpen size={26} />,
+    color: 'rgba(115,69,214,0.15)',
+    iconColor: '#b794f4',
   },
 ]
 

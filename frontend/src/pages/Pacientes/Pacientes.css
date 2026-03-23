@@ -1,14 +1,14 @@
 /* ===== Shared Components ===== */
 
 .required-asterisk {
-  color: #e53935;
+  color: var(--danger);
   font-weight: 700;
   margin-left: 2px;
 }
 
 .required-notice {
   font-size: 0.85rem;
-  color: #666;
+  color: var(--text-muted);
   margin-bottom: 12px;
 }
 
@@ -39,7 +39,7 @@
 }
 
 .field-error label {
-  color: #e53935;
+  color: var(--danger);
   font-weight: 600;
 }
 
@@ -58,7 +58,7 @@
 
 .btn-primary {
   background: var(--primary);
-  color: white;
+  color: var(--text);
 }
 
 .btn-primary:hover {
@@ -77,13 +77,13 @@
 
 .btn-danger {
   background: rgba(229, 62, 62, 0.15);
-  color: #fc8181;
+  color: var(--danger);
   border: 1px solid rgba(229, 62, 62, 0.3);
 }
 
 .btn-danger:hover {
   background: var(--danger);
-  color: white;
+  color: var(--text);
 }
 
 .btn-sm {
@@ -251,7 +251,7 @@
 .escola-dropdown li {
   padding: 0.45rem 0.75rem;
   font-size: 0.85rem;
-  color: #f0ebe3;
+  color: var(--text);
   cursor: pointer;
   transition: background 0.1s;
 }
@@ -270,13 +270,13 @@
 /* ===== Check-in Button ===== */
 .btn-checkin {
   background: rgba(56, 161, 105, 0.2);
-  color: #68d391;
+  color: var(--success);
   border: 1px solid rgba(56, 161, 105, 0.3);
 }
 
 .btn-checkin:hover {
   background: #28a745;
-  color: white;
+  color: var(--text);
 }
 
 .btn-checkin:disabled {
@@ -363,7 +363,7 @@
 .pac-codigo {
   font-size: 0.75rem;
   font-weight: 700;
-  color: white;
+  color: var(--text);
   background: var(--primary, #7345d6);
   padding: 1px 6px;
   border-radius: 4px;
@@ -375,11 +375,16 @@
   font-size: 0.72rem;
   font-weight: 600;
   background: rgba(56, 161, 105, 0.2);
-  color: #68d391;
+  color: var(--success);
   padding: 2px 8px;
   border-radius: 10px;
   white-space: nowrap;
   flex-shrink: 0;
+}
+
+.pac-fila-concluido {
+  background: rgba(128, 128, 128, 0.2);
+  color: var(--gray-400);
 }
 
 .pac-drawer-right {
@@ -440,6 +445,50 @@
   gap: 8px;
   padding-top: 10px;
   border-top: 1px solid var(--gray-50);
+}
+
+/* ===== Escola do Dia Filter ===== */
+.btn.btn-escola-dia {
+  background: var(--bg-light);
+  border: 2px solid var(--success);
+  color: var(--success);
+  border-radius: 8px;
+  font-weight: 500;
+  transition: all 0.2s;
+}
+
+.btn.btn-escola-dia:hover {
+  border-color: var(--success);
+  background: rgba(40, 167, 69, 0.15);
+  color: var(--success);
+}
+
+.btn.btn-escola-dia.active {
+  background: var(--success);
+  color: #fff;
+  border-color: var(--success);
+}
+
+.escola-dia-info {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  padding: 0.55rem 0.9rem;
+  background: rgba(40, 167, 69, 0.08);
+  border: 1px solid rgba(40, 167, 69, 0.25);
+  border-radius: 8px;
+  font-size: 0.82rem;
+  color: var(--success);
+  margin-top: -0.25rem;
+}
+
+.escola-dia-tag {
+  background: rgba(40, 167, 69, 0.15);
+  padding: 0.15rem 0.5rem;
+  border-radius: 4px;
+  font-weight: 500;
+  color: var(--text);
 }
 
 @media (max-width: 768px) {
@@ -657,9 +706,9 @@
 .form-group select {
   width: 100%;
   padding: 10px 12px;
-  background: var(--bg-elevated, #4a4a4a);
-  color: var(--text, #f0ebe3);
-  border: 1px solid var(--border, #594747);
+  background: var(--bg-card);
+  color: var(--text);
+  border: 1px solid var(--border);
   border-radius: var(--radius);
   font-size: 0.9rem;
   font-family: inherit;
@@ -674,9 +723,9 @@
 .form-group input[type="date"]:focus,
 .form-group textarea:focus,
 .form-group select:focus {
-  border-color: var(--primary, #7345d6);
+  border-color: var(--primary);
   box-shadow: 0 0 0 3px rgba(115, 69, 214, 0.2);
-  background: #5a5a5a;
+  background: var(--bg-card);
 }
 
 @keyframes arrowRotate {
@@ -699,9 +748,9 @@
 }
 
 .form-group select:focus {
-  border-color: var(--primary, #7345d6);
+  border-color: var(--primary);
   box-shadow: 0 0 0 3px rgba(115, 69, 214, 0.2);
-  background: #5a5a5a;
+  background-color: var(--bg-card);
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12' style='transform: rotate(180deg)'%3E%3Cpath fill='%23bfab93' d='M6 9L1 4h10z'/%3E%3C/svg%3E");
   background-repeat: no-repeat;
   background-position: right 12px center;

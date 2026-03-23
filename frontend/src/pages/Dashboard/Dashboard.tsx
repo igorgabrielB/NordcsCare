@@ -1,12 +1,14 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { Link } from 'react-router-dom'
 import { useAuth } from '../../contexts/AuthContext.tsx'
 import api from '../../services/api.ts'
-import { Users, ClipboardList, Stethoscope, BarChart3, TrendingUp, Tag, CheckCircle2, Hash } from 'lucide-react'
+import { Users, ClipboardList, Stethoscope, BarChart3, TrendingUp, Tag, Hash, School, CalendarDays, Filter } from 'lucide-react'
 import './Dashboard.css'
 
 interface Metricas {
   total_pacientes: number
+  pacientes_do_dia: number
+  escolas_hoje: { escola: string; total: number }[]
   atendimentos_hoje: number
   na_fila: number
   total_exames: number
@@ -16,6 +18,7 @@ interface Metricas {
   condutas_finais: Record<string, number>
   atendimentos_por_dia: { dia: string; total: number }[]
   fila_por_estacao: { estacao: string; status: string; total: number }[]
+  escolas_agendadas: { escola: string; data_atendimento: string; total_alunos: number }[]
 }
 
 const ESTACAO_LABELS: Record<string, string> = {
@@ -42,17 +45,33 @@ export default function Dashboard() {
   const [metricas, setMetricas] = useState<Metricas | null>(null)
   const [loading, setLoading] = useState(true)
 
-  useEffect(() => {
-    loadMetricas()
-    const interval = setInterval(loadMetricas, 30000)
-    return () => clearInterval(interval)
-  }, [])
+  const hoje = new Date().toISOString().slice(0, 10)
+  const [dataInicio, setDataInicio] = useState(hoje)
+  const [dataFim, setDataFim] = useState(hoje)
 
-  async function loadMetricas() {
+  const loadMetricas = useCallback(async (di: string, df: string) => {
     try {
-      const { data } = await api.get('/dashboard/metricas')
+      const { data } = await api.get('/dashboard/metricas', { params: { data_inicio: di, data_fim: df } })
       setMetricas(data)
     } catch { /* interceptor */ } finally { setLoading(false) }
+  }, [])
+
+  useEffect(() => {
+    loadMetricas(hoje, hoje)
+    const interval = setInterval(() => loadMetricas(hoje, hoje), 30000)
+    return () => clearInterval(interval)
+  }, [loadMetricas, hoje])
+
+  const handleFilterApply = () => {
+    setLoading(true)
+    loadMetricas(dataInicio, dataFim)
+  }
+
+  const handleFilterToday = () => {
+    setDataInicio(hoje)
+    setDataFim(hoje)
+    setLoading(true)
+    loadMetricas(hoje, hoje)
   }
 
   function diaSemana(dateStr: string) {
@@ -67,6 +86,22 @@ export default function Dashboard() {
         <p>Sistema de Prontuário Oftalmológico — NordcsCare</p>
       </div>
 
+      <div className="dashboard-filter-bar">
+        <Filter size={16} />
+        <label>
+          De
+          <input type="date" value={dataInicio} onChange={e => setDataInicio(e.target.value)} />
+        </label>
+        <label>
+          Até
+          <input type="date" value={dataFim} onChange={e => setDataFim(e.target.value)} />
+        </label>
+        <button className="btn-filter-apply" onClick={handleFilterApply}>Filtrar</button>
+        {(dataInicio !== hoje || dataFim !== hoje) && (
+          <button className="btn-filter-today" onClick={handleFilterToday}>Voltar para Hoje</button>
+        )}
+      </div>
+
       {loading ? (
         <div className="loading">Carregando métricas...</div>
       ) : metricas ? (
@@ -77,9 +112,17 @@ export default function Dashboard() {
               <div className="dash-card-icon" style={{ background: 'rgba(49,130,206,0.15)', color: '#63b3ed' }}><Users size={24} /></div>
               <div className="dash-card-info">
                 <span className="dash-card-number">{metricas.total_pacientes}</span>
-                <span className="dash-card-label">Pacientes</span>
+                <span className="dash-card-label">Pacientes Total</span>
               </div>
             </Link>
+
+            <div className="dash-card dash-card-highlight">
+              <div className="dash-card-icon" style={{ background: 'rgba(56,161,105,0.15)', color: '#48bb78' }}><School size={24} /></div>
+              <div className="dash-card-info">
+                <span className="dash-card-number">{metricas.pacientes_do_dia}</span>
+                <span className="dash-card-label">Pacientes do Dia</span>
+              </div>
+            </div>
 
             <Link to="/fila" className="dash-card dash-card-link">
               <div className="dash-card-icon" style={{ background: 'rgba(214,158,46,0.15)', color: '#ecc94b' }}><ClipboardList size={24} /></div>
@@ -93,7 +136,7 @@ export default function Dashboard() {
               <div className="dash-card-icon" style={{ background: 'rgba(56,161,105,0.15)', color: '#68d391' }}><Stethoscope size={24} /></div>
               <div className="dash-card-info">
                 <span className="dash-card-number">{metricas.atendimentos_hoje}</span>
-                <span className="dash-card-label">Atendimentos Hoje</span>
+                <span className="dash-card-label">Atendimentos</span>
               </div>
             </div>
 
@@ -101,13 +144,55 @@ export default function Dashboard() {
               <div className="dash-card-icon" style={{ background: 'rgba(115,69,214,0.15)', color: '#b794f4' }}><BarChart3 size={24} /></div>
               <div className="dash-card-info">
                 <span className="dash-card-number">{metricas.total_laudos}</span>
-                <span className="dash-card-label">Total de Laudos</span>
+                <span className="dash-card-label">Laudos</span>
               </div>
             </div>
           </div>
 
           {/* === Grid de detalhes === */}
           <div className="dashboard-grid">
+            {/* Escolas de hoje */}
+            <div className="dash-panel">
+              <h3><School size={18} style={{verticalAlign:'middle',marginRight:6}} />Escolas do Dia</h3>
+              {!metricas.escolas_hoje || metricas.escolas_hoje.length === 0 ? (
+                <p className="dash-empty">Nenhuma escola agendada</p>
+              ) : (
+                <div className="escolas-hoje-list">
+                  {metricas.escolas_hoje.map(e => (
+                    <div key={e.escola} className="escola-hoje-item">
+                      <School size={14} style={{ opacity: 0.6, flexShrink: 0 }} />
+                      <span className="escola-hoje-nome">{e.escola}</span>
+                      <span className="escola-hoje-count">{e.total} alunos</span>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Próximos Atendimentos */}
+            <div className="dash-panel">
+              <h3><CalendarDays size={18} style={{verticalAlign:'middle',marginRight:6}} />Próximos Atendimentos</h3>
+              {!metricas.escolas_agendadas || metricas.escolas_agendadas.length === 0 ? (
+                <p className="dash-empty">Nenhuma escola agendada</p>
+              ) : (
+                <div className="escolas-agendadas-list">
+                  {metricas.escolas_agendadas.map((e, i) => {
+                    const isHoje = e.data_atendimento === new Date().toISOString().slice(0, 10)
+                    return (
+                      <div key={i} className={`escola-agendada-item ${isHoje ? 'agendada-hoje' : ''}`}>
+                        <span className="agendada-data">
+                          {new Date(e.data_atendimento + 'T00:00:00').toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })}
+                          {isHoje && <span className="badge-hoje-sm">HOJE</span>}
+                        </span>
+                        <span className="agendada-escola">{e.escola}</span>
+                        <span className="agendada-total">{e.total_alunos} alunos</span>
+                      </div>
+                    )
+                  })}
+                </div>
+              )}
+            </div>
+
             {/* Fila por estação */}
             <div className="dash-panel">
               <h3><ClipboardList size={18} style={{verticalAlign:'middle',marginRight:6}} />Fila por Estação</h3>
@@ -157,50 +242,41 @@ export default function Dashboard() {
               )}
             </div>
 
-            {/* Condutas iniciais */}
+            {/* Condutas */}
             <div className="dash-panel">
-              <h3><Tag size={18} style={{verticalAlign:'middle',marginRight:6}} />Condutas Iniciais</h3>
-              {!metricas.condutas_iniciais || Object.keys(metricas.condutas_iniciais).length === 0 ? (
-                <p className="dash-empty">Sem dados</p>
-              ) : (
-                <div className="conduta-stats">
-                  {Object.entries(metricas.condutas_iniciais).map(([key, val]) => (
-                    <div key={key} className="conduta-stat-item">
-                      <span className="conduta-dot" style={{ background: CONDUTA_COLORS[key] ?? '#718096' }} />
-                      <span className="conduta-stat-label">{CONDUTA_LABELS[key] ?? key}</span>
-                      <span className="conduta-stat-val">{val}</span>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-
-            {/* Condutas finais */}
-            <div className="dash-panel">
-              <h3><CheckCircle2 size={18} style={{verticalAlign:'middle',marginRight:6}} />Condutas Finais</h3>
-              {!metricas.condutas_finais || Object.keys(metricas.condutas_finais).length === 0 ? (
-                <p className="dash-empty">Sem dados</p>
-              ) : (
-                <div className="conduta-stats">
-                  {Object.entries(metricas.condutas_finais).map(([key, val]) => (
-                    <div key={key} className="conduta-stat-item">
-                      <span className="conduta-dot" style={{ background: CONDUTA_COLORS[key] ?? '#718096' }} />
-                      <span className="conduta-stat-label">{CONDUTA_LABELS[key] ?? key}</span>
-                      <span className="conduta-stat-val">{val}</span>
-                    </div>
-                  ))}
-                </div>
-              )}
+              <h3><Tag size={18} style={{verticalAlign:'middle',marginRight:6}} />Condutas</h3>
+              {(() => {
+                const merged: Record<string, number> = {}
+                if (metricas.condutas_iniciais) {
+                  for (const [k, v] of Object.entries(metricas.condutas_iniciais)) merged[k] = (merged[k] ?? 0) + v
+                }
+                if (metricas.condutas_finais) {
+                  for (const [k, v] of Object.entries(metricas.condutas_finais)) merged[k] = (merged[k] ?? 0) + v
+                }
+                const entries = Object.entries(merged)
+                if (entries.length === 0) return <p className="dash-empty">Sem dados</p>
+                return (
+                  <div className="conduta-stats">
+                    {entries.map(([key, val]) => (
+                      <div key={key} className="conduta-stat-item">
+                        <span className="conduta-dot" style={{ background: CONDUTA_COLORS[key] ?? '#718096' }} />
+                        <span className="conduta-stat-label">{CONDUTA_LABELS[key] ?? key}</span>
+                        <span className="conduta-stat-val">{val}</span>
+                      </div>
+                    ))}
+                  </div>
+                )
+              })()}
             </div>
 
             {/* Resumo numérico */}
             <div className="dash-panel dash-panel-wide">
-              <h3><Hash size={18} style={{verticalAlign:'middle',marginRight:6}} />Resumo Geral</h3>
+              <h3><Hash size={18} style={{verticalAlign:'middle',marginRight:6}} />Resumo do Dia</h3>
               <div className="summary-grid">
-                <div className="summary-item"><span className="summary-num">{metricas.total_exames}</span><span>Exames realizados</span></div>
-                <div className="summary-item"><span className="summary-num">{metricas.total_prescricoes}</span><span>Prescrições emitidas</span></div>
-                <div className="summary-item"><span className="summary-num">{metricas.total_laudos}</span><span>Laudos emitidos</span></div>
-                <div className="summary-item"><span className="summary-num">{metricas.total_pacientes}</span><span>Pacientes cadastrados</span></div>
+                <div className="summary-item"><span className="summary-num">{metricas.total_exames}</span><span>Exames</span></div>
+                <div className="summary-item"><span className="summary-num">{metricas.total_prescricoes}</span><span>Prescrições</span></div>
+                <div className="summary-item"><span className="summary-num">{metricas.total_laudos}</span><span>Laudos</span></div>
+                <div className="summary-item"><span className="summary-num">{metricas.pacientes_do_dia}</span><span>Pacientes</span></div>
               </div>
             </div>
           </div>

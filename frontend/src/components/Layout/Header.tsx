@@ -5,15 +5,17 @@ import { Settings, Menu } from 'lucide-react'
 const roleLabels: Record<string, string> = {
   admin: 'Administrador',
   medico: 'Médico',
-  recepcionista: 'Recepcionista',
+  administrativo: 'Administrativo',
 }
 
+import { ReactNode } from 'react';
 interface HeaderProps {
   onToggleSidebar: () => void
   sidebarOpen: boolean
+  children?: ReactNode
 }
 
-export default function Header({ onToggleSidebar, sidebarOpen }: HeaderProps) {
+export default function Header({ onToggleSidebar, sidebarOpen, children }: HeaderProps) {
   const { user, logout } = useAuth()
   const navigate = useNavigate()
 
@@ -30,16 +32,19 @@ export default function Header({ onToggleSidebar, sidebarOpen }: HeaderProps) {
         </button>
         <h2>Nordcs Care</h2>
       </div>
-      <div className="header-right">
-        <Link to="/admin" className="header-icon-link" title="Administração">
-          <Settings size={16} />
-        </Link>
+      <div className="header-right" style={{display:'flex',alignItems:'center',gap:12}}>
+        {user?.role === 'admin' && (
+          <Link to="/admin" className="header-icon-link" title="Administração">
+            <Settings size={16} />
+          </Link>
+        )}
         {user && (
           <div className="header-user">
             <span className="header-user-name">{user.nome}</span>
             <span className="header-user-role">{roleLabels[user.role] || user.role}</span>
           </div>
         )}
+        {children}
         <button className="btn-logout" onClick={handleLogout}>
           Sair
         </button>

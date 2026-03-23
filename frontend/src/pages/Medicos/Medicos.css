@@ -103,7 +103,7 @@
   font-size: 0.8rem;
   font-weight: 600;
   background: rgba(56, 161, 105, 0.15);
-  color: #68d391;
+  color: var(--success);
   letter-spacing: 0.3px;
 }
 
