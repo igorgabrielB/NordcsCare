@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from 'react'
 import { Link } from 'react-router-dom'
 import api from '../../services/api.ts'
 import { useAuth } from '../../contexts/AuthContext.tsx'
-import { Eye, Microscope, FileText, Glasses, Zap, Timer, Building2, User, ClipboardList, X, ArrowRight, CheckCircle2, Send, Lock } from 'lucide-react'
+import { Eye, Microscope, FileText, Glasses, Zap, Timer, Building2, User, ClipboardList, X, ArrowRight, CheckCircle2, Send, Lock, Search } from 'lucide-react'
 import './Fila.css'
 
 interface FilaItem {
@@ -21,13 +21,6 @@ interface FilaItem {
   convenio: string | null
 }
 
-interface PacienteDisponivel {
-  id: number
-  nome_completo: string
-  cpf: string | null
-  convenio: string | null
-}
-
 type FilaAgrupada = Record<string, FilaItem[]>
 
 const ESTACOES = [
@@ -43,10 +36,6 @@ export default function Fila() {
   const { user } = useAuth()
   const [fila, setFila] = useState<FilaAgrupada>({})
   const [loading, setLoading] = useState(true)
-  const [showModal, setShowModal] = useState(false)
-  const [searchPaciente, setSearchPaciente] = useState('')
-  const [pacientesDisponiveis, setPacientesDisponiveis] = useState<PacienteDisponivel[]>([])
-  const [searchLoading, setSearchLoading] = useState(false)
 
   const fetchFila = useCallback(async () => {
     try {
@@ -64,36 +53,6 @@ export default function Fila() {
     const interval = setInterval(fetchFila, 8000) // Polling 8s
     return () => clearInterval(interval)
   }, [fetchFila])
-
-  const buscarPacientes = async (term: string) => {
-    setSearchPaciente(term)
-    if (term.length < 2) {
-      setPacientesDisponiveis([])
-      return
-    }
-    setSearchLoading(true)
-    try {
-      const res = await api.get('/fila/pacientes-disponiveis', { params: { search: term } })
-      setPacientesDisponiveis(res.data)
-    } catch {
-      console.error('Erro ao buscar pacientes')
-    } finally {
-      setSearchLoading(false)
-    }
-  }
-
-  const adicionarNaFila = async (pacienteId: number) => {
-    try {
-      await api.post('/fila', { paciente_id: pacienteId })
-      setShowModal(false)
-      setSearchPaciente('')
-      setPacientesDisponiveis([])
-      fetchFila()
-    } catch (err: unknown) {
-      const axiosErr = err as { response?: { data?: { error?: string } } }
-      alert(axiosErr.response?.data?.error || 'Erro ao adicionar paciente')
-    }
-  }
 
   const avancarEstacao = async (filaId: number) => {
     try {
@@ -144,6 +103,7 @@ export default function Fila() {
   const canManage = user?.role === 'admin' || user?.role === 'administrativo'
   const [collapsedStations, setCollapsedStations] = useState<Record<string, boolean>>({})
   const [expandedCards, setExpandedCards] = useState<Record<number, boolean>>({})
+  const [stationSearch, setStationSearch] = useState<Record<string, string>>({})
 
   const toggleStation = (key: string) => {
     setCollapsedStations(prev => ({ ...prev, [key]: !prev[key] }))
@@ -166,18 +126,17 @@ export default function Fila() {
               Média: {getMediaAtendimento()}
             </span>
           )}
-          {canManage && (
-            <button className="btn btn-primary" onClick={() => setShowModal(true)}>
-              + Adicionar Paciente
-            </button>
-          )}
         </div>
       </div>
 
       <div className="kanban-board">
         {ESTACOES.map((estacao) => {
-          const items = fila[estacao.key] || []
+          const allItems = fila[estacao.key] || []
           const isCollapsed = !!collapsedStations[estacao.key]
+          const searchTerm = (stationSearch[estacao.key] || '').toLowerCase()
+          const items = searchTerm
+            ? allItems.filter(i => i.nome_completo.toLowerCase().includes(searchTerm) || (i.codigo && i.codigo.toLowerCase().includes(searchTerm)))
+            : allItems
           return (
             <div className={`kanban-column ${isCollapsed ? 'collapsed' : ''} ${!estacao.isAtendimento ? 'saida' : ''}`} key={estacao.key}>
               <div
@@ -187,14 +146,33 @@ export default function Fila() {
               >
                 <span className="kanban-icon">{estacao.icon}</span>
                 <span className="kanban-title">{estacao.label}</span>
-                <span className="kanban-count">{items.length}</span>
+                <span className="kanban-count">{allItems.length}</span>
                 <span className={`kanban-chevron ${isCollapsed ? 'chevron-collapsed' : ''}`}>▼</span>
               </div>
 
               {!isCollapsed && (
+                <>
+                {allItems.length > 0 && (
+                  <div className="kanban-search">
+                    <Search size={14} className="kanban-search-icon" />
+                    <input
+                      type="text"
+                      placeholder="Buscar paciente..."
+                      value={stationSearch[estacao.key] || ''}
+                      onChange={(e) => setStationSearch(prev => ({ ...prev, [estacao.key]: e.target.value }))}
+                      className="kanban-search-input"
+                      onClick={(e) => e.stopPropagation()}
+                    />
+                    {searchTerm && (
+                      <button className="kanban-search-clear" onClick={() => setStationSearch(prev => ({ ...prev, [estacao.key]: '' }))}>
+                        <X size={12} />
+                      </button>
+                    )}
+                  </div>
+                )}
                 <div className="kanban-cards">
                   {items.length === 0 ? (
-                    <div className="kanban-empty">Nenhum paciente</div>
+                    <div className="kanban-empty">{searchTerm ? 'Nenhum resultado' : 'Nenhum paciente'}</div>
                   ) : (
                     items.map((item) => {
                       const isExpanded = !!expandedCards[item.id]
@@ -202,6 +180,7 @@ export default function Fila() {
                         <div
                           className={`kanban-card em-atendimento ${!estacao.isAtendimento ? 'concluded' : ''}`}
                           key={item.id}
+                          style={{ '--card-accent': estacao.color } as React.CSSProperties}
                         >
                           <div className="card-top" onClick={() => toggleCard(item.id)}>
                             <div className="card-top-left">
@@ -212,7 +191,7 @@ export default function Fila() {
                             <div className="card-top-right">
                               {item.prioridade > 0 && <span className="card-prioridade"><Zap size={14} /></span>}
                               <span className="card-tempo" title={!estacao.isAtendimento ? 'Tempo total de atendimento' : 'Tempo na estação'}>
-                                <Timer size={14} style={{verticalAlign:'middle',marginRight:3}} />
+                                <Timer size={13} />
                                 {!estacao.isAtendimento ? getTempoTotal(item.created_at, item.updated_at) : getTempoEstacao(item.updated_at)}
                               </span>
                             </div>
@@ -274,53 +253,13 @@ export default function Fila() {
                     })
                   )}
                 </div>
+                </>
               )}
             </div>
           )
         })}
       </div>
 
-      {/* Modal: Adicionar à Fila */}
-      {showModal && (
-        <div className="modal-overlay" onClick={() => setShowModal(false)}>
-          <div className="modal" onClick={(e) => e.stopPropagation()}>
-            <div className="modal-header">
-              <h2>Adicionar Paciente à Fila</h2>
-              <button className="modal-close" onClick={() => setShowModal(false)}><X size={18} /></button>
-            </div>
-            <div className="modal-body">
-              <div className="form-group">
-                <label htmlFor="busca-paciente">Buscar paciente</label>
-                <input
-                  id="busca-paciente"
-                  type="text"
-                  placeholder="Digite nome ou CPF..."
-                  value={searchPaciente}
-                  onChange={(e) => buscarPacientes(e.target.value)}
-                  autoFocus
-                />
-              </div>
-
-              {searchLoading && <div className="loading-sm">Buscando...</div>}
-
-              <div className="pacientes-lista">
-                {pacientesDisponiveis.map((p) => (
-                  <div className="paciente-item" key={p.id} onClick={() => adicionarNaFila(p.id)}>
-                    <div>
-                      <strong>{p.nome_completo}</strong>
-                      {p.cpf && <span className="paciente-cpf"> — {p.cpf}</span>}
-                    </div>
-                    {p.convenio && <span className="paciente-convenio">{p.convenio}</span>}
-                  </div>
-                ))}
-                {searchPaciente.length >= 2 && !searchLoading && pacientesDisponiveis.length === 0 && (
-                  <div className="pacientes-empty">Nenhum paciente disponível encontrado</div>
-                )}
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   )
 }

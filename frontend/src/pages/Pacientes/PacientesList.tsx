@@ -213,7 +213,7 @@ export default function PacientesList() {
       {loading ? (
         <div className="loading">Carregando...</div>
       ) : !searched ? (
-        <div className="empty-state-box"><Search size={18} style={{verticalAlign:'middle',marginRight:6}} />Pesquise por nome, CPF ou código para encontrar um paciente</div>
+        <div className="empty-state-box"><Search size={32} /><span>Pesquise por nome, CPF ou código para encontrar um paciente</span></div>
       ) : (
         <>
           <div className="pacientes-drawer-list">

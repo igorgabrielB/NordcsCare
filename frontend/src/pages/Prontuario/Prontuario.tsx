@@ -433,25 +433,26 @@ export default function Prontuario() {
           <h1>Prontuário Ambulatorial</h1>
           <p className="paciente-meta">
             <span className="meta-codigo">#{paciente.codigo}</span>
+            <span style={{color:'var(--text-secondary)',fontSize:'0.88rem'}}>{paciente.nome_completo}</span>
           </p>
         </div>
-        <Link to="/pacientes" className="btn btn-secondary">Voltar</Link>
+        <Link to="/pacientes" className="btn btn-secondary">← Voltar</Link>
       </div>
 
       {/* ===== DADOS DO PACIENTE ===== */}
       <div className="section-card">
-        <h2 className="section-title"><User size={18} style={{verticalAlign:'middle',marginRight:6}} />Dados do Paciente</h2>
+        <h2 className="section-title"><User size={16} />Dados do Paciente</h2>
         <div className="info-grid">
-          <div><strong>Nome:</strong> {paciente.nome_completo}</div>
-          <div><strong>CPF:</strong> {paciente.cpf || '—'}</div>
-          <div><strong>Nascimento:</strong> {paciente.data_nascimento ? `${new Date(paciente.data_nascimento + 'T00:00:00').toLocaleDateString('pt-BR')} (${calcAge(paciente.data_nascimento)} anos)` : '—'}</div>
-          <div><strong>Sexo:</strong> {paciente.sexo ? (paciente.sexo === 'M' ? 'Masculino' : paciente.sexo === 'F' ? 'Feminino' : 'Outro') : '—'}</div>
-          <div><strong>Telefone:</strong> {paciente.telefone || '—'}</div>
-          <div><strong>Email:</strong> {paciente.email || '—'}</div>
-          <div><strong>Endereço:</strong> {paciente.endereco || '—'}</div>
-          <div><strong>Convênio:</strong> {paciente.convenio || '—'} {paciente.numero_convenio ? `(${paciente.numero_convenio})` : ''}</div>
-          {paciente.responsavel && <div><strong>Responsável:</strong> {paciente.responsavel}</div>}
-          {paciente.observacoes && <div style={{whiteSpace:'normal'}}><strong>Observações:</strong> {paciente.observacoes}</div>}
+          <div><strong>Nome</strong> {paciente.nome_completo}</div>
+          <div><strong>CPF</strong> {paciente.cpf || '—'}</div>
+          <div><strong>Nascimento</strong> {paciente.data_nascimento ? `${new Date(paciente.data_nascimento + 'T00:00:00').toLocaleDateString('pt-BR')} (${calcAge(paciente.data_nascimento)} anos)` : '—'}</div>
+          <div><strong>Sexo</strong> {paciente.sexo ? (paciente.sexo === 'M' ? 'Masculino' : paciente.sexo === 'F' ? 'Feminino' : 'Outro') : '—'}</div>
+          <div><strong>Telefone</strong> {paciente.telefone || '—'}</div>
+          <div><strong>Email</strong> {paciente.email || '—'}</div>
+          <div><strong>Endereço</strong> {paciente.endereco || '—'}</div>
+          <div><strong>Convênio</strong> {paciente.convenio || '—'} {paciente.numero_convenio ? `(${paciente.numero_convenio})` : ''}</div>
+          {paciente.responsavel && <div><strong>Responsável</strong> {paciente.responsavel}</div>}
+          {paciente.observacoes && <div style={{whiteSpace:'normal'}}><strong>Observações</strong> {paciente.observacoes}</div>}
         </div>
       </div>
 
@@ -582,15 +583,19 @@ export default function Prontuario() {
       {showForm === 'laudos' && (
         <form className="atendimento-form station-form station-laudos" onSubmit={handleSubmit}>
           <div className="station-header station-header-laudos">
-            <h2><ClipboardList size={20} style={{verticalAlign:'middle',marginRight:6}} />Estação Laudos</h2>
-            <p>Anamnese, exames, diagnóstico e conduta inicial</p>
+            <div className="station-header-icon"><ClipboardList size={22} /></div>
+            <div className="station-header-text">
+              <h2>Estação Laudos</h2>
+              <p>Anamnese, exames, diagnóstico e conduta inicial</p>
+            </div>
           </div>
 
           {/* --- Modelo selector (topo da estação) --- */}
           <div className="modelo-selector">
+            <div className="modelo-selector-header"><BookOpen size={14} /> Modelos de Anamnese</div>
             <div className="form-row">
               <div className="form-group">
-                <label>Usar Modelo de Anamnese</label>
+                <label>Usar Modelo</label>
                 <select onChange={e => { aplicarModelo(e.target.value); e.target.value = '' }}>
                   <option value="">— Selecione um modelo —</option>
                   {modelos.map(m => <option key={m.id} value={m.id}>{m.nome} ({rolePrefix(m.autor_role)} {m.autor_nome})</option>)}
@@ -661,14 +666,16 @@ export default function Prontuario() {
           {/* --- Exames (Equipamentos) --- */}
           <fieldset className="form-section">
             <legend><Microscope size={16} style={{verticalAlign:'middle',marginRight:6}} />Exames (Equipamentos)</legend>
-            <p style={{fontSize:'0.9rem', color:'#bfab93', marginBottom:'12px'}}>Os exames serão adicionados automaticamente através dos equipamentos integrados. Abaixo você pode adicionar observações sobre os exames realizados.</p>
+            <p className="exames-info-text">Os exames serão adicionados automaticamente através dos equipamentos integrados. Abaixo você pode adicionar observações sobre os exames realizados.</p>
             {exames.length > 0 && (
-              <div className="exames-recebidos" style={{marginBottom:'16px', padding:'12px', backgroundColor:'#5a5a5a', borderRadius:'4px', borderLeft:'3px solid #7345d6'}}>
-                <strong style={{color:'#7345d6'}}>Exames Recebidos:</strong>
-                <div style={{marginTop:'8px'}}>
+              <div className="exames-recebidos">
+                <div className="exames-recebidos-header"><CheckCircle2 size={14} /> Exames Recebidos</div>
+                <div className="exames-recebidos-list">
                   {exames.map((ex, idx) => (
-                    <div key={idx} style={{fontSize:'0.85rem', color:'#f0ebe3', marginBottom:'6px'}}>
-                      • {tipoExameLabel(ex.tipo_exame)} — {ex.olho} {ex.resultado && `(${ex.resultado})`}
+                    <div key={idx} className="exames-recebidos-item">
+                      <span className="exame-tipo-badge">{tipoExameLabel(ex.tipo_exame)}</span>
+                      <span className="exame-olho">{ex.olho}</span>
+                      {ex.resultado && <span className="exame-resultado">{ex.resultado}</span>}
                     </div>
                   ))}
                 </div>
@@ -742,19 +749,24 @@ export default function Prontuario() {
       {showForm === 'onibus' && (
         <form className="atendimento-form station-form station-onibus" onSubmit={handleSubmit}>
           <div className="station-header station-header-onibus">
-            <h2><Bus size={20} style={{verticalAlign:'middle',marginRight:6}} />Estação Ônibus</h2>
-            <p>Refração e conduta final</p>
+            <div className="station-header-icon"><Bus size={22} /></div>
+            <div className="station-header-text">
+              <h2>Estação Ônibus</h2>
+              <p>Refração e conduta final</p>
+            </div>
           </div>
 
           {/* --- Prescrição / Refração --- */}
           <fieldset className="form-section">
             <legend><Glasses size={16} style={{verticalAlign:'middle',marginRight:6}} />Refração</legend>
-            <div className="form-group" style={{ maxWidth: 200 }}>
-              <label>Tipo</label>
-              <select value={form.prescricao.tipo} onChange={e => updatePrescricao('tipo', e.target.value)}>
-                <option value="oculos">Óculos</option>
-                <option value="lentes_contato">Lente de Contato</option>
-              </select>
+            <div className="rx-tipo-row">
+              <div className="form-group">
+                <label>Tipo</label>
+                <div className="rx-tipo-buttons">
+                  <button type="button" className={`rx-tipo-btn${form.prescricao.tipo === 'oculos' ? ' active' : ''}`} onClick={() => updatePrescricao('tipo', 'oculos')}><Glasses size={14} /> Óculos</button>
+                  <button type="button" className={`rx-tipo-btn${form.prescricao.tipo === 'lentes_contato' ? ' active' : ''}`} onClick={() => updatePrescricao('tipo', 'lentes_contato')}><Eye size={14} /> Lente de Contato</button>
+                </div>
+              </div>
             </div>
             <div className="rx-table">
               <table>
@@ -763,13 +775,13 @@ export default function Prontuario() {
                 </thead>
                 <tbody>
                   <tr>
-                    <td className="eye-label">OD</td>
+                    <td className="eye-label"><Eye size={12} style={{marginRight:2}} />OD</td>
                     <td><input type="text" value={form.prescricao.od_esferico} onChange={e => updatePrescricao('od_esferico', e.target.value)} placeholder="+0.00" /></td>
                     <td><input type="text" value={form.prescricao.od_cilindrico} onChange={e => updatePrescricao('od_cilindrico', e.target.value)} placeholder="-0.00" /></td>
                     <td><input type="text" value={form.prescricao.od_eixo} onChange={e => updatePrescricao('od_eixo', e.target.value)} placeholder="0°" /></td>
                   </tr>
                   <tr>
-                    <td className="eye-label">OE</td>
+                    <td className="eye-label"><Eye size={12} style={{marginRight:2}} />OE</td>
                     <td><input type="text" value={form.prescricao.oe_esferico} onChange={e => updatePrescricao('oe_esferico', e.target.value)} placeholder="+0.00" /></td>
                     <td><input type="text" value={form.prescricao.oe_cilindrico} onChange={e => updatePrescricao('oe_cilindrico', e.target.value)} placeholder="-0.00" /></td>
                     <td><input type="text" value={form.prescricao.oe_eixo} onChange={e => updatePrescricao('oe_eixo', e.target.value)} placeholder="0°" /></td>
@@ -777,16 +789,16 @@ export default function Prontuario() {
                 </tbody>
               </table>
             </div>
-            <div className="form-row">
-              <div className="form-group" style={{ maxWidth: 120 }}>
+            <div className="rx-extras">
+              <div className="rx-extra-item">
                 <label>Adição</label>
                 <input type="text" value={form.prescricao.od_adicao} onChange={e => { updatePrescricao('od_adicao', e.target.value); updatePrescricao('oe_adicao', e.target.value) }} placeholder="+0.00" />
               </div>
-              <div className="form-group" style={{ maxWidth: 120 }}>
+              <div className="rx-extra-item">
                 <label>DP (mm)</label>
                 <input type="text" value={form.prescricao.dp} onChange={e => updatePrescricao('dp', e.target.value)} placeholder="63" />
               </div>
-              <div className="form-group">
+              <div className="rx-extra-item rx-extra-wide">
                 <label>Tipo de Lente</label>
                 <select value={form.prescricao.observacoes} onChange={e => updatePrescricao('observacoes', e.target.value)}>
                   <option value="Monofocal para longe">Monofocal para longe</option>
@@ -803,28 +815,34 @@ export default function Prontuario() {
           {/* --- Acuidade com Óculos Novo --- */}
           <fieldset className="form-section">
             <legend><Eye size={16} style={{verticalAlign:'middle',marginRight:6}} />Acuidade com Óculos Novo</legend>
-            <div className="form-row">
-              <div className="form-group">
-                <label>OD (Olho Direito)</label>
-                <select value={ACUIDADE_OPTIONS.includes(form.prescricao.acuidade_od) || form.prescricao.acuidade_od === '' ? form.prescricao.acuidade_od : 'outro'} onChange={e => updatePrescricao('acuidade_od', e.target.value === 'outro' ? '__outro__' : e.target.value)}>
-                  <option value="">— Selecione —</option>
-                  {ACUIDADE_OPTIONS.map(o => <option key={o} value={o}>{o}</option>)}
-                  <option value="outro">Outro</option>
-                </select>
-                {!ACUIDADE_OPTIONS.includes(form.prescricao.acuidade_od) && form.prescricao.acuidade_od !== '' && (
-                  <input type="text" value={form.prescricao.acuidade_od === '__outro__' ? '' : form.prescricao.acuidade_od} onChange={e => updatePrescricao('acuidade_od', e.target.value || '__outro__')} placeholder="Digite a acuidade..." style={{marginTop:6}} />
-                )}
+            <div className="acuidade-eyes-row">
+              <div className="acuidade-eye-card">
+                <div className="acuidade-eye-indicator od">OD</div>
+                <div className="form-group">
+                  <label>Olho Direito</label>
+                  <select value={ACUIDADE_OPTIONS.includes(form.prescricao.acuidade_od) || form.prescricao.acuidade_od === '' ? form.prescricao.acuidade_od : 'outro'} onChange={e => updatePrescricao('acuidade_od', e.target.value === 'outro' ? '__outro__' : e.target.value)}>
+                    <option value="">— Selecione —</option>
+                    {ACUIDADE_OPTIONS.map(o => <option key={o} value={o}>{o}</option>)}
+                    <option value="outro">Outro</option>
+                  </select>
+                  {!ACUIDADE_OPTIONS.includes(form.prescricao.acuidade_od) && form.prescricao.acuidade_od !== '' && (
+                    <input type="text" value={form.prescricao.acuidade_od === '__outro__' ? '' : form.prescricao.acuidade_od} onChange={e => updatePrescricao('acuidade_od', e.target.value || '__outro__')} placeholder="Digite a acuidade..." style={{marginTop:6}} />
+                  )}
+                </div>
               </div>
-              <div className="form-group">
-                <label>OE (Olho Esquerdo)</label>
-                <select value={ACUIDADE_OPTIONS.includes(form.prescricao.acuidade_oe) || form.prescricao.acuidade_oe === '' ? form.prescricao.acuidade_oe : 'outro'} onChange={e => updatePrescricao('acuidade_oe', e.target.value === 'outro' ? '__outro__' : e.target.value)}>
-                  <option value="">— Selecione —</option>
-                  {ACUIDADE_OPTIONS.map(o => <option key={o} value={o}>{o}</option>)}
-                  <option value="outro">Outro</option>
-                </select>
-                {!ACUIDADE_OPTIONS.includes(form.prescricao.acuidade_oe) && form.prescricao.acuidade_oe !== '' && (
-                  <input type="text" value={form.prescricao.acuidade_oe === '__outro__' ? '' : form.prescricao.acuidade_oe} onChange={e => updatePrescricao('acuidade_oe', e.target.value || '__outro__')} placeholder="Digite a acuidade..." style={{marginTop:6}} />
-                )}
+              <div className="acuidade-eye-card">
+                <div className="acuidade-eye-indicator oe">OE</div>
+                <div className="form-group">
+                  <label>Olho Esquerdo</label>
+                  <select value={ACUIDADE_OPTIONS.includes(form.prescricao.acuidade_oe) || form.prescricao.acuidade_oe === '' ? form.prescricao.acuidade_oe : 'outro'} onChange={e => updatePrescricao('acuidade_oe', e.target.value === 'outro' ? '__outro__' : e.target.value)}>
+                    <option value="">— Selecione —</option>
+                    {ACUIDADE_OPTIONS.map(o => <option key={o} value={o}>{o}</option>)}
+                    <option value="outro">Outro</option>
+                  </select>
+                  {!ACUIDADE_OPTIONS.includes(form.prescricao.acuidade_oe) && form.prescricao.acuidade_oe !== '' && (
+                    <input type="text" value={form.prescricao.acuidade_oe === '__outro__' ? '' : form.prescricao.acuidade_oe} onChange={e => updatePrescricao('acuidade_oe', e.target.value || '__outro__')} placeholder="Digite a acuidade..." style={{marginTop:6}} />
+                  )}
+                </div>
               </div>
             </div>
           </fieldset>
@@ -855,8 +873,11 @@ export default function Prontuario() {
       {showForm === 'acuidade' && (
         <form className="atendimento-form station-form station-acuidade" onSubmit={handleSubmit}>
           <div className="station-header station-header-acuidade">
-            <h2><Eye size={20} style={{verticalAlign:'middle',marginRight:6}} />Acuidade Visual</h2>
-            <p>Medição de acuidade com e sem óculos</p>
+            <div className="station-header-icon"><Eye size={22} /></div>
+            <div className="station-header-text">
+              <h2>Acuidade Visual</h2>
+              <p>Medição de acuidade com e sem óculos</p>
+            </div>
           </div>
 
           {/* --- Acuidade Sem Óculos --- */}
@@ -981,7 +1002,7 @@ export default function Prontuario() {
       {/* ===== HISTÓRICO (Laudo Unificado) ===== */}
       <div className="historico-section">
         <div style={{display:'flex',justifyContent:'space-between',alignItems:'center'}}>
-          <h2 className="section-title" style={{margin:0}}><BookOpen size={18} style={{verticalAlign:'middle',marginRight:6}} />Laudo do Atendimento</h2>
+          <h2 className="section-title" style={{margin:0}}><BookOpen size={16} />Laudo do Atendimento</h2>
           {user?.role === 'admin' && (anamneses.length > 0 || exames.length > 0 || laudos.length > 0 || data.acuidade_visual) && (
             <button className="btn btn-danger btn-sm" onClick={async () => {
               if (!confirm('Tem certeza que deseja excluir todo o laudo deste paciente? Esta ação não pode ser desfeita.')) return

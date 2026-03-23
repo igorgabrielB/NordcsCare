@@ -59,6 +59,13 @@ class DashboardController {
         $stmtLa->execute([':di' => $dataInicio, ':df' => $dataFim]);
         $totalLaudos = (int) $stmtLa->fetchColumn();
 
+        // Total altas no período (pacientes que foram para estação altas)
+        $stmtAltas = $db->prepare(
+            "SELECT COUNT(*) FROM fila WHERE estacao = 'altas' AND DATE(created_at) BETWEEN :di AND :df"
+        );
+        $stmtAltas->execute([':di' => $dataInicio, ':df' => $dataFim]);
+        $totalAltas = (int) $stmtAltas->fetchColumn();
+
         // Condutas iniciais no período
         $stmt = $db->prepare(
             "SELECT conduta_inicial, COUNT(*) as total FROM laudos
@@ -113,6 +120,19 @@ class DashboardController {
             ];
         }
 
+        // Encaminhamentos no período
+        $stmtEnc = $db->prepare(
+            "SELECT l.paciente_id, p.nome_completo, p.escola, l.diagnostico, l.conduta_inicial, l.conduta_final, l.observacoes, l.created_at
+             FROM laudos l
+             INNER JOIN pacientes p ON p.id = l.paciente_id
+             WHERE DATE(l.created_at) BETWEEN :di AND :df
+               AND (l.conduta_inicial IN ('encaminhamento','onibus_encaminhamento') OR l.conduta_final = 'encaminhamento')
+             ORDER BY l.created_at DESC"
+        );
+        $stmtEnc->execute([':di' => $dataInicio, ':df' => $dataFim]);
+        $encaminhamentos = $stmtEnc->fetchAll(PDO::FETCH_ASSOC);
+        $totalEncaminhamentos = count($encaminhamentos);
+
         // Próximas escolas agendadas (a partir de hoje, máx 15)
         $hoje = date('Y-m-d');
         $stmtAgenda = $db->prepare(
@@ -136,11 +156,14 @@ class DashboardController {
             'total_exames' => $totalExames,
             'total_prescricoes' => $totalPrescricoes,
             'total_laudos' => $totalLaudos,
+            'total_altas' => $totalAltas,
             'condutas_iniciais' => $condutasIniciais,
             'condutas_finais' => $condutasFinais,
             'atendimentos_por_dia' => $porDia,
             'fila_por_estacao' => $filaPorEstacao,
             'escolas_agendadas' => $escolasAgendadas,
+            'total_encaminhamentos' => $totalEncaminhamentos,
+            'encaminhamentos' => $encaminhamentos,
         ]);
     }
 }

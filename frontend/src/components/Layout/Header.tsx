@@ -27,7 +27,7 @@ export default function Header({ onToggleSidebar, sidebarOpen, children }: Heade
   return (
     <header className="header">
       <div className="header-left">
-        <button className="btn-toggle-sidebar" onClick={onToggleSidebar} title={sidebarOpen ? 'Fechar menu' : 'Abrir menu'}>
+        <button className={`btn-toggle-sidebar ${sidebarOpen ? 'open' : ''}`} onClick={onToggleSidebar} title={sidebarOpen ? 'Fechar menu' : 'Abrir menu'}>
           <Menu size={20} />
         </button>
         <h2>Nordcs Care</h2>

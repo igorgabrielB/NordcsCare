@@ -85,14 +85,15 @@ const CSS_BASE = `
   html, body {
     font-family: 'Segoe UI', Arial, Helvetica, sans-serif;
     font-size: 12pt;
-    color: #1a1a1a;
-    line-height: 1.5;
+    color: #222;
+    line-height: 1.6;
     padding: 0;
     background: #fff;
     -webkit-print-color-adjust: exact;
     print-color-adjust: exact;
   }
-  .doc-container { max-width: 760px; margin: 0 auto; padding: 10px 20px; }
+
+  .doc-container { max-width: 760px; margin: 0 auto; padding: 10px 24px; }
   .doc-container.doc-centered {
     min-height: 100vh;
     display: flex;
@@ -104,163 +105,290 @@ const CSS_BASE = `
     flex-direction: column;
     justify-content: center;
   }
-  
-  /* Header */
+
+  /* ===== Header ===== */
   .doc-header {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    border-bottom: 2px solid #6743a5;
-    padding-bottom: 12px;
-    margin-bottom: 20px;
+    padding-bottom: 14px;
+    margin-bottom: 6px;
+    border-bottom: 3px solid #6743a5;
+    position: relative;
+  }
+  .doc-header::after {
+    content: '';
+    position: absolute;
+    bottom: -6px;
+    left: 0;
+    right: 0;
+    height: 1px;
+    background: #d4c8ef;
   }
   .doc-header .logo-cerof {
-    max-height: 70px;
+    max-height: 72px;
   }
   .doc-header .header-brand {
     text-align: right;
   }
   .doc-header h1 {
-    font-size: 18pt;
+    font-size: 20pt;
+    font-weight: 800;
     color: #6743a5;
     margin-bottom: 2px;
-    letter-spacing: 1px;
+    letter-spacing: 1.5px;
   }
   .doc-header .subtitle {
-    font-size: 10pt;
-    color: #2e2e2e;
+    font-size: 9.5pt;
+    color: #666;
+    letter-spacing: 0.5px;
   }
-  
-  /* Título do documento */
+
+  /* ===== Título do documento ===== */
   .doc-title {
     text-align: center;
-    font-size: 16pt;
+    font-size: 15pt;
     font-weight: 700;
     color: #6743a5;
-    margin: 24px 0 16px;
+    margin: 28px 0 8px;
     text-transform: uppercase;
-    letter-spacing: 2px;
+    letter-spacing: 3px;
   }
-  
-  /* Paciente info */
+  .doc-title-line {
+    width: 60px;
+    height: 3px;
+    background: linear-gradient(90deg, #6743a5, #9b6dff);
+    margin: 0 auto 20px;
+    border-radius: 2px;
+  }
+
+  /* ===== Paciente info ===== */
   .paciente-info {
-    background: #f5f5f5;
-    border-radius: 6px;
-    padding: 12px 16px;
-    margin-bottom: 20px;
-    font-size: 11pt;
+    background: #faf8ff;
+    border-radius: 8px;
+    padding: 14px 18px;
+    margin-bottom: 22px;
+    font-size: 10.5pt;
+    border-left: 4px solid #6743a5;
+    border: 1px solid #e8e0f3;
+    border-left: 4px solid #6743a5;
   }
-  .paciente-info p { margin-bottom: 4px; }
-  .paciente-info strong { color: #333; }
-  
-  /* Conteúdo genérico */
+  .paciente-info-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 6px 24px;
+  }
+  .paciente-info-grid .info-full {
+    grid-column: 1 / -1;
+  }
+  .paciente-info p { margin-bottom: 3px; color: #333; }
+  .paciente-info strong {
+    color: #6743a5;
+    font-weight: 600;
+    font-size: 8.5pt;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    display: block;
+    margin-bottom: 1px;
+  }
+  .paciente-info .info-value {
+    font-size: 11pt;
+    color: #222;
+    font-weight: 500;
+  }
+
+  /* ===== Conteúdo genérico ===== */
   .doc-body { margin: 20px 0; }
   .doc-body p { margin-bottom: 8px; }
   .doc-body .texto-livre {
     white-space: pre-wrap;
     font-size: 12pt;
-    line-height: 1.7;
-    padding: 10px 0;
+    line-height: 1.8;
+    padding: 16px 20px;
+    background: #fdfcff;
+    border-radius: 8px;
+    border: 1px solid #ece6f5;
   }
-  
-  /* Tabela RX */
-  .rx-table {
-    width: 80%;
-    margin: 16px auto;
-    border-collapse: separate;
-    border-spacing: 0;
-    border-radius: 13px;
-    overflow: hidden;
-    border: 1.5px solid #333;
+
+  /* ===== Info line (Tipo, DP, etc.) ===== */
+  .doc-info-line {
+    display: flex;
+    gap: 32px;
+    margin-bottom: 12px;
+    padding: 8px 0;
   }
-  .rx-table th {
-    background: transparent;
-    color: #1a1a1a;
-    font-weight: 700;
-    padding: 10px 14px;
-    text-align: center;
-    font-size: 10pt;
+  .doc-info-line .info-item strong {
+    color: #6743a5;
+    font-size: 8.5pt;
+    text-transform: uppercase;
     letter-spacing: 0.5px;
-    border-bottom: 2px solid #333;
+    display: block;
+    margin-bottom: 2px;
+    font-weight: 600;
   }
-  .rx-table td {
-    padding: 10px 14px;
-    text-align: center;
+  .doc-info-line .info-item span {
     font-size: 11pt;
     font-weight: 500;
-    color: #1a1a1a;
+    color: #222;
+  }
+
+  /* ===== Tabela RX ===== */
+  .rx-table {
+    width: 85%;
+    margin: 20px auto;
+    border-collapse: separate;
+    border-spacing: 0;
+    border-radius: 10px;
+    overflow: hidden;
+    border: 1px solid #d4c8ef;
+  }
+  .rx-table th {
+    background: #6743a5;
+    color: #fff;
+    font-weight: 600;
+    padding: 10px 16px;
+    text-align: center;
+    font-size: 9.5pt;
+    letter-spacing: 0.8px;
+    text-transform: uppercase;
+  }
+  .rx-table th:first-child {
+    background: #5a3a94;
+  }
+  .rx-table td {
+    padding: 12px 16px;
+    text-align: center;
+    font-size: 12pt;
+    font-weight: 500;
+    color: #222;
     background: #fff;
   }
   .rx-table tbody tr:not(:last-child) td {
-    border-bottom: 1px solid #ccc;
+    border-bottom: 1px solid #ece6f5;
   }
   .rx-table .eye-label {
-    font-weight: 700;
-    background: #f0f0f0;
-    color: #1a1a1a;
+    font-weight: 800;
+    background: #f5f1fc;
+    color: #6743a5;
     width: 60px;
     font-size: 13pt;
     letter-spacing: 1px;
+    border-right: 1px solid #ece6f5;
   }
+
   .rx-adicao {
-    width: 25%;
-    margin: 8px auto 16px;
+    width: 28%;
+    margin: 8px auto 20px;
     border-collapse: separate;
     border-spacing: 0;
-    border-radius: 13px;
+    border-radius: 10px;
     overflow: hidden;
-    border: 1.5px solid #333;
+    border: 1px solid #d4c8ef;
   }
   .rx-adicao th {
-    background: transparent;
-    color: #1a1a1a;
-    font-weight: 700;
-    padding: 5px 12px;
+    background: #6743a5;
+    color: #fff;
+    font-weight: 600;
+    padding: 6px 14px;
     text-align: center;
     font-size: 9pt;
     text-transform: uppercase;
     letter-spacing: 1px;
-    border-bottom: 2px solid #333;
   }
   .rx-adicao td {
-    padding: 6px 12px;
+    padding: 8px 14px;
     text-align: center;
-    font-size: 11pt;
+    font-size: 12pt;
     font-weight: 600;
     background: #fff;
-    color: #1a1a1a;
+    color: #222;
   }
-  
-  /* Seções do relatório */
+
+  /* ===== Seções do relatório ===== */
   .section {
-    margin-bottom: 18px;
+    margin-bottom: 20px;
     page-break-inside: avoid;
     break-inside: avoid;
+    padding: 14px 16px;
+    background: #fdfcff;
+    border-radius: 8px;
+    border: 1px solid #ece6f5;
   }
   .section h3 {
-    font-size: 12pt;
+    font-size: 11pt;
+    font-weight: 700;
     color: #6743a5;
-    border-bottom: 1px solid #ccc;
-    padding-bottom: 4px;
-    margin-bottom: 8px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    padding-bottom: 6px;
+    margin-bottom: 10px;
+    border-bottom: 2px solid #e8e0f3;
+    display: flex;
+    align-items: center;
+    gap: 8px;
   }
-  .section p { font-size: 11pt; margin-bottom: 4px; }
-  
-  /* Rodapé / Assinatura */
+  .section h3::before {
+    content: '';
+    display: inline-block;
+    width: 4px;
+    height: 16px;
+    background: #6743a5;
+    border-radius: 2px;
+  }
+  .section p {
+    font-size: 10.5pt;
+    margin-bottom: 5px;
+    line-height: 1.6;
+  }
+  .section p strong {
+    color: #444;
+    font-weight: 600;
+  }
+
+  /* ===== Rodapé / Assinatura ===== */
   .doc-footer {
-    margin-top: 60px;
+    margin-top: 50px;
     text-align: center;
-    border-top: 1px solid #ccc;
-    padding-top: 20px;
+    padding-top: 10px;
+  }
+  .doc-footer .assinatura-block {
+    display: inline-block;
+    text-align: center;
+    margin-top: 30px;
   }
   .doc-footer .assinatura-line {
-    width: 300px;
-    border-top: 1px solid #333;
-    margin: 40px auto 8px;
+    width: 280px;
+    border-top: 2px solid #6743a5;
+    margin: 0 auto 10px;
   }
-  .doc-footer .medico-nome { font-weight: 700; font-size: 12pt; }
-  .doc-footer .medico-crm { font-size: 10pt; color: #555; }
-  .doc-footer .data { margin-top: 16px; font-size: 10pt; color: #777; }
+  .doc-footer .medico-nome {
+    font-weight: 700;
+    font-size: 12pt;
+    color: #222;
+  }
+  .doc-footer .medico-crm {
+    font-size: 9.5pt;
+    color: #666;
+    margin-top: 2px;
+  }
+  .doc-footer .data {
+    margin-top: 20px;
+    font-size: 9.5pt;
+    color: #888;
+    letter-spacing: 0.3px;
+  }
+  .doc-footer .footer-line {
+    width: 100%;
+    height: 1px;
+    background: #e0d6f0;
+    margin-top: 16px;
+  }
+  .doc-footer .footer-brand {
+    font-size: 7.5pt;
+    color: #bbb;
+    margin-top: 8px;
+    letter-spacing: 0.5px;
+  }
 
   @media print {
     body { padding: 0; margin: 0; }
@@ -475,16 +603,24 @@ function headerHtml(logoSrc: string): string {
     </div>`
 }
 
+function titleHtml(title: string): string {
+  return `
+    <div class="doc-title">${title}</div>
+    <div class="doc-title-line"></div>`
+}
+
 function pacienteHtml(p: PacientePdf): string {
   const idade = p.data_nascimento ? `${calcIdade(p.data_nascimento)} anos` : ''
   const nascFmt = p.data_nascimento ? new Date(p.data_nascimento + 'T00:00:00').toLocaleDateString('pt-BR') : '—'
   const cpfFmt = p.cpf ? p.cpf.replace(/\D/g, '').replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, '$1.$2.$3-$4') : ''
   return `
     <div class="paciente-info">
-      <p><strong>Paciente:</strong> ${p.nome_completo} ${p.codigo ? `` : ''}</p>
-      ${p.data_nascimento ? `<p><strong>Data de nascimento:</strong> ${nascFmt} ${idade ? `(${idade})` : ''}</p>` : ''}
-      ${cpfFmt ? `<p><strong>CPF:</strong> ${cpfFmt}</p>` : ''}
-      ${p.endereco ? `<p><strong>Endereço:</strong> ${p.endereco}</p>` : ''}
+      <div class="paciente-info-grid">
+        <div class="info-full"><strong>Paciente</strong><span class="info-value">${p.nome_completo}</span></div>
+        ${p.data_nascimento ? `<div><strong>Nascimento</strong><span class="info-value">${nascFmt} ${idade ? `(${idade})` : ''}</span></div>` : ''}
+        ${cpfFmt ? `<div><strong>CPF</strong><span class="info-value">${cpfFmt}</span></div>` : ''}
+        ${p.endereco ? `<div class="info-full"><strong>Endereço</strong><span class="info-value">${p.endereco}</span></div>` : ''}
+      </div>
     </div>`
 }
 
@@ -510,11 +646,15 @@ function fmtEixo(v: string | number | null | undefined): string {
 function footerHtml(medico: MedicoPdf): string {
   return `
     <div class="doc-footer">
-      <div class="assinatura-line"></div>
-      <p class="medico-nome">Dr(a). ${medico.nome}</p>
-      ${medico.crm ? `<p class="medico-crm">CRM ${medico.crm}${medico.uf ? ` — ${medico.uf}` : ''}</p>` : ''}
-      ${medico.especialidade ? `<p class="medico-crm">${medico.especialidade}</p>` : ''}
-      <p class="data">${dataFormatada()}</p>
+      <div class="assinatura-block">
+        <div class="assinatura-line"></div>
+        <p class="medico-nome">Dr(a). ${medico.nome}</p>
+        ${medico.crm ? `<p class="medico-crm">CRM ${medico.crm}${medico.uf ? ` — ${medico.uf}` : ''}</p>` : ''}
+        ${medico.especialidade ? `<p class="medico-crm">${medico.especialidade}</p>` : ''}
+      </div>
+      <p class="data">Goiânia, ${dataFormatada()}</p>
+      <div class="footer-line"></div>
+      <p class="footer-brand">NordcsCare — Sistema de Saúde Ocular</p>
     </div>`
 }
 
@@ -528,10 +668,14 @@ export async function gerarReceitaOcular(paciente: PacientePdf, rx: PrescricaoPd
     <div class="doc-container doc-centered">
       ${headerHtml(logo)}
       <div class="doc-content">
-      <div class="doc-title">Receita Ocular</div>
+      ${titleHtml('Receita Ocular')}
       ${pacienteHtml(paciente)}
       <div class="doc-body">
-        <p><strong>Tipo:</strong> ${tipoLabel}</p>
+        <div class="doc-info-line">
+          <div class="info-item"><strong>Tipo</strong><span>${tipoLabel}</span></div>
+          ${rx.dp ? `<div class="info-item"><strong>DP</strong><span>${rx.dp} mm</span></div>` : ''}
+          ${rx.observacoes ? `<div class="info-item"><strong>Tipo de Lente</strong><span>${rx.observacoes}</span></div>` : ''}
+        </div>
         <table class="rx-table">
           <thead><tr><th></th><th>Esférico</th><th>Cilíndrico</th><th>Eixo</th></tr></thead>
           <tbody>
@@ -550,8 +694,6 @@ export async function gerarReceitaOcular(paciente: PacientePdf, rx: PrescricaoPd
           </tbody>
         </table>
         ${rx.od_adicao ? `<table class="rx-adicao"><thead><tr><th>Adição</th></tr></thead><tbody><tr><td>${fmtEsf(rx.od_adicao)}</td></tr></tbody></table>` : ''}
-        ${rx.dp ? `<p><strong>DP:</strong> ${rx.dp} mm</p>` : ''}
-        ${rx.observacoes ? `<p><strong>Observações:</strong> ${rx.observacoes}</p>` : ''}
       </div>
       </div>
       ${footerHtml(medico)}
@@ -568,7 +710,7 @@ export async function gerarAtestado(paciente: PacientePdf, texto: string, medico
     <div class="doc-container doc-centered">
       ${headerHtml(logo)}
       <div class="doc-content">
-      <div class="doc-title">Atestado Médico</div>
+      ${titleHtml('Atestado Médico')}
       <div class="doc-body">
         <div class="texto-livre">${formatTexto(texto)}</div>
       </div>
@@ -587,7 +729,7 @@ export async function gerarReceitaMedica(paciente: PacientePdf, texto: string, m
     <div class="doc-container doc-centered">
       ${headerHtml(logo)}
       <div class="doc-content">
-      <div class="doc-title">Receita Médica</div>
+      ${titleHtml('Receita Médica')}
       ${pacienteHtml(paciente)}
       <div class="doc-body">
         <div class="texto-livre">${formatTexto(texto)}</div>
@@ -682,7 +824,7 @@ export async function gerarRelatorio(
   const body = `
     <div class="doc-container">
       ${headerHtml(logo)}
-      <div class="doc-title">Relatório do Atendimento</div>
+      ${titleHtml('Relatório do Atendimento')}
       ${pacienteHtml(paciente)}
       <div class="doc-body">${sections}</div>
       ${footerHtml(medico)}

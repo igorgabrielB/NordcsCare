@@ -10,22 +10,22 @@ export default function Sidebar({ isOpen }: SidebarProps) {
     <aside className={`sidebar ${isOpen ? 'open' : 'closed'}`}>
       <nav className="sidebar-nav">
         <div className="sidebar-section">
-          {isOpen && <div className="sidebar-section-title">Principal</div>}
+          <div className={`sidebar-section-title ${isOpen ? 'show' : ''}`}>Principal</div>
           <NavLink to="/dashboard" className={({ isActive }) => `sidebar-link${isActive ? ' active' : ''}`} title="Dashboard">
             <span className="icon"><LayoutDashboard size={18} /></span>
-            {isOpen && <span>Dashboard</span>}
+            <span className={`sidebar-text ${isOpen ? 'show' : ''}`}>Dashboard</span>
           </NavLink>
           <NavLink to="/pacientes" className={({ isActive }) => `sidebar-link${isActive ? ' active' : ''}`} title="Pacientes">
             <span className="icon"><Users size={18} /></span>
-            {isOpen && <span>Pacientes</span>}
+            <span className={`sidebar-text ${isOpen ? 'show' : ''}`}>Pacientes</span>
           </NavLink>
           <NavLink to="/fila" className={({ isActive }) => `sidebar-link${isActive ? ' active' : ''}`} title="Fila de Atendimento">
             <span className="icon"><ClipboardList size={18} /></span>
-            {isOpen && <span>Fila de Atendimento</span>}
+            <span className={`sidebar-text ${isOpen ? 'show' : ''}`}>Fila de Atendimento</span>
           </NavLink>
           <NavLink to="/relatorios" className={({ isActive }) => `sidebar-link${isActive ? ' active' : ''}`} title="Relatórios">
             <span className="icon"><BarChart2 size={18} /></span>
-            {isOpen && <span>Relatórios</span>}
+            <span className={`sidebar-text ${isOpen ? 'show' : ''}`}>Relatórios</span>
           </NavLink>
         </div>
       </nav>

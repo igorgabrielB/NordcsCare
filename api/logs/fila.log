@@ -262,3 +262,41 @@
 [2026-03-23 18:02:02] Tentando mover paciente 2926 para fila 'altas'
 [2026-03-23 18:02:02] Removido paciente de 1 filas anteriores
 [2026-03-23 18:02:02] INSERT resultado: SUCCESS (created_at preservado: 2026-03-23 13:57:58)
+[2026-03-23 18:26:36] Conduta Inicial recebida: 'encaminhamento'
+[2026-03-23 18:26:36] Detectada conduta ENCAMINHAMENTO para paciente 2926
+[2026-03-23 18:26:36] Tentando mover paciente 2926 para fila 'encaminhamentos'
+[2026-03-23 18:26:36] Removido paciente de 1 filas anteriores
+[2026-03-23 18:26:36] INSERT resultado: SUCCESS (created_at preservado: 2026-03-23 13:57:58)
+[2026-03-23 18:29:24] Conduta Inicial recebida: 'onibus_encaminhamento'
+[2026-03-23 18:29:24] Detectada conduta ONIBUS+ENCAMINHAMENTO para paciente 2926
+[2026-03-23 18:29:24] Tentando mover paciente 2926 para fila 'oculos' (saindo de 'laudos')
+[2026-03-23 18:29:24] Removido paciente de 1 filas anteriores
+[2026-03-23 18:29:24] INSERT resultado: SUCCESS (created_at preservado: 2026-03-23 13:57:58)
+[2026-03-23 19:16:11] Conduta Inicial recebida: 'alta'
+[2026-03-23 19:16:11] Detectada conduta ALTA para paciente 1552
+[2026-03-23 19:16:11] Tentando mover paciente 1552 para fila 'altas'
+[2026-03-23 19:16:11] Removido paciente de 1 filas anteriores
+[2026-03-23 19:16:11] INSERT resultado: SUCCESS (created_at preservado: 2026-03-23 14:30:54)
+[2026-03-23 19:20:44] Conduta Inicial recebida: 'onibus'
+[2026-03-23 19:20:44] Detectada conduta ONIBUS para paciente 2562
+[2026-03-23 19:20:44] Tentando mover paciente 2562 para fila 'oculos' (saindo de 'laudos')
+[2026-03-23 19:20:44] Removido paciente de 1 filas anteriores
+[2026-03-23 19:20:44] INSERT resultado: SUCCESS (created_at preservado: 2026-03-23 14:30:54)
+[2026-03-23 19:26:00] Conduta Inicial recebida: 'onibus_encaminhamento'
+[2026-03-23 19:26:00] Detectada conduta ONIBUS+ENCAMINHAMENTO para paciente 2926
+[2026-03-23 19:26:00] Tentando mover paciente 2926 para fila 'oculos' (saindo de 'laudos')
+[2026-03-23 19:26:00] Removido paciente de 1 filas anteriores
+[2026-03-23 19:26:00] INSERT resultado: SUCCESS (created_at preservado: 2026-03-23 13:57:58)
+[2026-03-23 19:32:13] Conduta Inicial recebida: 'onibus'
+[2026-03-23 19:32:13] Detectada conduta ONIBUS para paciente 2562
+[2026-03-23 19:32:13] Tentando mover paciente 2562 para fila 'oculos' (saindo de 'laudos')
+[2026-03-23 19:32:13] Removido paciente de 1 filas anteriores
+[2026-03-23 19:32:13] INSERT resultado: SUCCESS (created_at preservado: 2026-03-23 14:30:54)
+[2026-03-23 19:39:58] Prescricao salva com conduta_final alta - movendo paciente 2562 para altas
+[2026-03-23 19:39:58] Tentando mover paciente 2562 para fila 'altas'
+[2026-03-23 19:39:58] Removido paciente de 1 filas anteriores
+[2026-03-23 19:39:58] INSERT resultado: SUCCESS (created_at preservado: 2026-03-23 14:30:54)
+[2026-03-23 19:53:44] Prescricao salva com conduta_final alta - movendo paciente 2562 para altas
+[2026-03-23 19:53:44] Tentando mover paciente 2562 para fila 'altas'
+[2026-03-23 19:53:44] Removido paciente de 1 filas anteriores
+[2026-03-23 19:53:44] INSERT resultado: SUCCESS (created_at preservado: 2026-03-23 14:30:54)

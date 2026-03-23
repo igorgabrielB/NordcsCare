@@ -21,20 +21,21 @@
   font-size: 0.88rem;
   font-weight: 500;
   border: none;
-  border-radius: var(--radius);
+  border-radius: 8px;
   cursor: pointer;
-  transition: background 0.2s, opacity 0.2s;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
 }
 .btn:disabled {
   opacity: 0.55;
   cursor: not-allowed;
 }
 .btn-primary {
-  background: var(--primary);
+  background: linear-gradient(135deg, var(--primary), #9b6dff);
   color: #fff;
 }
 .btn-primary:hover:not(:disabled) {
-  background: var(--primary-dark);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 14px rgba(115, 69, 214, 0.35);
 }
 .btn-secondary {
   background: var(--bg-elevated);
@@ -43,13 +44,14 @@
 }
 .btn-secondary:hover:not(:disabled) {
   background: var(--bg-card-hover);
+  transform: translateY(-1px);
 }
 
 .clinical-form {
   background: var(--bg-card);
   border: 1px solid var(--border);
-  border-radius: var(--radius);
-  padding: 1.2rem;
+  border-radius: 12px;
+  padding: 1.35rem;
   margin-bottom: 1.2rem;
 }
 
@@ -74,13 +76,14 @@
   color: var(--text);
   font-size: 0.9rem;
   font-family: inherit;
-  transition: border-color 0.2s;
+  transition: border-color 0.2s, box-shadow 0.2s;
 }
 .clinical-form .form-group input:focus,
 .clinical-form .form-group select:focus,
 .clinical-form .form-group textarea:focus {
   outline: none;
   border-color: var(--primary);
+  box-shadow: 0 0 0 3px rgba(115, 69, 214, 0.15);
 }
 
 .form-row {
@@ -112,8 +115,14 @@
 .clinical-card {
   background: var(--bg-card);
   border: 1px solid var(--border);
-  border-radius: var(--radius);
+  border-radius: 10px;
   overflow: hidden;
+  transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.2s;
+}
+
+.clinical-card:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.1);
 }
 .clinical-card-header {
   display: flex;
@@ -154,34 +163,41 @@
   align-items: center;
   gap: 8px;
   flex-wrap: wrap;
-  margin-bottom: 1.2rem;
-  padding: 10px 14px;
-  background: var(--card-bg);
-  border-radius: var(--radius);
-  border: 1px dashed var(--border);
+  margin-bottom: 1.5rem;
+  padding: 14px 18px;
+  background: var(--bg-card, #3a3a3a);
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow);
 }
 .pdf-buttons-label {
   display: flex;
   align-items: center;
-  gap: 4px;
-  font-size: 0.85rem;
+  gap: 6px;
+  font-size: 0.82rem;
   color: var(--text-secondary);
-  font-weight: 600;
-  margin-right: 4px;
+  font-weight: 700;
+  margin-right: 8px;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
 }
 .btn-pdf {
   background: transparent;
   color: var(--primary);
   border: 1px solid var(--primary) !important;
   font-size: 0.82rem;
-  padding: 5px 14px;
-  border-radius: var(--radius);
+  padding: 6px 16px;
+  border-radius: 8px;
   cursor: pointer;
-  transition: background 0.2s, color 0.2s;
+  font-weight: 500;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
 }
 .btn-pdf:hover {
-  background: var(--primary);
+  background: linear-gradient(135deg, var(--primary), #9b6dff);
   color: #fff;
+  border-color: transparent !important;
+  transform: translateY(-1px);
+  box-shadow: 0 3px 10px rgba(115, 69, 214, 0.3);
 }
 
 /* ===== PDF Modal ===== */
@@ -196,10 +212,10 @@
 }
 .pdf-modal {
   background: var(--bg-card);
-  border-radius: var(--radius);
+  border-radius: 12px;
   width: 95%;
   max-width: 600px;
-  box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+  box-shadow: 0 20px 60px rgba(0,0,0,0.5);
   overflow: hidden;
 }
 .pdf-modal-header {
@@ -268,17 +284,20 @@
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
-  margin-bottom: 1.5rem;
+  margin-bottom: 1.8rem;
+  padding-bottom: 1.2rem;
+  border-bottom: 2px solid var(--border, #594747);
 }
 
 .prontuario-page .page-header h1 {
-  margin: 0 0 0.25rem 0;
-  font-size: 1.4rem;
+  margin: 0 0 0.35rem 0;
+  font-size: 1.5rem;
+  letter-spacing: -0.3px;
 }
 
 .paciente-meta {
   display: flex;
-  gap: 1.5rem;
+  gap: 1rem;
   color: var(--text-secondary);
   font-size: 0.9rem;
   margin: 0;
@@ -286,50 +305,72 @@
 }
 
 .meta-codigo {
-  background: var(--primary);
-  color: var(--text);
+  background: linear-gradient(135deg, var(--primary), #9b6dff);
+  color: #fff;
   font-weight: 700;
-  font-size: 1rem;
-  padding: 0.2rem 0.7rem;
-  border-radius: 6px;
+  font-size: 0.95rem;
+  padding: 0.25rem 0.85rem;
+  border-radius: 10px;
   letter-spacing: 0.5px;
+  box-shadow: 0 2px 8px rgba(115, 69, 214, 0.3);
 }
 
 /* Section card (dados do paciente) */
 .section-card {
   background: var(--bg-card, #3a3a3a);
   border: 1px solid var(--border, #594747);
-  border-radius: var(--radius, 8px);
-  padding: 1.25rem 1.5rem;
+  border-radius: 12px;
+  padding: 1.5rem 1.75rem;
   margin-bottom: 1.5rem;
   box-shadow: var(--shadow);
+  transition: box-shadow 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.section-card:hover {
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
 }
 
 .section-title {
-  margin: 0 0 0.75rem 0;
-  font-size: 1.1rem;
+  margin: 0 0 1rem 0;
+  font-size: 1.05rem;
   font-weight: 700;
-  color: var(--accent);
+  color: var(--primary, #7345d6);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  font-size: 0.82rem;
+  padding-bottom: 0.65rem;
+  border-bottom: 2px solid var(--border, #594747);
+  display: flex;
+  align-items: center;
+  gap: 6px;
 }
 
 /* Info grid (dados pessoais) */
 .info-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 0.6rem;
+  gap: 0.5rem;
 }
 
 .info-grid div {
-  font-size: 0.93rem;
+  font-size: 0.9rem;
   background: var(--bg-elevated, #4a4a4a);
   border: 1px solid var(--border, #594747);
-  border-radius: 6px;
-  padding: 0.5rem 0.75rem;
+  border-radius: 8px;
+  padding: 0.55rem 0.85rem;
+  transition: background 0.2s;
+}
+
+.info-grid div:hover {
+  background: var(--bg-card-hover, #505050);
 }
 
 .info-grid div strong {
   color: var(--accent);
   margin-right: 0.3rem;
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
 }
 
 /* Stats row */
@@ -342,25 +383,35 @@
 
 .stat-card {
   background: var(--bg-card, #3a3a3a);
-  border-radius: var(--radius, 8px);
-  padding: 0.75rem 1rem;
+  border-radius: 12px;
+  padding: 0.85rem 1rem;
   display: flex;
   flex-direction: column;
   align-items: center;
   box-shadow: var(--shadow);
   border: 1px solid var(--border, #594747);
+  transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.25s;
+}
+
+.stat-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
 }
 
 .stat-number {
   font-size: 1.5rem;
   font-weight: 700;
   color: var(--primary, #7345d6);
+  line-height: 1;
 }
 
 .stat-label {
-  font-size: 0.78rem;
+  font-size: 0.75rem;
   color: var(--text-secondary);
-  margin-top: 0.15rem;
+  margin-top: 0.25rem;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+  font-weight: 600;
 }
 
 /* Success banner */
@@ -464,89 +515,118 @@
 /* Station buttons */
 .station-buttons {
   display: flex;
-  gap: 1rem;
-  margin-bottom: 1.25rem;
+  gap: 0.75rem;
+  margin-bottom: 1.5rem;
+  flex-wrap: wrap;
 }
 
 .btn-station {
-  font-size: 1rem;
+  font-size: 0.95rem;
   padding: 0.7rem 1.5rem;
-  border-radius: var(--radius, 8px);
+  border-radius: 10px;
   font-weight: 600;
-  transition: all 0.2s;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  letter-spacing: 0.2px;
+}
+
+.btn-station:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
 }
 
 .btn-station-laudos {
-  background: #6743a5;
-  color: var(--text);
-  border: 2px solid #6743a5 !important;
+  background: linear-gradient(135deg, #6743a5, #7345d6);
+  color: #fff;
+  border: 2px solid transparent !important;
+  box-shadow: 0 2px 8px rgba(103, 67, 165, 0.3);
 }
 
 .btn-station-laudos:hover {
-  background: #7345d6;
-  border-color: #7345d6 !important;
+  background: linear-gradient(135deg, #7345d6, #9b6dff);
+  border-color: transparent !important;
 }
 
 .btn-station-laudos.active {
   background: transparent;
-  color: var(--text-secondary);
+  color: var(--primary);
   border: 2px solid var(--primary) !important;
-  box-shadow: 0 0 0 3px rgba(115, 69, 214, 0.35);
+  box-shadow: 0 0 0 3px rgba(115, 69, 214, 0.25);
 }
 
 .btn-station-onibus {
-  background: var(--border, #594747);
-  color: var(--text, #f0ebe3);
-  border: 2px solid var(--border, #594747) !important;
+  background: linear-gradient(135deg, #594747, #6a5a5a);
+  color: #fff;
+  border: 2px solid transparent !important;
+  box-shadow: 0 2px 8px rgba(89, 71, 71, 0.3);
 }
 
 .btn-station-onibus:hover {
-  background: #6a5a5a;
-  border-color: #6a5a5a !important;
+  background: linear-gradient(135deg, #6a5a5a, #7d6c6c);
+  border-color: transparent !important;
 }
 
 .btn-station-onibus.active {
   background: transparent;
   color: var(--text, #f0ebe3);
   border: 2px solid #6a5a5a !important;
-  box-shadow: 0 0 0 3px rgba(106, 90, 90, 0.4);
+  box-shadow: 0 0 0 3px rgba(106, 90, 90, 0.3);
 }
 
 .btn-station-acuidade {
-  background: #2d5f4f;
-  color: var(--text);
-  border: 2px solid #2d5f4f !important;
+  background: linear-gradient(135deg, #2d5f4f, #3a7a63);
+  color: #fff;
+  border: 2px solid transparent !important;
+  box-shadow: 0 2px 8px rgba(45, 95, 79, 0.3);
 }
 
 .btn-station-acuidade:hover {
-  background: #3a7a63;
-  border-color: #3a7a63 !important;
+  background: linear-gradient(135deg, #3a7a63, #4a9a7a);
+  border-color: transparent !important;
 }
 
 .btn-station-acuidade.active {
   background: transparent;
   color: var(--success);
   border: 2px solid #3a7a63 !important;
-  box-shadow: 0 0 0 3px rgba(58, 122, 99, 0.35);
+  box-shadow: 0 0 0 3px rgba(58, 122, 99, 0.25);
 }
 
 /* Station header */
 .station-header {
-  padding: 1rem 1.5rem;
-  border-radius: var(--radius, 8px);
-  margin-bottom: 1rem;
-  color: var(--text);
+  padding: 1.25rem 1.5rem;
+  border-radius: 12px;
+  margin-bottom: 1.5rem;
+  color: #fff;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+  display: flex;
+  align-items: center;
+  gap: 1rem;
 }
 
-.station-header h2 {
+.station-header-icon {
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  backdrop-filter: blur(4px);
+}
+
+.station-header-text h2 {
   margin: 0;
-  font-size: 1.2rem;
+  font-size: 1.15rem;
+  letter-spacing: -0.2px;
+  font-weight: 700;
 }
 
-.station-header p {
-  margin: 0.25rem 0 0;
-  font-size: 0.88rem;
-  opacity: 0.9;
+.station-header-text p {
+  margin: 0.15rem 0 0;
+  font-size: 0.83rem;
+  opacity: 0.8;
+  font-weight: 400;
 }
 
 .station-header-laudos {
@@ -564,35 +644,56 @@
 /* ===== Formulário de Estação ===== */
 .atendimento-form {
   margin-bottom: 2rem;
+  animation: stationSlideIn 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+@keyframes stationSlideIn {
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: translateY(0); }
 }
 
 .station-form {
-  border-left: 4px solid transparent;
-  padding-left: 0;
+  background: var(--bg-card, #3a3a3a);
+  border: 1px solid var(--border, #594747);
+  border-radius: 16px;
+  padding: 1.5rem;
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.12);
+  border-top: 4px solid transparent;
 }
 
 .station-laudos {
-  border-left-color: #6743a5;
-  padding-left: 0.75rem;
+  border-top-color: #7345d6;
 }
 
 .station-onibus {
-  border-left-color: #594747;
-  padding-left: 0.75rem;
+  border-top-color: #6a5a5a;
 }
 
 .station-acuidade {
-  border-left-color: #2d5f4f;
-  padding-left: 0.75rem;
+  border-top-color: #3a7a63;
 }
 
 /* ===== Modelo de Laudo Selector ===== */
 .modelo-selector {
-  background: rgba(103, 67, 165, 0.15);
-  border: 1px solid rgba(103, 67, 165, 0.3);
-  border-radius: 6px;
-  padding: 0.85rem 1rem;
-  margin-bottom: 1rem;
+  background: rgba(103, 67, 165, 0.06);
+  border: 1px solid rgba(103, 67, 165, 0.2);
+  border-radius: 12px;
+  padding: 1.1rem 1.25rem;
+  margin-bottom: 1.5rem;
+}
+
+.modelo-selector-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.8rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--primary, #7345d6);
+  margin-bottom: 0.75rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px dashed rgba(103, 67, 165, 0.25);
 }
 
 .modelo-selector .form-group {
@@ -607,19 +708,19 @@
 }
 .modelo-selector .form-group select {
   width: 100%;
-  padding: 0.45rem 0.7rem;
+  padding: 0.5rem 0.8rem;
   border: 1px solid var(--border);
-  border-radius: 6px;
-  font-size: 0.93rem;
+  border-radius: 8px;
+  font-size: 0.9rem;
   font-family: inherit;
-  background: var(--bg-elevated);
+  background: var(--bg, #2d2d2d);
   color: var(--text);
-  transition: border-color 0.2s;
+  transition: border-color 0.2s, box-shadow 0.2s;
 }
 .modelo-selector .form-group select:focus {
   outline: none;
   border-color: var(--primary);
-  box-shadow: 0 0 0 3px rgba(115, 69, 214, 0.2);
+  box-shadow: 0 0 0 3px rgba(115, 69, 214, 0.15);
 }
 
 .modelo-actions {
@@ -630,12 +731,16 @@
   white-space: nowrap;
   border: 1px solid var(--primary);
   color: var(--primary);
+  border-radius: 8px;
+  font-size: 0.82rem;
 }
 .modelo-actions .btn-secondary:hover,
 .modelo-actions .btn-secondary:hover:not(:disabled) {
-  background: var(--primary) !important;
+  background: linear-gradient(135deg, var(--primary), #9b6dff) !important;
   color: #fff !important;
-  border: 1px solid var(--primary) !important;
+  border: 1px solid transparent !important;
+  transform: translateY(-1px);
+  box-shadow: 0 3px 10px rgba(115, 69, 214, 0.3);
 }
 
 .modelo-save-row {
@@ -646,17 +751,18 @@
 
 .modelo-save-row input {
   flex: 1;
-  padding: 0.4rem 0.7rem;
+  padding: 0.45rem 0.8rem;
   border: 1px solid var(--border);
-  border-radius: 6px;
+  border-radius: 8px;
   font-size: 0.9rem;
-  background: var(--bg-elevated);
+  background: var(--bg, #2d2d2d);
   color: var(--text);
   font-family: inherit;
 }
 .modelo-save-row input:focus {
   outline: none;
   border-color: var(--primary);
+  box-shadow: 0 0 0 3px rgba(115, 69, 214, 0.15);
 }
 
 .modelo-list {
@@ -670,13 +776,18 @@
   display: inline-flex;
   align-items: center;
   gap: 0.3rem;
-  background: var(--primary-light);
-  border: 1px solid var(--primary);
-  border-radius: 12px;
-  padding: 0.2rem 0.6rem;
+  background: rgba(115, 69, 214, 0.1);
+  border: 1px solid rgba(115, 69, 214, 0.3);
+  border-radius: 10px;
+  padding: 0.25rem 0.7rem;
   font-size: 0.78rem;
   font-weight: 500;
   color: var(--primary);
+  transition: background 0.2s;
+}
+
+.modelo-tag:hover {
+  background: rgba(115, 69, 214, 0.18);
 }
 
 .modelo-tag button {
@@ -696,42 +807,59 @@
 .form-section {
   background: var(--bg-card, #3a3a3a);
   border: 1px solid var(--border, #594747);
-  border-radius: var(--radius, 8px);
-  padding: 1.25rem 1.5rem;
-  margin-bottom: 1rem;
+  border-radius: 12px;
+  padding: 1.5rem 1.75rem;
+  margin-bottom: 1.25rem;
+  transition: box-shadow 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.form-section:focus-within {
+  box-shadow: 0 0 0 3px rgba(115, 69, 214, 0.1);
+}
+
+.station-form .form-section {
+  background: var(--bg-elevated, #4a4a4a);
+  border-color: rgba(255, 255, 255, 0.06);
 }
 
 .form-section legend {
-  font-size: 1.05rem;
+  font-size: 0.82rem;
   font-weight: 700;
-  color: var(--accent, #bfab93);
+  color: var(--primary, #7345d6);
   padding: 0 0.5rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
 }
 
 .form-section .form-group {
-  margin-bottom: 0.85rem;
+  margin-bottom: 0.9rem;
 }
 
 .form-section label {
   display: block;
   font-weight: 600;
-  font-size: 0.82rem;
-  margin-bottom: 0.3rem;
+  font-size: 0.8rem;
+  margin-bottom: 0.35rem;
   color: var(--text-secondary, #bfab93);
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
 }
 
 .form-section input,
 .form-section select,
 .form-section textarea {
   width: 100%;
-  padding: 0.45rem 0.7rem;
+  padding: 0.5rem 0.8rem;
   border: 1px solid var(--border, #594747);
-  border-radius: 6px;
-  font-size: 0.93rem;
+  border-radius: 8px;
+  font-size: 0.9rem;
   font-family: inherit;
-  transition: border-color 0.2s;
+  transition: border-color 0.2s, box-shadow 0.2s;
   box-sizing: border-box;
-  background: var(--bg-elevated, #4a4a4a);
+  background: var(--bg, #2d2d2d);
   color: var(--text, #f0ebe3);
 }
 
@@ -740,7 +868,7 @@
 .form-section textarea:focus {
   outline: none;
   border-color: var(--primary, #7345d6);
-  box-shadow: 0 0 0 3px rgba(115, 69, 214, 0.2);
+  box-shadow: 0 0 0 3px rgba(115, 69, 214, 0.15);
 }
 
 .form-row {
@@ -755,6 +883,79 @@
 
 .form-row-4 {
   grid-template-columns: 1fr 1fr 1.5fr 1.5fr;
+}
+
+/* ===== Exames Recebidos (Estação Laudos) ===== */
+.exames-info-text {
+  font-size: 0.85rem;
+  color: var(--text-secondary, #bfab93);
+  margin: 0 0 14px 0;
+  line-height: 1.5;
+}
+
+.exames-recebidos {
+  margin-bottom: 1.25rem;
+  background: var(--bg-elevated, #4a4a4a);
+  border: 1px solid var(--border, #594747);
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+.exames-recebidos-header {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0.6rem 1rem;
+  font-size: 0.8rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  color: var(--primary, #7345d6);
+  background: rgba(115, 69, 214, 0.08);
+  border-bottom: 1px solid var(--border, #594747);
+}
+
+.exames-recebidos-list {
+  padding: 0.6rem 0.75rem;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.exames-recebidos-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0.4rem 0.6rem;
+  border-radius: 6px;
+  font-size: 0.85rem;
+  color: var(--text, #f0ebe3);
+  background: var(--bg-card, #3a3a3a);
+  transition: background 0.15s;
+}
+
+.exames-recebidos-item:hover {
+  background: var(--bg-card-hover, #505050);
+}
+
+.exame-tipo-badge {
+  background: rgba(115, 69, 214, 0.15);
+  color: var(--primary, #7345d6);
+  font-size: 0.78rem;
+  font-weight: 600;
+  padding: 2px 10px;
+  border-radius: 8px;
+}
+
+.exame-olho {
+  font-weight: 500;
+  color: var(--text-secondary, #bfab93);
+}
+
+.exame-resultado {
+  font-size: 0.82rem;
+  color: var(--text-muted, #8a7a6a);
+  margin-left: auto;
 }
 
 /* Conduta button group */
@@ -774,13 +975,13 @@
   font-size: 0.9rem;
   font-weight: 600;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
   letter-spacing: 0.3px;
 }
 
 .conduta-btn:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.25);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
 }
 
 .conduta-btn-alta {
@@ -876,11 +1077,16 @@ body.light-mode .conduta-btn-onibus_encaminhamento.active {
 /* Exame row with remove button */
 .exame-row {
   position: relative;
-  padding: 0.75rem;
+  padding: 0.85rem;
   border: 1px dashed var(--border, #594747);
-  border-radius: 6px;
+  border-radius: 8px;
   margin-bottom: 0.75rem;
-  background: var(--bg-elevated, #4a4a4a);
+  background: var(--bg, #2d2d2d);
+  transition: border-color 0.2s;
+}
+
+.exame-row:hover {
+  border-color: var(--primary, #7345d6);
 }
 
 .btn-remove-exame {
@@ -905,12 +1111,15 @@ body.light-mode .conduta-btn-onibus_encaminhamento.active {
 .form-actions-main {
   display: flex;
   gap: 1rem;
-  padding: 1rem 0;
+  padding: 1.25rem 0 0.5rem;
+  margin-top: 0.5rem;
+  border-top: 1px solid var(--border, #594747);
 }
 
 .btn-lg {
-  padding: 0.75rem 2rem;
+  padding: 0.8rem 2.2rem;
   font-size: 1.05rem;
+  border-radius: 10px;
 }
 
 .btn-sm {
@@ -920,76 +1129,253 @@ body.light-mode .conduta-btn-onibus_encaminhamento.active {
 
 .btn-danger {
   background: var(--danger);
-  color: var(--text);
+  color: #fff;
   border: none;
+  border-radius: 8px;
 }
 
 .btn-danger:hover {
   background: #c53030;
+  transform: translateY(-1px);
+  box-shadow: 0 3px 10px rgba(197, 48, 48, 0.3);
 }
 
 /* ===== RX Table ===== */
+.rx-tipo-row {
+  margin-bottom: 1rem;
+}
+
+.rx-tipo-buttons {
+  display: flex;
+  gap: 8px;
+}
+
+.rx-tipo-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 18px;
+  border: 2px solid var(--border, #594747);
+  border-radius: 10px;
+  background: transparent;
+  color: var(--text-muted, #aaa);
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.rx-tipo-btn:hover {
+  border-color: var(--primary, #7345d6);
+  color: var(--primary, #7345d6);
+  transform: translateY(-1px);
+}
+
+.rx-tipo-btn.active {
+  background: linear-gradient(135deg, var(--primary, #7345d6), #9b6dff);
+  color: #fff;
+  border-color: transparent;
+  box-shadow: 0 3px 10px rgba(115, 69, 214, 0.3);
+}
+
 .rx-table {
-  margin: 0.75rem 0;
+  margin: 0.85rem 0;
 }
 
 .rx-table table {
   width: 100%;
-  border-collapse: collapse;
-  max-width: 550px;
+  border-collapse: separate;
+  border-spacing: 0;
+  max-width: 580px;
+  border-radius: 10px;
+  overflow: hidden;
+  border: 1px solid var(--border, #594747);
 }
 
 .rx-table th,
 .rx-table td {
-  padding: 0.5rem 0.6rem;
+  padding: 0.6rem 0.75rem;
   text-align: center;
   border: 1px solid var(--border, #594747);
   font-size: 0.88rem;
 }
 
 .rx-table th {
-  background: var(--bg-elevated, #4a4a4a);
-  font-weight: 600;
-  font-size: 0.78rem;
+  background: rgba(115, 69, 214, 0.08);
+  font-weight: 700;
+  font-size: 0.72rem;
   text-transform: uppercase;
-  color: var(--text-secondary, #bfab93);
+  letter-spacing: 0.6px;
+  color: var(--primary, #7345d6);
 }
 
 .rx-table .eye-label {
   font-weight: 700;
-  background: var(--bg-elevated, #4a4a4a);
-  width: 50px;
+  background: rgba(115, 69, 214, 0.08);
+  width: 60px;
   color: var(--primary, #7345d6);
+  font-size: 0.82rem;
+  letter-spacing: 0.3px;
 }
 
 .rx-table input {
-  width: 80px;
+  width: 85px;
   text-align: center;
-  padding: 0.3rem;
+  padding: 0.4rem 0.3rem;
   border: 1px solid var(--border, #594747);
-  border-radius: 4px;
+  border-radius: 8px;
   font-size: 0.88rem;
-  background: var(--bg-card, #3a3a3a);
+  font-weight: 600;
+  background: var(--bg, #2d2d2d);
   color: var(--text, #f0ebe3);
+  transition: border-color 0.2s, box-shadow 0.2s, transform 0.15s;
 }
 
 .rx-table input:focus {
   outline: none;
   border-color: var(--primary, #7345d6);
+  box-shadow: 0 0 0 3px rgba(115, 69, 214, 0.15);
+  transform: scale(1.03);
 }
 
 .rx-table-readonly td {
   font-size: 0.88rem;
 }
 
+/* ===== RX Extras (Adição, DP, Tipo de Lente) ===== */
+.rx-extras {
+  display: flex;
+  gap: 12px;
+  margin-top: 1rem;
+  flex-wrap: wrap;
+  align-items: flex-end;
+}
+
+.rx-extra-item {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 100px;
+}
+
+.rx-extra-item label {
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--text-secondary, #bfab93);
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+
+.rx-extra-item input,
+.rx-extra-item select {
+  padding: 0.5rem 0.8rem;
+  border: 1px solid var(--border, #594747);
+  border-radius: 8px;
+  font-size: 0.9rem;
+  background: var(--bg, #2d2d2d);
+  color: var(--text, #f0ebe3);
+  font-family: inherit;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.rx-extra-item select {
+  appearance: none;
+  -webkit-appearance: none;
+  padding-right: 2rem;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%239ca3af' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 0.6rem center;
+  cursor: pointer;
+}
+
+.rx-extra-item input:focus,
+.rx-extra-item select:focus {
+  outline: none;
+  border-color: var(--primary, #7345d6);
+  box-shadow: 0 0 0 3px rgba(115, 69, 214, 0.15);
+}
+
+.rx-extra-wide {
+  flex: 1;
+  min-width: 200px;
+}
+
+/* ===== Acuidade Eye Cards (Ônibus) ===== */
+.acuidade-eyes-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+}
+
+.acuidade-eye-card {
+  background: var(--bg-card, #3a3a3a);
+  border: 1px solid var(--border, #594747);
+  border-radius: 10px;
+  padding: 1rem 1.1rem;
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.acuidade-eye-card:focus-within {
+  border-color: var(--primary, #7345d6);
+  box-shadow: 0 0 0 3px rgba(115, 69, 214, 0.1);
+}
+
+.acuidade-eye-card .form-group {
+  flex: 1;
+  margin-bottom: 0;
+}
+
+.acuidade-eye-indicator {
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.75rem;
+  font-weight: 800;
+  letter-spacing: 0.5px;
+  flex-shrink: 0;
+  margin-top: 18px;
+}
+
+.acuidade-eye-indicator.od {
+  background: rgba(115, 69, 214, 0.15);
+  color: var(--primary, #7345d6);
+  border: 1px solid rgba(115, 69, 214, 0.3);
+}
+
+.acuidade-eye-indicator.oe {
+  background: rgba(46, 204, 113, 0.12);
+  color: #2ecc71;
+  border: 1px solid rgba(46, 204, 113, 0.3);
+}
+
+@media (max-width: 768px) {
+  .acuidade-eyes-row {
+    grid-template-columns: 1fr;
+  }
+  .rx-extras {
+    flex-direction: column;
+  }
+  .rx-extra-item {
+    min-width: auto;
+  }
+}
+
 /* Conduta badge */
 .conduta-badge {
   display: inline-block;
-  padding: 0.15rem 0.6rem;
-  border-radius: 12px;
-  color: var(--text);
+  padding: 0.2rem 0.7rem;
+  border-radius: 10px;
+  color: #fff;
   font-size: 0.78rem;
   font-weight: 600;
+  letter-spacing: 0.2px;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.15);
 }
 
 /* ===== Histórico ===== */
@@ -1000,19 +1386,24 @@ body.light-mode .conduta-btn-onibus_encaminhamento.active {
 .hist-group {
   margin-bottom: 1rem;
   border: 1px solid var(--border, #594747);
-  border-radius: var(--radius, 8px);
+  border-radius: 12px;
   overflow: hidden;
+  transition: box-shadow 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.hist-group:hover {
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
 }
 
 .hist-group-header {
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  padding: 0.75rem 1rem;
+  padding: 0.85rem 1.1rem;
   background: var(--bg-elevated, #4a4a4a);
   cursor: pointer;
   user-select: none;
-  transition: background 0.15s;
+  transition: background 0.2s;
 }
 
 .hist-group-header:hover {
@@ -1027,7 +1418,7 @@ body.light-mode .conduta-btn-onibus_encaminhamento.active {
 
 .hist-chevron {
   font-size: 0.7rem;
-  transition: transform 0.2s;
+  transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1);
   color: var(--text-muted);
 }
 
@@ -1036,22 +1427,29 @@ body.light-mode .conduta-btn-onibus_encaminhamento.active {
 }
 
 .hist-group-body {
-  padding: 0.5rem;
+  padding: 0.75rem;
 }
 
 .hist-card {
   background: var(--bg-card, #3a3a3a);
   border: 1px solid var(--border, #594747);
-  border-radius: var(--radius, 8px);
+  border-radius: 10px;
+  border-left: 4px solid var(--primary, #7345d6);
   margin-bottom: 0.75rem;
   overflow: hidden;
+  transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.2s;
+}
+
+.hist-card:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 3px 12px rgba(0, 0, 0, 0.1);
 }
 
 .hist-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 0.6rem 1rem;
+  padding: 0.7rem 1.1rem;
   background: var(--bg-elevated, #4a4a4a);
   border-bottom: 1px solid var(--border, #594747);
   font-size: 0.83rem;
@@ -1060,23 +1458,23 @@ body.light-mode .conduta-btn-onibus_encaminhamento.active {
 }
 
 .hist-medico {
-  color: var(--accent, #bfab93);
+  color: var(--primary, #7345d6);
   font-weight: 500;
 }
 
 .hist-body {
-  padding: 0.75rem 1rem;
+  padding: 0.85rem 1.1rem;
 }
 
 .hist-body p {
-  margin: 0.3rem 0;
+  margin: 0.35rem 0;
   font-size: 0.9rem;
-  line-height: 1.5;
+  line-height: 1.55;
 }
 
 /* Laudo unificado — seções internas */
 .laudo-section {
-  padding: 0.75rem 0;
+  padding: 0.85rem 0;
   border-bottom: 1px solid var(--border, #594747);
 }
 
@@ -1086,8 +1484,10 @@ body.light-mode .conduta-btn-onibus_encaminhamento.active {
 
 .laudo-section h4 {
   margin: 0 0 0.5rem 0;
-  font-size: 0.95rem;
-  color: var(--accent, #bfab93);
+  font-size: 0.92rem;
+  color: var(--primary, #7345d6);
+  font-weight: 700;
+  letter-spacing: 0.2px;
 }
 
 .laudo-section-header {
@@ -1096,6 +1496,9 @@ body.light-mode .conduta-btn-onibus_encaminhamento.active {
   align-items: center;
   flex-wrap: wrap;
   gap: 8px;
+  margin-bottom: 0.4rem;
+  padding-bottom: 0.4rem;
+  border-bottom: 1px dashed var(--border, #594747);
 }
 
 .laudo-section-header h4 {
@@ -1103,10 +1506,13 @@ body.light-mode .conduta-btn-onibus_encaminhamento.active {
 }
 
 .section-author {
-  font-size: 0.75rem;
+  font-size: 0.73rem;
   color: var(--text-muted);
   font-style: italic;
   white-space: nowrap;
+  background: var(--bg-elevated, #4a4a4a);
+  padding: 2px 10px;
+  border-radius: 10px;
 }
 
 .laudo-detail-grid {
@@ -1122,7 +1528,11 @@ body.light-mode .conduta-btn-onibus_encaminhamento.active {
 .empty-msg {
   text-align: center;
   color: var(--text-muted, #8a7a6a);
-  padding: 2rem 0;
+  padding: 2.5rem 1rem;
+  font-size: 0.9rem;
+  border: 1px dashed var(--border, #594747);
+  border-radius: 10px;
+  margin: 0.5rem 0;
 }
 
 /* ===== Uploads ===== */
@@ -1163,10 +1573,16 @@ body.light-mode .conduta-btn-onibus_encaminhamento.active {
   display: flex;
   align-items: center;
   gap: 0.75rem;
-  padding: 0.6rem 0.75rem;
+  padding: 0.65rem 0.85rem;
   border: 1px solid var(--border, #594747);
-  border-radius: 6px;
+  border-radius: 8px;
   background: var(--bg-elevated, #4a4a4a);
+  transition: background 0.2s, border-color 0.2s;
+}
+
+.upload-item:hover {
+  border-color: var(--primary, #7345d6);
+  background: var(--bg-card-hover, #505050);
 }
 
 .upload-icon {
@@ -1246,9 +1662,9 @@ body.light-mode .conduta-btn-onibus_encaminhamento.active {
   -webkit-appearance: none;
   -moz-appearance: none;
   border: 2px solid var(--border, #594747);
-  border-radius: 4px;
-  background: var(--bg-elevated, #4a4a4a);
-  transition: all 0.2s ease;
+  border-radius: 6px;
+  background: var(--bg, #2d2d2d);
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
   flex-shrink: 0;
   display: flex;
   align-items: center;
@@ -1397,9 +1813,15 @@ body.light-mode .conduta-btn-sim.active {
 /* Card de exame individual */
 .redcheck-exam-card {
   background: var(--bg-page, #2d2d2d);
-  border-radius: var(--radius, 8px);
+  border-radius: 10px;
   border: 1px solid var(--border);
   overflow: hidden;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.redcheck-exam-card:hover {
+  border-color: var(--primary, #7345d6);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
 
 .redcheck-exam-meta {
