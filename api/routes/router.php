@@ -73,6 +73,7 @@ $router->add('POST', '/api/fila', [FilaController::class, 'store']);
 $router->add('PUT', '/api/fila/{id}/avancar', [FilaController::class, 'avancar']);
 $router->add('PUT', '/api/fila/{id}/status', [FilaController::class, 'updateStatus']);
 $router->add('PUT', '/api/fila/{id}/mover', [FilaController::class, 'mover']);
+$router->add('PUT', '/api/fila/{id}/prioridade', [FilaController::class, 'togglePrioridade']);
 $router->add('DELETE', '/api/fila/{id}', [FilaController::class, 'destroy']);
 
 // Prontuário

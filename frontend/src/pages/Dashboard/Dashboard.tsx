@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from 'react'
 import { Link } from 'react-router-dom'
 import { useAuth } from '../../contexts/AuthContext.tsx'
 import api from '../../services/api.ts'
-import { Users, ClipboardList, Stethoscope, BarChart3, TrendingUp, Tag, Hash, School, CalendarDays, Filter, ArrowRightLeft, CheckCircle, Eye, FileText, Glasses } from 'lucide-react'
+import { Users, ClipboardList, Stethoscope, TrendingUp, Tag, Hash, School, CalendarDays, Calendar, Filter, ArrowRightLeft, CheckCircle, Eye, Glasses } from 'lucide-react'
 import './Dashboard.css'
 
 interface Metricas {
@@ -55,7 +55,8 @@ export default function Dashboard() {
   const [metricas, setMetricas] = useState<Metricas | null>(null)
   const [loading, setLoading] = useState(true)
 
-  const hoje = new Date().toISOString().slice(0, 10)
+  const now = new Date()
+  const hoje = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`
   const [dataInicio, setDataInicio] = useState(hoje)
   const [dataFim, setDataFim] = useState(hoje)
 
@@ -89,11 +90,30 @@ export default function Dashboard() {
     return d.toLocaleDateString('pt-BR', { weekday: 'short' })
   }
 
+  const hora = new Date().getHours()
+  const saudacao = hora < 12 ? 'Bom dia' : hora < 18 ? 'Boa tarde' : 'Boa noite'
+
   return (
     <div className="dashboard">
-      <div className="dashboard-welcome">
-        <h1>Bem-vindo, {user?.nome}!</h1>
-        <p>Sistema de Prontuário Oftalmológico — NordcsCare</p>
+      <div className="dashboard-hero">
+        <div className="dashboard-hero-bg" />
+        <div className="dashboard-hero-content">
+          <div className="dashboard-hero-text">
+            <p className="dashboard-hero-greeting">{saudacao},</p>
+            <h1 className="dashboard-hero-name">{user?.nome?.split(' ')[0]}!</h1>
+          </div>
+          <div className="dashboard-hero-date">
+            <Calendar size={15} />
+            <span>
+              {new Date().toLocaleDateString('pt-BR', {
+                weekday: 'long',
+                day: 'numeric',
+                month: 'long',
+                year: 'numeric',
+              })}
+            </span>
+          </div>
+        </div>
       </div>
 
       <div className="dashboard-filter-bar">
@@ -195,7 +215,7 @@ export default function Dashboard() {
               ) : (
                 <div className="escolas-agendadas-list">
                   {metricas.escolas_agendadas.map((e, i) => {
-                    const isHoje = e.data_atendimento === new Date().toISOString().slice(0, 10)
+                    const isHoje = e.data_atendimento === hoje
                     return (
                       <div key={i} className={`escola-agendada-item ${isHoje ? 'agendada-hoje' : ''}`}>
                         <span className="agendada-data">
@@ -249,7 +269,7 @@ export default function Dashboard() {
                     {metricas.atendimentos_por_dia.map(d => {
                       const max = Math.max(...metricas.atendimentos_por_dia.map(x => x.total), 1)
                       const pct = (d.total / max) * 100
-                      const isHoje = d.dia === new Date().toISOString().slice(0, 10)
+                      const isHoje = d.dia === hoje
                       const dataFmt = new Date(d.dia + 'T00:00:00').toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })
                       return (
                         <div key={d.dia} className={`chart-bar-col ${isHoje ? 'chart-bar-hoje' : ''}`}>

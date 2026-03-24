@@ -519,60 +519,71 @@ export default function Prontuario() {
         <div className="pdf-modal-overlay" onClick={() => setPdfModal(null)}>
           <div className="pdf-modal" onClick={e => e.stopPropagation()}>
             <div className="pdf-modal-header">
-              <h3>{pdfModal === 'atestado' ? 'Atestado Médico' : 'Receita Médica'}</h3>
-              <button className="btn btn-icon" onClick={() => setPdfModal(null)}><X size={18} /></button>
+              <div className="pdf-modal-header-icon">
+                {pdfModal === 'atestado' ? <ClipboardList size={20} /> : <FileText size={20} />}
+              </div>
+              <div className="pdf-modal-header-text">
+                <h3>{pdfModal === 'atestado' ? 'Atestado Médico' : 'Receita Médica'}</h3>
+                <span className="pdf-modal-subtitle">Paciente: {paciente.nome_completo}</span>
+              </div>
+              <button className="pdf-modal-close" onClick={() => setPdfModal(null)}><X size={18} /></button>
             </div>
+
             <div className="pdf-modal-body">
               {modelosDoc.filter(m => m.tipo === pdfModal).length > 0 && (
                 <div className="modelo-selector">
-                  <label>Modelo:</label>
-                  <select onChange={e => {
-                    const m = modelosDoc.find(x => x.id === Number(e.target.value))
-                    if (m) {
-                      const hoje = new Date().toLocaleDateString('pt-BR')
-                      let texto = m.conteudo
-                        .replace(/\{\{nome\}\}/g, paciente.nome_completo)
-                        .replace(/\{\{cpf\}\}/g, (paciente.cpf || '').replace(/\D/g, '').replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, '$1.$2.$3-$4'))
-                        .replace(/\{\{data_nascimento\}\}/g, paciente.data_nascimento ? new Date(paciente.data_nascimento + 'T00:00:00').toLocaleDateString('pt-BR') : '')
-                        .replace(/\{\{sexo\}\}/g, paciente.sexo || '')
-                        .replace(/\{\{telefone\}\}/g, paciente.telefone || '')
-                        .replace(/\{\{email\}\}/g, paciente.email || '')
-                        .replace(/\{\{endereco\}\}/g, paciente.endereco || '')
-                        .replace(/\{\{convenio\}\}/g, paciente.convenio || '')
-                        .replace(/\{\{codigo\}\}/g, paciente.codigo || '')
-                        .replace(/\{\{data\}\}/g, hoje)
-                        .replace(/\{\{medico\}\}/g, medicoInfo.nome || '')
-                        .replace(/\{\{crm\}\}/g, medicoInfo.crm || '')
-                      setPdfTexto(texto)
-                    }
-                    e.target.value = ''
-                  }}>
-                    <option value="">Selecionar modelo...</option>
+                  <label><BookOpen size={14} /> Modelos disponíveis</label>
+                  <div className="modelo-cards">
                     {modelosDoc.filter(m => m.tipo === pdfModal).map(m => (
-                      <option key={m.id} value={m.id}>{m.nome}</option>
+                      <button key={m.id} className="modelo-card" onClick={() => {
+                        const hoje = new Date().toLocaleDateString('pt-BR')
+                        let texto = m.conteudo
+                          .replace(/\{\{nome\}\}/g, paciente.nome_completo)
+                          .replace(/\{\{cpf\}\}/g, (paciente.cpf || '').replace(/\D/g, '').replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, '$1.$2.$3-$4'))
+                          .replace(/\{\{data_nascimento\}\}/g, paciente.data_nascimento ? new Date(paciente.data_nascimento + 'T00:00:00').toLocaleDateString('pt-BR') : '')
+                          .replace(/\{\{sexo\}\}/g, paciente.sexo || '')
+                          .replace(/\{\{telefone\}\}/g, paciente.telefone || '')
+                          .replace(/\{\{email\}\}/g, paciente.email || '')
+                          .replace(/\{\{endereco\}\}/g, paciente.endereco || '')
+                          .replace(/\{\{convenio\}\}/g, paciente.convenio || '')
+                          .replace(/\{\{codigo\}\}/g, paciente.codigo || '')
+                          .replace(/\{\{data\}\}/g, hoje)
+                          .replace(/\{\{medico\}\}/g, medicoInfo.nome || '')
+                          .replace(/\{\{crm\}\}/g, medicoInfo.crm || '')
+                        setPdfTexto(texto)
+                      }}>
+                        <FileText size={16} />
+                        <span>{m.nome}</span>
+                      </button>
                     ))}
-                  </select>
+                  </div>
                 </div>
               )}
-              <label>{pdfModal === 'atestado' ? 'Texto do Atestado:' : 'Prescrição / Medicamentos:'}</label>
-              <textarea
-                rows={8}
-                value={pdfTexto}
-                onChange={e => setPdfTexto(e.target.value)}
-                placeholder={pdfModal === 'atestado'
-                  ? 'Atesto para os devidos fins que o(a) paciente...'
-                  : 'Medicamento, posologia, duração...'}
-                autoFocus
-              />
+
+              <div className="pdf-modal-editor">
+                <label>{pdfModal === 'atestado' ? 'Texto do Atestado:' : 'Prescrição / Medicamentos:'}</label>
+                <textarea
+                  rows={8}
+                  value={pdfTexto}
+                  onChange={e => setPdfTexto(e.target.value)}
+                  placeholder={pdfModal === 'atestado'
+                    ? 'Atesto para os devidos fins que o(a) paciente...'
+                    : 'Medicamento, posologia, duração...'}
+                  autoFocus
+                />
+              </div>
             </div>
+
             <div className="pdf-modal-footer">
-              <button className="btn btn-secondary" onClick={() => setPdfModal(null)}>Cancelar</button>
+              <button className="btn btn-secondary" onClick={() => setPdfModal(null)}>
+                <X size={14} /> Cancelar
+              </button>
               <button className="btn btn-primary" disabled={!pdfTexto.trim()} onClick={async () => {
                 if (pdfModal === 'atestado') await gerarAtestado(paciente, pdfTexto, medicoInfo)
                 else await gerarReceitaMedica(paciente, pdfTexto, medicoInfo)
                 setPdfModal(null)
               }}>
-                <Printer size={14} style={{verticalAlign:'middle',marginRight:4}} />Gerar PDF
+                <Printer size={14} /> Gerar PDF
               </button>
             </div>
           </div>
@@ -1047,7 +1058,7 @@ export default function Prontuario() {
                           </>
                         )}
                         <p><strong>Usa Óculos:</strong> {data.acuidade_visual.usa_oculos === 1 ? 'Sim' : 'Não'}</p>
-                        <p><strong>Dilata:</strong> {data.acuidade_visual.dilata === 1 ? 'Sim' : 'Não'}</p>
+                        <p><strong>Dilatação:</strong> <span className={`dilata-badge ${data.acuidade_visual.dilata === 1 ? 'dilata-sim' : 'dilata-nao'}`}>{data.acuidade_visual.dilata === 1 ? 'Sim' : 'Não'}</span></p>
                       </div>
                       {data.acuidade_visual.observacoes && <p style={{marginTop:4}}><strong>Obs:</strong> {data.acuidade_visual.observacoes}</p>}
                     </div>
@@ -1099,6 +1110,9 @@ export default function Prontuario() {
                         </div>
                         {l.diagnostico && <p><strong>Diagnóstico:</strong> <span dangerouslySetInnerHTML={{ __html: formatTexto(l.diagnostico) }} /></p>}
                         {l.conduta_inicial && <p><strong>Conduta Inicial:</strong> <span className="conduta-badge" style={{backgroundColor: condutaColor(l.conduta_inicial)}}>{condutaInicialLabel(l.conduta_inicial)}</span></p>}
+                        {data.acuidade_visual && (
+                          <p><strong>Dilatou:</strong> <span className={`dilata-badge ${data.acuidade_visual.dilata === 1 ? 'dilata-sim' : 'dilata-nao'}`}>{data.acuidade_visual.dilata === 1 ? 'Sim' : 'Não'}</span></p>
+                        )}
                         {l.observacoes && <p><strong>Obs:</strong> <span dangerouslySetInnerHTML={{ __html: formatTexto(l.observacoes) }} /></p>}
                       </div>
                     )

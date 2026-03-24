@@ -304,6 +304,58 @@ const CSS_BASE = `
     color: #222;
   }
 
+  /* ===== Tabelas RX para impressão P&B ===== */
+  .rx-table.rx-print th {
+    background: transparent;
+    color: #222;
+    font-weight: 700;
+    border: 1.5px solid #333;
+  }
+  .rx-table.rx-print th:first-child {
+    background: transparent;
+  }
+  .rx-table.rx-print td {
+    border: 1.5px solid #333;
+    background: transparent;
+  }
+  .rx-table.rx-print .eye-label {
+    background: transparent;
+    color: #222;
+    font-weight: 800;
+    border-right: 1.5px solid #333;
+  }
+  .rx-table.rx-print {
+    border: 1.5px solid #333;
+  }
+  .rx-adicao.rx-print th {
+    background: transparent;
+    color: #222;
+    font-weight: 700;
+    border: 1.5px solid #333;
+  }
+  .rx-adicao.rx-print td {
+    border: 1.5px solid #333;
+    background: transparent;
+  }
+  .rx-adicao.rx-print {
+    border: 1.5px solid #333;
+  }
+
+  /* ===== Tipo de Lente abaixo das tabelas ===== */
+  .rx-tipo-lente {
+    text-align: left;
+    margin: 16px auto 0;
+    font-size: 11pt;
+  }
+  .rx-tipo-lente strong {
+    color: #333;
+    font-weight: 700;
+  }
+  .rx-tipo-lente span {
+    font-weight: 500;
+    color: #222;
+  }
+
   /* ===== Seções do relatório ===== */
   .section {
     margin-bottom: 20px;
@@ -674,9 +726,8 @@ export async function gerarReceitaOcular(paciente: PacientePdf, rx: PrescricaoPd
         <div class="doc-info-line">
           <div class="info-item"><strong>Tipo</strong><span>${tipoLabel}</span></div>
           ${rx.dp ? `<div class="info-item"><strong>DP</strong><span>${rx.dp} mm</span></div>` : ''}
-          ${rx.observacoes ? `<div class="info-item"><strong>Tipo de Lente</strong><span>${rx.observacoes}</span></div>` : ''}
         </div>
-        <table class="rx-table">
+        <table class="rx-table rx-print">
           <thead><tr><th></th><th>Esférico</th><th>Cilíndrico</th><th>Eixo</th></tr></thead>
           <tbody>
             <tr>
@@ -693,7 +744,8 @@ export async function gerarReceitaOcular(paciente: PacientePdf, rx: PrescricaoPd
             </tr>
           </tbody>
         </table>
-        ${rx.od_adicao ? `<table class="rx-adicao"><thead><tr><th>Adição</th></tr></thead><tbody><tr><td>${fmtEsf(rx.od_adicao)}</td></tr></tbody></table>` : ''}
+        ${rx.od_adicao ? `<table class="rx-adicao rx-print"><thead><tr><th>Adição</th></tr></thead><tbody><tr><td>${fmtEsf(rx.od_adicao)}</td></tr></tbody></table>` : ''}
+        ${rx.observacoes ? `<div class="rx-tipo-lente"><strong>Tipo de Lente:</strong> <span>${rx.observacoes}</span></div>` : ''}
       </div>
       </div>
       ${footerHtml(medico)}

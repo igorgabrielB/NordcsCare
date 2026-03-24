@@ -96,7 +96,8 @@ export default function AgendaEscola() {
     agendaByDate.get(key)!.push(item)
   }
 
-  const hoje = new Date().toISOString().slice(0, 10)
+  const _now = new Date()
+  const hoje = `${_now.getFullYear()}-${String(_now.getMonth() + 1).padStart(2, '0')}-${String(_now.getDate()).padStart(2, '0')}`
 
   return (
     <div className="agenda-escola-page">

@@ -310,4 +310,31 @@ class FilaController {
 
         echo json_encode($stmt->fetchAll());
     }
+
+    /**
+     * PUT /api/fila/{id}/prioridade — Alterna prioridade do paciente na fila.
+     */
+    public static function togglePrioridade(int $id): void {
+        $user = Auth::requireRole(['admin', 'administrativo']);
+
+        $db = Database::getInstance();
+        $stmt = $db->prepare('SELECT id, prioridade FROM fila WHERE id = :id');
+        $stmt->execute([':id' => $id]);
+        $fila = $stmt->fetch();
+
+        if (!$fila) {
+            http_response_code(404);
+            echo json_encode(['error' => 'Registro não encontrado']);
+            return;
+        }
+
+        $novaPrioridade = $fila['prioridade'] > 0 ? 0 : 1;
+        $stmt = $db->prepare('UPDATE fila SET prioridade = :prioridade WHERE id = :id');
+        $stmt->execute([':prioridade' => $novaPrioridade, ':id' => $id]);
+
+        $label = $novaPrioridade > 0 ? 'ativada' : 'removida';
+        AuditLog::registrar('prioridade', 'fila', $id, "Prioridade {$label}", $user);
+
+        echo json_encode(['message' => "Prioridade {$label}", 'prioridade' => $novaPrioridade]);
+    }
 }

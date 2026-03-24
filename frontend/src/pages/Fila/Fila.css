@@ -409,6 +409,35 @@ body.light-mode .kanban-title {
   transform: translateY(-1px) rotate(90deg);
 }
 
+.btn-prioridade {
+  background: rgba(246, 173, 85, 0.1);
+  color: var(--text-muted, #8a7a6a);
+  border: 1px solid transparent;
+}
+
+.btn-prioridade:hover {
+  background: rgba(246, 173, 85, 0.2);
+  color: #f6ad55;
+  border-color: rgba(246, 173, 85, 0.3);
+}
+
+.btn-prioridade.active {
+  background: linear-gradient(135deg, #f6ad55, #ed8936);
+  color: #fff;
+  border-color: transparent;
+  box-shadow: 0 2px 8px rgba(246, 173, 85, 0.35);
+}
+
+.btn-prioridade.active:hover {
+  background: linear-gradient(135deg, #ed8936, #dd6b20);
+  box-shadow: 0 3px 12px rgba(246, 173, 85, 0.45);
+}
+
+.kanban-card.prioritario {
+  border-left: 3px solid #f6ad55;
+  background: linear-gradient(135deg, rgba(246, 173, 85, 0.06), transparent);
+}
+
 /* ===== Modal ===== */
 .modal-overlay {
   position: fixed;

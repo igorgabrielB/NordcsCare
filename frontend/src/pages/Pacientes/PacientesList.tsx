@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import api from '../../services/api.ts'
-import { Search, ClipboardList, Pencil, Trash2, MapPin, Users, School } from 'lucide-react'
+import { Search, ClipboardList, Pencil, Trash2, MapPin, Users, School, Zap } from 'lucide-react'
 import './Pacientes.css'
 
 interface FilaCheck {
@@ -34,8 +34,10 @@ interface PaginationData {
 }
 
 interface FilaInfo {
+  filaId: number
   estacao: string
   status: string
+  prioridade: number
 }
 
 export default function PacientesList() {
@@ -74,9 +76,9 @@ export default function PacientesList() {
       const ids: FilaCheck = {}
       const info: Record<number, FilaInfo> = {}
       Object.entries(res.data).forEach(([estacao, items]) => {
-        (items as { paciente_id: number; status: string }[]).forEach((item) => {
+        (items as { id: number; paciente_id: number; status: string; prioridade: number }[]).forEach((item) => {
           ids[item.paciente_id] = true
-          info[item.paciente_id] = { estacao, status: item.status }
+          info[item.paciente_id] = { filaId: item.id, estacao, status: item.status, prioridade: item.prioridade }
         })
       })
       setNaFila(ids)
@@ -159,16 +161,31 @@ export default function PacientesList() {
     }
   }
 
-  const handleCheckIn = async (pacienteId: number) => {
+  const handleCheckIn = async (pacienteId: number, prioridade = 0) => {
     setCheckingIn(pacienteId)
     try {
-      await api.post('/fila', { paciente_id: pacienteId })
+      await api.post('/fila', { paciente_id: pacienteId, prioridade })
       setNaFila(prev => ({ ...prev, [pacienteId]: true }))
+      checkFilaStatus()
     } catch (err: unknown) {
       const msg = (err as { response?: { data?: { error?: string } } })?.response?.data?.error || 'Erro ao marcar presença'
       alert(msg)
     } finally {
       setCheckingIn(null)
+    }
+  }
+
+  const handleTogglePrioridade = async (pacienteId: number) => {
+    const info = filaInfo[pacienteId]
+    if (!info) {
+      handleCheckIn(pacienteId, 1)
+      return
+    }
+    try {
+      await api.put(`/fila/${info.filaId}/prioridade`)
+      checkFilaStatus()
+    } catch {
+      alert('Erro ao alterar prioridade')
     }
   }
 
@@ -237,6 +254,14 @@ export default function PacientesList() {
                         </span>
                       )}
                       <div className="pac-drawer-right">
+                        <button
+                          className={`btn btn-sm btn-checkin-priority ${filaInfo[p.id]?.prioridade > 0 ? 'active' : ''}`}
+                          onClick={(e) => { e.stopPropagation(); handleTogglePrioridade(p.id) }}
+                          disabled={checkingIn === p.id}
+                          title={filaInfo[p.id]?.prioridade > 0 ? 'Remover prioridade' : naFila[p.id] ? 'Ativar prioridade' : 'Marcar presença com prioridade'}
+                        >
+                          <Zap size={14} />
+                        </button>
                         <button
                           className="btn btn-sm btn-checkin"
                           onClick={(e) => { e.stopPropagation(); handleCheckIn(p.id) }}

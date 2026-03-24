@@ -73,6 +73,15 @@ export default function Fila() {
     }
   }
 
+  const togglePrioridade = async (filaId: number) => {
+    try {
+      await api.put(`/fila/${filaId}/prioridade`)
+      fetchFila()
+    } catch {
+      alert('Erro ao alterar prioridade')
+    }
+  }
+
   const formatTempo = (diffMs: number): string => {
     const mins = Math.floor(diffMs / 60000)
     if (mins < 60) return `${mins}min`
@@ -178,7 +187,7 @@ export default function Fila() {
                       const isExpanded = !!expandedCards[item.id]
                       return (
                         <div
-                          className={`kanban-card em-atendimento ${!estacao.isAtendimento ? 'concluded' : ''}`}
+                          className={`kanban-card em-atendimento ${!estacao.isAtendimento ? 'concluded' : ''} ${item.prioridade > 0 ? 'prioritario' : ''}`}
                           key={item.id}
                           style={{ '--card-accent': estacao.color } as React.CSSProperties}
                         >
@@ -216,6 +225,15 @@ export default function Fila() {
                                     >
                                       <ClipboardList size={14} style={{verticalAlign:'middle',marginRight:3}} />Prontuário
                                     </Link>
+                                    {canManage && (
+                                      <button
+                                        className={`btn-card btn-prioridade ${item.prioridade > 0 ? 'active' : ''}`}
+                                        onClick={() => togglePrioridade(item.id)}
+                                        title={item.prioridade > 0 ? 'Remover prioridade' : 'Marcar como prioridade'}
+                                      >
+                                        <Zap size={14} />{item.prioridade > 0 ? 'Prioridade' : 'Priorizar'}
+                                      </button>
+                                    )}
                                     <button
                                       className="btn-card btn-avancar"
                                       onClick={() => avancarEstacao(item.id)}

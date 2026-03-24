@@ -337,6 +337,49 @@
   box-shadow: none;
 }
 
+.btn-checkin-priority {
+  background: rgba(246, 173, 85, 0.12);
+  color: #f6ad55;
+  border: 1px solid rgba(246, 173, 85, 0.25);
+  border-radius: 8px;
+  padding: 4px 8px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.25s ease;
+}
+
+.btn-checkin-priority:hover:not(:disabled) {
+  background: linear-gradient(135deg, #f6ad55, #ed8936);
+  color: #fff;
+  border-color: transparent;
+  transform: translateY(-1px);
+  box-shadow: 0 3px 10px rgba(246, 173, 85, 0.35);
+}
+
+.btn-checkin-priority:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.btn-checkin-priority.active {
+  background: linear-gradient(135deg, #f6ad55, #ed8936);
+  color: #fff;
+  border-color: transparent;
+  box-shadow: 0 2px 8px rgba(246, 173, 85, 0.35);
+}
+
+.btn-checkin-priority.active:hover:not(:disabled) {
+  background: linear-gradient(135deg, #ed8936, #dd6b20);
+}
+
+.pac-drawer-right {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
 /* ===== Pacientes Drawer List ===== */
 .pacientes-drawer-list {
   display: flex;

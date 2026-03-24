@@ -37,8 +37,14 @@ class DashboardController {
         $escolasHoje = $stmtEscHoje->fetchAll();
 
         // Atendimentos no período
-        $stmt = $db->prepare('SELECT COUNT(*) FROM laudos WHERE DATE(created_at) BETWEEN :di AND :df');
-        $stmt->execute([':di' => $dataInicio, ':df' => $dataFim]);
+        $medicoId = isset($_GET['medico_id']) ? (int) $_GET['medico_id'] : null;
+        if ($medicoId) {
+            $stmt = $db->prepare('SELECT COUNT(*) FROM laudos WHERE DATE(created_at) BETWEEN :di AND :df AND medico_id = :mid');
+            $stmt->execute([':di' => $dataInicio, ':df' => $dataFim, ':mid' => $medicoId]);
+        } else {
+            $stmt = $db->prepare('SELECT COUNT(*) FROM laudos WHERE DATE(created_at) BETWEEN :di AND :df');
+            $stmt->execute([':di' => $dataInicio, ':df' => $dataFim]);
+        }
         $atendimentosHoje = (int) $stmt->fetchColumn();
 
         // Pacientes na fila agora (não concluídos e não de alta/encaminhamento)
@@ -55,8 +61,13 @@ class DashboardController {
         $totalPrescricoes = (int) $stmtPr->fetchColumn();
 
         // Total laudos no período
-        $stmtLa = $db->prepare('SELECT COUNT(*) FROM laudos WHERE DATE(created_at) BETWEEN :di AND :df');
-        $stmtLa->execute([':di' => $dataInicio, ':df' => $dataFim]);
+        if ($medicoId) {
+            $stmtLa = $db->prepare('SELECT COUNT(*) FROM laudos WHERE DATE(created_at) BETWEEN :di AND :df AND medico_id = :mid');
+            $stmtLa->execute([':di' => $dataInicio, ':df' => $dataFim, ':mid' => $medicoId]);
+        } else {
+            $stmtLa = $db->prepare('SELECT COUNT(*) FROM laudos WHERE DATE(created_at) BETWEEN :di AND :df');
+            $stmtLa->execute([':di' => $dataInicio, ':df' => $dataFim]);
+        }
         $totalLaudos = (int) $stmtLa->fetchColumn();
 
         // Total altas no período (pacientes que foram para estação altas)

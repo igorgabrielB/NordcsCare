@@ -19,6 +19,7 @@ import Relatorios from './pages/Relatorios/Relatorios.tsx'
 import ModelosDocumentos from './pages/ModelosDocumentos/ModelosDocumentos.tsx'
 import LaudosProntos from './pages/LaudosProntos/LaudosProntos.tsx'
 import GerenciamentoRoles from './pages/GerenciamentoRoles/GerenciamentoRoles.tsx'
+import Home from './pages/Home/Home.tsx'
 
 export default function App() {
   return (
@@ -28,10 +29,14 @@ export default function App() {
           {/* Public */}
           <Route path="/login" element={<Login />} />
 
-          {/* Protected - all roles */}
-          {/* Rotas para todos os roles autenticados */}
-          <Route element={<Layout />}>
+          {/* Dashboard - somente admin */}
+          <Route element={<Layout allowedRoles={['admin']} />}>
             <Route path="/dashboard" element={<Dashboard />} />
+          </Route>
+
+          {/* Protected - all roles */}
+          <Route element={<Layout />}>
+            <Route path="/home" element={<Home />} />
             <Route path="/pacientes" element={<PacientesList />} />
             <Route path="/pacientes/novo" element={<PacienteForm />} />
             <Route path="/pacientes/:id/editar" element={<PacienteForm />} />
@@ -56,7 +61,7 @@ export default function App() {
           </Route>
 
           {/* Default redirect */}
-          <Route path="*" element={<Navigate to="/dashboard" replace />} />
+          <Route path="*" element={<Navigate to="/fila" replace />} />
         </Routes>
       </AuthProvider>
     </BrowserRouter>

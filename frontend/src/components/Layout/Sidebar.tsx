@@ -1,20 +1,32 @@
 import { NavLink } from 'react-router-dom'
-import { LayoutDashboard, Users, ClipboardList, BarChart2 } from 'lucide-react'
+import { LayoutDashboard, Home, Users, ClipboardList, BarChart2 } from 'lucide-react'
+import { useAuth } from '../../contexts/AuthContext.tsx'
 
 interface SidebarProps {
   isOpen: boolean
 }
 
 export default function Sidebar({ isOpen }: SidebarProps) {
+  const { user } = useAuth()
+  const isAdmin = user?.role === 'admin'
+
   return (
     <aside className={`sidebar ${isOpen ? 'open' : 'closed'}`}>
       <nav className="sidebar-nav">
         <div className="sidebar-section">
           <div className={`sidebar-section-title ${isOpen ? 'show' : ''}`}>Principal</div>
-          <NavLink to="/dashboard" className={({ isActive }) => `sidebar-link${isActive ? ' active' : ''}`} title="Dashboard">
-            <span className="icon"><LayoutDashboard size={18} /></span>
-            <span className={`sidebar-text ${isOpen ? 'show' : ''}`}>Dashboard</span>
-          </NavLink>
+          {isAdmin && (
+            <NavLink to="/dashboard" className={({ isActive }) => `sidebar-link${isActive ? ' active' : ''}`} title="Dashboard">
+              <span className="icon"><LayoutDashboard size={18} /></span>
+              <span className={`sidebar-text ${isOpen ? 'show' : ''}`}>Dashboard</span>
+            </NavLink>
+          )}
+          {!isAdmin && (
+            <NavLink to="/home" className={({ isActive }) => `sidebar-link${isActive ? ' active' : ''}`} title="Início">
+              <span className="icon"><Home size={18} /></span>
+              <span className={`sidebar-text ${isOpen ? 'show' : ''}`}>Início</span>
+            </NavLink>
+          )}
           <NavLink to="/pacientes" className={({ isActive }) => `sidebar-link${isActive ? ' active' : ''}`} title="Pacientes">
             <span className="icon"><Users size={18} /></span>
             <span className={`sidebar-text ${isOpen ? 'show' : ''}`}>Pacientes</span>

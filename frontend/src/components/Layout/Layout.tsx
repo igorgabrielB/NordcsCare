@@ -33,7 +33,7 @@ export default function Layout({ allowedRoles }: LayoutProps) {
   }
 
   if (allowedRoles && user && !allowedRoles.includes(user.role)) {
-    return <Navigate to="/dashboard" replace />
+    return <Navigate to="/home" replace />
   }
 
   return (
