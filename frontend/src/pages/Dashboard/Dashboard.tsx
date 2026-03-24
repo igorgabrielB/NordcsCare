@@ -98,20 +98,27 @@ export default function Dashboard() {
       <div className="dashboard-hero">
         <div className="dashboard-hero-bg" />
         <div className="dashboard-hero-content">
-          <div className="dashboard-hero-text">
-            <p className="dashboard-hero-greeting">{saudacao},</p>
-            <h1 className="dashboard-hero-name">{user?.nome?.split(' ')[0]}!</h1>
+          <div className="dashboard-hero-left">
+            <div className="dashboard-hero-icon">
+              <TrendingUp size={26} />
+            </div>
+            <div className="dashboard-hero-text">
+              <p className="dashboard-hero-greeting">{saudacao},</p>
+              <h1 className="dashboard-hero-name">{user?.nome?.split(' ')[0]}!</h1>
+            </div>
           </div>
-          <div className="dashboard-hero-date">
-            <Calendar size={15} />
-            <span>
-              {new Date().toLocaleDateString('pt-BR', {
-                weekday: 'long',
-                day: 'numeric',
-                month: 'long',
-                year: 'numeric',
-              })}
-            </span>
+          <div className="dashboard-hero-right">
+            <div className="dashboard-hero-date">
+              <Calendar size={15} />
+              <span>
+                {new Date().toLocaleDateString('pt-BR', {
+                  weekday: 'long',
+                  day: 'numeric',
+                  month: 'long',
+                  year: 'numeric',
+                })}
+              </span>
+            </div>
           </div>
         </div>
       </div>

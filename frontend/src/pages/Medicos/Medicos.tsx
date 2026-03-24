@@ -1,7 +1,7 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useMemo } from 'react'
 import { Link } from 'react-router-dom'
 import api from '../../services/api.ts'
-import { ArrowLeft, Pencil, Trash2 } from 'lucide-react'
+import { ArrowLeft, Pencil, Trash2, Plus, Search, Stethoscope, UserCheck, UserX, Phone, Mail, ShieldCheck } from 'lucide-react'
 import './Medicos.css'
 
 interface Medico {
@@ -72,6 +72,12 @@ export default function Medicos() {
     m.nome.toLowerCase().includes(search.toLowerCase()) ||
     m.crm.toLowerCase().includes(search.toLowerCase())
   )
+
+  const stats = useMemo(() => ({
+    total: medicos.length,
+    ativos: medicos.filter(m => m.ativo).length,
+    inativos: medicos.filter(m => !m.ativo).length,
+  }), [medicos])
 
   const openCreate = () => {
     setEditId(null)
@@ -153,63 +159,123 @@ export default function Medicos() {
 
   return (
     <div className="medicos-page">
-      <div className="page-header">
-        <div className="page-header-left">
-          <Link to="/admin" className="btn btn-secondary btn-sm btn-back">
-            <ArrowLeft size={16} /> Voltar
+      {/* Hero Header */}
+      <div className="med-hero">
+        <div className="med-hero-top">
+          <Link to="/admin" className="btn btn-secondary btn-sm med-btn-back">
+            <ArrowLeft size={16} />
           </Link>
-          <h1>Cadastro de Médicos</h1>
+          <button className="btn btn-primary med-btn-novo" onClick={openCreate}>
+            <Plus size={16} />
+            <span>Novo Médico</span>
+          </button>
         </div>
-        <button className="btn btn-primary" onClick={openCreate}>+ Novo Médico</button>
+        <div className="med-hero-content">
+          <div className="med-hero-icon">
+            <Stethoscope size={28} />
+          </div>
+          <div>
+            <h1>Cadastro de Médicos</h1>
+            <p className="med-hero-subtitle">Gerencie a equipe médica do sistema</p>
+          </div>
+        </div>
+        <div className="med-stats-row">
+          <div className="med-stat">
+            <span className="med-stat-value">{stats.total}</span>
+            <span className="med-stat-label">Total</span>
+          </div>
+          <div className="med-stat">
+            <span className="med-stat-value med-stat-ativo">{stats.ativos}</span>
+            <span className="med-stat-label">Ativos</span>
+          </div>
+          <div className="med-stat">
+            <span className="med-stat-value med-stat-inativo">{stats.inativos}</span>
+            <span className="med-stat-label">Inativos</span>
+          </div>
+        </div>
       </div>
 
-      <div className="search-bar">
-        <input
-          type="text"
-          placeholder="Buscar por nome ou CRM..."
-          value={search}
-          onChange={e => setSearch(e.target.value)}
-        />
+      {/* Search */}
+      <div className="med-toolbar">
+        <div className="med-search-box">
+          <Search size={16} className="med-search-icon" />
+          <input
+            type="text"
+            placeholder="Buscar por nome ou CRM..."
+            value={search}
+            onChange={e => setSearch(e.target.value)}
+          />
+        </div>
       </div>
 
+      {/* Content */}
       {loading ? (
-        <div className="loading">Carregando...</div>
+        <div className="med-loading">
+          <div className="med-loading-spinner" />
+          <p>Carregando médicos...</p>
+        </div>
+      ) : filtered.length === 0 ? (
+        <div className="med-empty">
+          <div className="med-empty-icon">
+            <Stethoscope size={48} strokeWidth={1.5} />
+          </div>
+          <h3>{medicos.length === 0 ? 'Nenhum médico cadastrado' : 'Nenhum resultado encontrado'}</h3>
+          <p>{medicos.length === 0 ? 'Adicione médicos para começar' : 'Tente outra busca'}</p>
+          {medicos.length === 0 && (
+            <button className="btn btn-primary" onClick={openCreate}>
+              <Plus size={16} style={{ marginRight: 6 }} />Cadastrar primeiro médico
+            </button>
+          )}
+        </div>
       ) : (
-        <div className="medicos-table-container">
-          <table className="medicos-table">
+        <div className="med-table-container">
+          <table className="med-table">
             <thead>
               <tr>
-                <th>Nome</th>
+                <th>Médico</th>
                 <th>CRM</th>
                 <th>Especialidade</th>
-                <th>Telefone</th>
-                <th>Email</th>
+                <th>Contato</th>
                 <th>Status</th>
-                <th>Ações</th>
+                <th></th>
               </tr>
             </thead>
             <tbody>
-              {filtered.length === 0 ? (
-                <tr><td colSpan={7} className="empty-state">Nenhum médico cadastrado</td></tr>
-              ) : filtered.map(m => (
-                <tr key={m.id}>
-                  <td>Dr(a). {m.nome}</td>
-                  <td><span className="crm-badge">{m.crm}</span></td>
-                  <td>{m.especialidade}</td>
-                  <td>{m.telefone || '—'}</td>
-                  <td>{m.email || '—'}</td>
+              {filtered.map((m, index) => (
+                <tr key={m.id} style={{ animationDelay: `${index * 0.03}s` }}>
                   <td>
-                    <span className={`badge ${m.ativo ? 'badge-ativo' : 'badge-inativo'}`}>
-                      {m.ativo ? 'Ativo' : 'Inativo'}
+                    <div className="med-nome-cell">
+                      <div className="med-avatar">
+                        {m.nome.charAt(0).toUpperCase()}
+                      </div>
+                      <div>
+                        <span className="med-nome">Dr(a). {m.nome}</span>
+                      </div>
+                    </div>
+                  </td>
+                  <td><span className="crm-badge"><ShieldCheck size={12} /> {m.crm}/{m.uf}</span></td>
+                  <td><span className="med-especialidade">{m.especialidade}</span></td>
+                  <td>
+                    <div className="med-contato-cell">
+                      {m.telefone && <span className="med-contato-item"><Phone size={12} /> {m.telefone}</span>}
+                      {m.email && <span className="med-contato-item"><Mail size={12} /> {m.email}</span>}
+                      {!m.telefone && !m.email && <span className="med-contato-vazio">—</span>}
+                    </div>
+                  </td>
+                  <td>
+                    <span className={`med-status-badge ${m.ativo ? 'med-status-ativo' : 'med-status-inativo'}`}>
+                      {m.ativo ? <><UserCheck size={12} /> Ativo</> : <><UserX size={12} /> Inativo</>}
                     </span>
                   </td>
-                  <td className="actions">
-                    <button className="btn btn-secondary btn-sm" onClick={() => openEdit(m)}>
-                      <Pencil size={14} style={{verticalAlign:'middle',marginRight:3}} />Editar
-                    </button>
-                    <button className="btn btn-danger btn-sm" onClick={() => handleDelete(m)}>
-                      <Trash2 size={14} style={{verticalAlign:'middle',marginRight:3}} />Excluir
-                    </button>
+                  <td>
+                    <div className="med-actions">
+                      <button className="med-action-btn" title="Editar" onClick={() => openEdit(m)}>
+                        <Pencil size={14} />
+                      </button>
+                      <button className="med-action-btn med-action-danger" title="Excluir" onClick={() => handleDelete(m)}>
+                        <Trash2 size={14} />
+                      </button>
+                    </div>
                   </td>
                 </tr>
               ))}
@@ -219,10 +285,19 @@ export default function Medicos() {
       )}
 
       {showModal && (
-        <div className="modal-overlay" onClick={() => setShowModal(false)}>
-          <div className="modal-content" onClick={e => e.stopPropagation()}>
-            <h2>{editId ? 'Editar Médico' : 'Novo Médico'}</h2>
-            <div className="modal-form">
+        <div className="med-modal-overlay" onClick={() => setShowModal(false)}>
+          <div className="med-modal" onClick={e => e.stopPropagation()}>
+            <div className="med-modal-header">
+              <div className="med-modal-header-icon">
+                {editId ? <Pencil size={18} /> : <Plus size={18} />}
+              </div>
+              <div>
+                <h3>{editId ? 'Editar Médico' : 'Novo Médico'}</h3>
+                <p className="med-modal-header-sub">{editId ? 'Atualize os dados do médico' : 'Preencha os dados para cadastrar'}</p>
+              </div>
+              <button className="med-modal-close" onClick={() => setShowModal(false)}>&times;</button>
+            </div>
+            <div className="med-modal-body">
               <div className="form-group">
                 <label>Nome Completo *</label>
                 <input value={form.nome} onChange={e => setForm({ ...form, nome: e.target.value })} placeholder="Nome do médico" />
@@ -275,10 +350,10 @@ export default function Medicos() {
                 </div>
               )}
             </div>
-            <div className="modal-actions">
+            <div className="med-modal-footer">
               <button className="btn btn-secondary" onClick={() => setShowModal(false)}>Cancelar</button>
               <button className="btn btn-primary" onClick={handleSave} disabled={saving}>
-                {saving ? 'Salvando...' : 'Salvar'}
+                {saving ? 'Salvando...' : editId ? 'Atualizar' : 'Cadastrar'}
               </button>
             </div>
           </div>

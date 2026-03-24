@@ -47,8 +47,8 @@ class DashboardController {
         }
         $atendimentosHoje = (int) $stmt->fetchColumn();
 
-        // Pacientes na fila agora (não concluídos e não de alta/encaminhamento)
-        $naFila = (int) $db->query("SELECT COUNT(*) FROM fila WHERE status != 'concluido' AND estacao NOT IN ('altas', 'encaminhamentos')")->fetchColumn();
+        // Pacientes na fila agora (não concluídos e não de alta/encaminhamento, somente hoje)
+        $naFila = (int) $db->query("SELECT COUNT(*) FROM fila WHERE DATE(created_at) = CURDATE() AND status != 'concluido' AND estacao NOT IN ('altas', 'encaminhamentos')")->fetchColumn();
 
         // Total exames no período
         $stmtEx = $db->prepare('SELECT COUNT(*) FROM exames WHERE DATE(created_at) BETWEEN :di AND :df');

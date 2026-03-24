@@ -8,13 +8,14 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 1.5rem;
+  margin-bottom: 1.75rem;
   flex-wrap: wrap;
   gap: 1rem;
 }
 
 .alunos-page .page-header h1 {
-  font-size: 1.5rem;
+  font-size: 1.4rem;
+  font-weight: 700;
   color: var(--text);
 }
 
@@ -27,11 +28,11 @@
 /* Upload area */
 .csv-upload-area {
   border: 2px dashed var(--border);
-  border-radius: 12px;
-  padding: 2.5rem 2rem;
+  border-radius: 16px;
+  padding: 3rem 2rem;
   text-align: center;
   background: var(--bg-card);
-  transition: border-color 0.2s, background 0.2s;
+  transition: border-color 0.25s, background 0.25s, box-shadow 0.25s;
   cursor: pointer;
   position: relative;
 }
@@ -39,7 +40,8 @@
 .csv-upload-area:hover,
 .csv-upload-area.drag-over {
   border-color: var(--primary);
-  background: rgba(115, 69, 214, 0.08);
+  background: rgba(115, 69, 214, 0.06);
+  box-shadow: 0 0 0 4px rgba(115, 69, 214, 0.08);
 }
 
 .csv-upload-area input[type="file"] {
@@ -106,9 +108,9 @@
   justify-content: space-between;
   background: var(--bg-card);
   border: 1px solid var(--border);
-  border-radius: 10px;
-  padding: 0.75rem 1.25rem;
-  margin-bottom: 1rem;
+  border-radius: 12px;
+  padding: 0.85rem 1.25rem;
+  margin-bottom: 1.25rem;
 }
 
 .file-details {
@@ -157,8 +159,8 @@
 .csv-mapping {
   background: var(--bg-card);
   border: 1px solid var(--border);
-  border-radius: 12px;
-  padding: 1.25rem;
+  border-radius: 14px;
+  padding: 1.5rem;
   margin-bottom: 1.25rem;
 }
 
@@ -210,7 +212,7 @@
 .csv-preview {
   background: var(--bg-card);
   border: 1px solid var(--border);
-  border-radius: 12px;
+  border-radius: 14px;
   overflow: hidden;
   margin-bottom: 1.25rem;
 }
@@ -341,7 +343,7 @@
 /* Result message */
 .import-result {
   padding: 1rem 1.25rem;
-  border-radius: 10px;
+  border-radius: 12px;
   margin-bottom: 1.25rem;
   font-size: 0.88rem;
 }

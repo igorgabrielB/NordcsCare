@@ -1,16 +1,16 @@
 .exclusao-escola-page {
-  padding: 1.5rem;
+  padding: 2rem;
   max-width: 900px;
   margin: 0 auto;
 }
 
 /* Result banner */
 .exclusao-result {
-  padding: 0.85rem 1rem;
-  border-radius: 8px;
-  margin-bottom: 1rem;
+  padding: 0.85rem 1.25rem;
+  border-radius: 12px;
+  margin-bottom: 1.25rem;
   font-size: 0.88rem;
-  font-weight: 500;
+  font-weight: 600;
 }
 .exclusao-result.success {
   background: rgba(72, 187, 120, 0.12);
@@ -27,37 +27,38 @@
 .exclusao-summary {
   display: flex;
   gap: 1.5rem;
-  color: var(--text-muted, #bfab93);
+  color: var(--text-muted);
   font-size: 0.88rem;
-  margin-bottom: 1rem;
+  margin-bottom: 1.25rem;
 }
 
 /* Search */
 .exclusao-search-bar {
   position: relative;
-  margin-bottom: 1rem;
+  margin-bottom: 1.25rem;
 }
 .exclusao-search-bar .search-icon {
   position: absolute;
-  left: 0.75rem;
+  left: 0.85rem;
   top: 50%;
   transform: translateY(-50%);
-  color: var(--text-muted, #bfab93);
+  color: var(--text-muted);
   pointer-events: none;
 }
 .exclusao-search-bar input {
   width: 100%;
-  padding: 0.55rem 0.9rem 0.55rem 2.2rem;
-  border: 1px solid var(--border, #4a3f35);
-  border-radius: 8px;
-  background: var(--bg-light, #2d2a26);
-  color: var(--text, #ede0d4);
+  padding: 0.65rem 1rem 0.65rem 2.4rem;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--bg-card);
+  color: var(--text);
   font-size: 0.88rem;
   outline: none;
-  transition: border-color 0.2s;
+  transition: border-color 0.2s, box-shadow 0.2s;
 }
 .exclusao-search-bar input:focus {
-  border-color: var(--accent, #c4956a);
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px rgba(115, 69, 214, 0.12);
 }
 
 /* School list */
@@ -71,33 +72,34 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  background: var(--bg-light, #2d2a26);
-  border: 1px solid var(--border, #4a3f35);
-  border-radius: 10px;
-  padding: 0.75rem 1rem;
-  transition: border-color 0.2s;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 0.85rem 1.25rem;
+  transition: border-color 0.2s, box-shadow 0.2s;
 }
 .exclusao-row:hover {
   border-color: rgba(245, 101, 101, 0.4);
+  box-shadow: 0 2px 8px rgba(245, 101, 101, 0.06);
 }
 
 .exclusao-row-info {
   display: flex;
   align-items: center;
-  gap: 0.6rem;
+  gap: 0.75rem;
   flex: 1;
   min-width: 0;
 }
 
 .exclusao-row-icon {
-  color: var(--accent, #c4956a);
+  color: var(--text-secondary);
   flex-shrink: 0;
 }
 
 .exclusao-row-name {
   font-weight: 600;
   font-size: 0.9rem;
-  color: var(--text, #ede0d4);
+  color: var(--text);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -105,7 +107,7 @@
 
 .exclusao-row-count {
   font-size: 0.78rem;
-  color: var(--text-muted, #bfab93);
+  color: var(--text-muted);
   flex-shrink: 0;
   margin-left: 0.5rem;
 }
@@ -114,19 +116,19 @@
   display: inline-flex;
   align-items: center;
   gap: 0.3rem;
-  padding: 0.4rem 0.75rem;
-  border: 1px solid rgba(245, 101, 101, 0.35);
-  border-radius: 6px;
-  background: rgba(245, 101, 101, 0.1);
+  padding: 0.45rem 0.85rem;
+  border: 1px solid rgba(245, 101, 101, 0.3);
+  border-radius: 8px;
+  background: rgba(245, 101, 101, 0.08);
   color: var(--danger);
   font-size: 0.8rem;
-  font-weight: 500;
+  font-weight: 600;
   cursor: pointer;
   transition: all 0.2s;
   flex-shrink: 0;
 }
 .btn-delete-sm:hover {
-  background: rgba(245, 101, 101, 0.2);
+  background: rgba(245, 101, 101, 0.18);
   border-color: rgba(245, 101, 101, 0.5);
 }
 
@@ -134,22 +136,25 @@
 .exclusao-overlay {
   position: fixed;
   inset: 0;
-  background: rgba(0, 0, 0, 0.6);
+  background: rgba(0, 0, 0, 0.55);
+  backdrop-filter: blur(4px);
   display: flex;
   align-items: center;
   justify-content: center;
   z-index: 1000;
   padding: 1rem;
+  animation: fadeIn 0.15s ease;
 }
 
 .exclusao-modal {
-  background: var(--bg-light, #2d2a26);
-  border: 1px solid var(--border, #4a3f35);
-  border-radius: 14px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 16px;
   padding: 2rem;
   max-width: 440px;
   width: 100%;
   text-align: center;
+  animation: slideUp 0.2s ease;
 }
 
 .exclusao-modal-icon {
@@ -158,25 +163,26 @@
 }
 
 .exclusao-modal h3 {
-  color: var(--text, #ede0d4);
-  font-size: 1.1rem;
+  color: var(--text);
+  font-size: 1.15rem;
+  font-weight: 700;
   margin-bottom: 0.5rem;
 }
 
 .exclusao-modal p {
-  color: var(--text-muted, #bfab93);
+  color: var(--text-muted);
   font-size: 0.85rem;
   line-height: 1.5;
   margin-bottom: 0.5rem;
 }
 
 .exclusao-modal-school {
-  background: var(--bg, #1e1b18);
-  border: 1px solid var(--border, #4a3f35);
-  border-radius: 8px;
-  padding: 0.6rem 1rem;
-  font-weight: 600;
-  color: var(--text, #ede0d4);
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 0.7rem 1rem;
+  font-weight: 700;
+  color: var(--text);
   font-size: 0.95rem;
   margin: 0.75rem 0;
 }
@@ -188,7 +194,7 @@
 
 .exclusao-modal-label {
   display: block;
-  color: var(--text-muted, #bfab93);
+  color: var(--text-muted);
   font-size: 0.82rem;
   margin-bottom: 0.4rem;
   text-align: left;
@@ -196,20 +202,22 @@
 
 .exclusao-modal-input {
   width: 100%;
-  padding: 0.5rem 0.75rem;
-  border: 1px solid var(--border, #4a3f35);
-  border-radius: 6px;
-  background: var(--bg, #1e1b18);
-  color: var(--text, #ede0d4);
+  padding: 0.6rem 0.75rem;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--bg-elevated);
+  color: var(--text);
   font-size: 0.88rem;
   outline: none;
   margin-bottom: 1rem;
   text-align: center;
   letter-spacing: 2px;
-  font-weight: 600;
+  font-weight: 700;
+  transition: border-color 0.2s;
 }
 .exclusao-modal-input:focus {
   border-color: var(--danger);
+  box-shadow: 0 0 0 3px rgba(229, 62, 62, 0.12);
 }
 
 .exclusao-modal-actions {
@@ -219,29 +227,29 @@
 }
 
 .exclusao-modal-actions .btn-cancel {
-  padding: 0.5rem 1.2rem;
-  border: 1px solid var(--border, #4a3f35);
-  border-radius: 8px;
+  padding: 0.55rem 1.25rem;
+  border: 1px solid var(--border);
+  border-radius: 10px;
   background: transparent;
-  color: var(--text-muted, #bfab93);
+  color: var(--text-muted);
   cursor: pointer;
   font-size: 0.85rem;
   transition: all 0.2s;
 }
 .exclusao-modal-actions .btn-cancel:hover {
-  background: rgba(255, 255, 255, 0.05);
+  background: var(--bg-hover);
 }
 
 .exclusao-modal-actions .btn-delete {
   display: inline-flex;
   align-items: center;
   gap: 0.35rem;
-  padding: 0.5rem 1.2rem;
+  padding: 0.55rem 1.25rem;
   border: none;
-  border-radius: 8px;
+  border-radius: 10px;
   background: #e53e3e;
-  color: var(--text);
-  font-weight: 600;
+  color: #fff;
+  font-weight: 700;
   font-size: 0.85rem;
   cursor: pointer;
   transition: all 0.2s;

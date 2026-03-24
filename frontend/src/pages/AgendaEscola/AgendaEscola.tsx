@@ -1,7 +1,7 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { Link } from 'react-router-dom'
 import api from '../../services/api.ts'
-import { ArrowLeft, CalendarDays, School, Plus, Trash2, ChevronLeft, ChevronRight, Users } from 'lucide-react'
+import { ArrowLeft, CalendarDays, School, Plus, Trash2, ChevronLeft, ChevronRight, Users, CalendarCheck, CalendarX } from 'lucide-react'
 import './AgendaEscola.css'
 
 interface EscolaOption {
@@ -99,36 +99,75 @@ export default function AgendaEscola() {
   const _now = new Date()
   const hoje = `${_now.getFullYear()}-${String(_now.getMonth() + 1).padStart(2, '0')}-${String(_now.getDate()).padStart(2, '0')}`
 
+  const stats = useMemo(() => {
+    const escolasAgendadas = new Set(agenda.map(a => a.escola)).size
+    const datasAgendadas = new Set(agenda.map(a => a.data_atendimento)).size
+    const totalAlunos = agenda.reduce((sum, a) => sum + a.total_alunos, 0)
+    return { escolasAgendadas, datasAgendadas, totalAlunos }
+  }, [agenda])
+
   return (
     <div className="agenda-escola-page">
-      <div className="page-header">
-        <div>
-          <h1><CalendarDays size={24} style={{ verticalAlign: 'middle', marginRight: 8 }} />Agenda de Escolas</h1>
-          <p>Defina os dias de atendimento para cada escola</p>
+      {/* Hero Header */}
+      <div className="ae-hero">
+        <div className="ae-hero-top">
+          <Link to="/admin" className="btn btn-secondary btn-sm ae-btn-back">
+            <ArrowLeft size={16} />
+          </Link>
         </div>
-        <Link to="/admin" className="btn btn-secondary" style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem' }}>
-          <ArrowLeft size={16} /> Voltar
-        </Link>
+        <div className="ae-hero-content">
+          <div className="ae-hero-icon">
+            <CalendarDays size={28} />
+          </div>
+          <div>
+            <h1>Agenda de Escolas</h1>
+            <p className="ae-hero-subtitle">Defina os dias de atendimento para cada escola</p>
+          </div>
+        </div>
+        <div className="ae-stats-row">
+          <div className="ae-stat">
+            <span className="ae-stat-value">{stats.escolasAgendadas}</span>
+            <span className="ae-stat-label">Escolas</span>
+          </div>
+          <div className="ae-stat">
+            <span className="ae-stat-value ae-stat-datas">{stats.datasAgendadas}</span>
+            <span className="ae-stat-label">Datas</span>
+          </div>
+          <div className="ae-stat">
+            <span className="ae-stat-value ae-stat-alunos">{stats.totalAlunos}</span>
+            <span className="ae-stat-label">Alunos</span>
+          </div>
+        </div>
       </div>
+
+      <div className="ae-content-grid">
 
       {/* Add schedule */}
       <div className="agenda-add-section">
-        <h3><Plus size={16} style={{ verticalAlign: 'middle', marginRight: 6 }} />Agendar Escola</h3>
+        <div className="ae-section-header">
+          <div className="ae-section-icon ae-section-icon-add">
+            <Plus size={16} />
+          </div>
+          <h3>Agendar Escola</h3>
+        </div>
 
         <div className="agenda-form-row">
           <div className="agenda-form-group">
             <label>Escola</label>
-            <select
-              value={selectedEscola}
-              onChange={e => { setSelectedEscola(e.target.value); setSelectedDates([]) }}
-            >
-              <option value="">— Selecione a escola —</option>
-              {escolas.map(e => (
-                <option key={e.escola} value={e.escola}>
-                  {e.escola} ({e.total} alunos)
-                </option>
-              ))}
-            </select>
+            <div className="ae-select-wrapper">
+              <School size={16} className="ae-select-icon" />
+              <select
+                value={selectedEscola}
+                onChange={e => { setSelectedEscola(e.target.value); setSelectedDates([]) }}
+              >
+                <option value="">— Selecione a escola —</option>
+                {escolas.map(e => (
+                  <option key={e.escola} value={e.escola}>
+                    {e.escola} ({e.total} alunos)
+                  </option>
+                ))}
+              </select>
+            </div>
           </div>
         </div>
 
@@ -178,9 +217,12 @@ export default function AgendaEscola() {
 
             {selectedDates.length > 0 && (
               <div className="agenda-selected-dates">
-                <span>{selectedDates.length} data(s) selecionada(s)</span>
+                <div className="ae-selected-info">
+                  <CalendarCheck size={16} />
+                  <span><strong>{selectedDates.length}</strong> data(s) selecionada(s)</span>
+                </div>
                 <button
-                  className="btn btn-primary"
+                  className="btn btn-primary ae-btn-salvar"
                   onClick={salvarDatas}
                   disabled={saving}
                 >
@@ -194,13 +236,21 @@ export default function AgendaEscola() {
 
       {/* Current schedule */}
       <div className="agenda-list-section">
-        <h3>
-          <CalendarDays size={16} style={{ verticalAlign: 'middle', marginRight: 6 }} />
-          Agenda de {mesLabel}
-        </h3>
+        <div className="ae-section-header">
+          <div className="ae-section-icon">
+            <CalendarDays size={16} />
+          </div>
+          <div>
+            <h3>Agenda de {mesLabel}</h3>
+            <p className="ae-section-sub">{agenda.length} agendamento(s)</p>
+          </div>
+        </div>
 
         {agenda.length === 0 ? (
-          <p className="agenda-empty">Nenhuma escola agendada para este mês</p>
+          <div className="agenda-empty">
+            <CalendarX size={36} strokeWidth={1.5} />
+            <p>Nenhuma escola agendada para este mês</p>
+          </div>
         ) : (
           <div className="agenda-table-wrapper">
             <table className="agenda-table">
@@ -225,12 +275,16 @@ export default function AgendaEscola() {
                         {isHoje && <span className="badge-hoje">HOJE</span>}
                       </td>
                       <td>
-                        <School size={14} style={{ verticalAlign: 'middle', marginRight: 4, opacity: 0.6 }} />
-                        {item.escola}
+                        <div className="ae-cell-escola">
+                          <School size={14} />
+                          <span>{item.escola}</span>
+                        </div>
                       </td>
                       <td>
-                        <Users size={14} style={{ verticalAlign: 'middle', marginRight: 4, opacity: 0.6 }} />
-                        {item.total_alunos}
+                        <div className="ae-cell-alunos">
+                          <Users size={14} />
+                          <span>{item.total_alunos}</span>
+                        </div>
                       </td>
                       <td>
                         <button
@@ -248,6 +302,7 @@ export default function AgendaEscola() {
             </table>
           </div>
         )}
+      </div>
       </div>
     </div>
   )

@@ -9,7 +9,7 @@ export default function Footer() {
         <span className="footer-copy">&copy; {new Date().getFullYear()} Nordcs. Todos os direitos reservados.</span>
       </div>
       <div className="footer-right">
-        <span className="footer-version">v1.4</span>
+        <span className="footer-version">v1.5</span>
       </div>
     </footer>
   )

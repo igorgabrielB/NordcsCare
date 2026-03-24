@@ -1,115 +1,614 @@
-/* ===== Medicos ===== */
+/* ===== Cadastro de Médicos – Redesign ===== */
+
 .medicos-page {
-  padding: 0;
+  padding: 2rem;
+  max-width: 1100px;
+  margin: 0 auto;
+  animation: med-fadeIn 0.35s ease;
 }
 
-.medicos-page .page-header {
+@keyframes med-fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes med-rowIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes med-spin {
+  to { transform: rotate(360deg); }
+}
+
+@keyframes med-modalIn {
+  from { opacity: 0; transform: translateY(24px) scale(0.97); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+/* ===== Hero Header ===== */
+.med-hero {
+  background: linear-gradient(135deg, rgba(115, 69, 214, 0.10), rgba(49, 130, 206, 0.06));
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 1.5rem 1.75rem;
+  margin-bottom: 1.5rem;
+}
+
+.med-hero-top {
   display: flex;
-  align-items: center;
   justify-content: space-between;
-  margin-bottom: 24px;
-}
-
-.medicos-page .page-header-left {
-  display: flex;
   align-items: center;
-  gap: 12px;
+  margin-bottom: 1.25rem;
 }
 
-.medicos-page .page-header h1 {
-  font-size: 1.4rem;
-  color: var(--text, #f0ebe3);
-}
-
-.btn-back {
+.med-btn-back {
   display: inline-flex;
   align-items: center;
   gap: 4px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 6px 10px;
+  color: var(--text-secondary);
+  transition: all 0.2s;
 }
 
-.medicos-page .search-bar {
-  display: flex;
-  gap: 8px;
-  margin-bottom: 20px;
-}
-
-.medicos-page .search-bar input {
-  flex: 1;
-  padding: 10px 14px;
-  border: 1px solid var(--gray-300);
-  border-radius: var(--radius);
-  font-size: 0.9rem;
-  outline: none;
-}
-
-.medicos-page .search-bar input:focus {
+.med-btn-back:hover {
+  color: var(--text);
   border-color: var(--primary);
-  box-shadow: 0 0 0 3px rgba(115, 69, 214, 0.2);
 }
 
-/* Table */
-.medicos-table-container {
-  background: var(--bg-card, #3a3a3a);
-  border-radius: var(--radius);
-  box-shadow: var(--shadow);
-  overflow-x: auto;
-  border: 1px solid var(--border, #594747);
-}
-
-.medicos-table {
-  width: 100%;
-  border-collapse: collapse;
-}
-
-.medicos-table th {
-  text-align: left;
-  padding: 12px 16px;
-  font-size: 0.8rem;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-  color: var(--text-secondary, #bfab93);
-  background: var(--bg-elevated, #4a4a4a);
-  border-bottom: 2px solid var(--border, #594747);
-  white-space: nowrap;
-}
-
-.medicos-table td {
-  padding: 12px 16px;
-  font-size: 0.9rem;
-  border-bottom: 1px solid var(--border, #594747);
-  color: var(--text, #f0ebe3);
-}
-
-.medicos-table tbody tr:hover {
-  background: var(--bg-elevated, #4a4a4a);
-}
-
-.medicos-table .actions {
-  display: flex;
+.med-btn-novo {
+  display: inline-flex;
+  align-items: center;
   gap: 6px;
-  white-space: nowrap;
+  font-weight: 600;
+  border-radius: 10px;
+  padding: 8px 18px;
 }
 
-.medicos-table .empty-state {
+.med-hero-content {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 1.25rem;
+}
+
+.med-hero-icon {
+  width: 52px;
+  height: 52px;
+  border-radius: 14px;
+  background: rgba(115, 69, 214, 0.12);
+  color: var(--primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.med-hero h1 {
+  font-size: 1.4rem;
+  font-weight: 700;
+  color: var(--text);
+  margin: 0 0 2px;
+}
+
+.med-hero-subtitle {
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+  margin: 0;
+}
+
+/* Stats Row */
+.med-stats-row {
+  display: flex;
+  gap: 1rem;
+}
+
+.med-stat {
+  flex: 1;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 0.65rem 1rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+}
+
+.med-stat-value {
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.med-stat-ativo { color: #68d391; }
+.med-stat-inativo { color: #fc8181; }
+
+.med-stat-label {
+  font-size: 0.7rem;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+  font-weight: 600;
+}
+
+/* ===== Toolbar ===== */
+.med-toolbar {
+  margin-bottom: 1.25rem;
+}
+
+.med-search-box {
+  position: relative;
+  max-width: 400px;
+}
+
+.med-search-icon {
+  position: absolute;
+  left: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--text-secondary);
+  pointer-events: none;
+}
+
+.med-search-box input {
+  width: 100%;
+  padding: 9px 12px 9px 36px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  color: var(--text);
+  font-size: 0.88rem;
+  transition: border-color 0.2s;
+}
+
+.med-search-box input:focus {
+  outline: none;
+  border-color: var(--primary);
+}
+
+.med-search-box input::placeholder {
+  color: var(--text-secondary);
+  opacity: 0.7;
+}
+
+/* ===== Loading ===== */
+.med-loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+  padding: 4rem 0;
+  color: var(--text-secondary);
+}
+
+.med-loading-spinner {
+  width: 32px;
+  height: 32px;
+  border: 3px solid var(--border);
+  border-top-color: var(--primary);
+  border-radius: 50%;
+  animation: med-spin 0.8s linear infinite;
+}
+
+.med-loading p {
+  font-size: 0.9rem;
+  margin: 0;
+}
+
+/* ===== Empty State ===== */
+.med-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 4rem 2rem;
+  background: var(--bg-card);
+  border: 2px dashed var(--border);
+  border-radius: 16px;
+  color: var(--text-secondary);
   text-align: center;
-  padding: 2rem;
-  color: var(--text-secondary, #bfab93);
+}
+
+.med-empty-icon {
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  background: rgba(115, 69, 214, 0.08);
+  color: var(--primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 0.5rem;
+}
+
+.med-empty h3 {
+  font-size: 1.1rem;
+  color: var(--text);
+  margin: 0;
+  font-weight: 700;
+}
+
+.med-empty p {
+  margin: 0;
+  font-size: 0.9rem;
+}
+
+/* ===== Table ===== */
+.med-table-container {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  overflow: hidden;
+}
+
+.med-table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+}
+
+.med-table th {
+  text-align: left;
+  padding: 0.75rem 1rem;
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+  color: var(--text-secondary);
+  border-bottom: 1px solid var(--border);
+  background: rgba(0, 0, 0, 0.06);
+}
+
+.med-table td {
+  padding: 0.75rem 1rem;
+  font-size: 0.88rem;
+  border-bottom: 1px solid var(--border);
+  color: var(--text);
+  vertical-align: middle;
+}
+
+.med-table tbody tr {
+  animation: med-rowIn 0.3s ease both;
+  transition: background 0.15s;
+}
+
+.med-table tbody tr:hover {
+  background: rgba(115, 69, 214, 0.04);
+}
+
+.med-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+/* Name cell with avatar */
+.med-nome-cell {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.med-avatar {
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  background: linear-gradient(135deg, var(--primary), rgba(49, 130, 206, 0.8));
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 0.9rem;
+  flex-shrink: 0;
+}
+
+.med-nome {
+  font-weight: 600;
+  color: var(--text);
 }
 
 .crm-badge {
-  display: inline-block;
-  padding: 2px 10px;
-  border-radius: 12px;
-  font-size: 0.8rem;
-  font-weight: 600;
-  background: rgba(56, 161, 105, 0.15);
-  color: var(--success);
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 10px;
+  border-radius: 20px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  background: rgba(56, 161, 105, 0.12);
+  color: #68d391;
   letter-spacing: 0.3px;
 }
 
-/* Modal form row */
+.med-especialidade {
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+}
+
+.med-contato-cell {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.med-contato-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+}
+
+.med-contato-item svg {
+  color: var(--text-secondary);
+  opacity: 0.7;
+}
+
+.med-contato-vazio {
+  color: var(--text-secondary);
+  opacity: 0.5;
+}
+
+.med-status-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.7rem;
+  font-weight: 700;
+  padding: 3px 10px;
+  border-radius: 20px;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+}
+
+.med-status-ativo {
+  background: rgba(56, 161, 105, 0.12);
+  color: #68d391;
+}
+
+.med-status-inativo {
+  background: rgba(245, 101, 101, 0.12);
+  color: #fc8181;
+}
+
+/* Action buttons */
+.med-actions {
+  display: flex;
+  gap: 0.3rem;
+  opacity: 0;
+  transition: opacity 0.2s;
+}
+
+.med-table tbody tr:hover .med-actions {
+  opacity: 1;
+}
+
+.med-action-btn {
+  width: 30px;
+  height: 30px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid transparent;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.med-action-btn:hover {
+  background: rgba(115, 69, 214, 0.12);
+  color: var(--primary);
+  border-color: rgba(115, 69, 214, 0.3);
+}
+
+.med-action-danger:hover {
+  background: rgba(245, 101, 101, 0.12);
+  color: #fc8181;
+  border-color: rgba(245, 101, 101, 0.3);
+}
+
+/* ===== Modal ===== */
+.med-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.55);
+  backdrop-filter: blur(6px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 1rem;
+  animation: med-fadeIn 0.2s ease;
+}
+
+.med-modal {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  width: 100%;
+  max-width: 580px;
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
+  animation: med-modalIn 0.3s ease;
+  overflow: hidden;
+}
+
+.med-modal-header {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 1.25rem 1.5rem;
+  border-bottom: 1px solid var(--border);
+  background: linear-gradient(135deg, rgba(115, 69, 214, 0.06), transparent);
+}
+
+.med-modal-header-icon {
+  width: 38px;
+  height: 38px;
+  border-radius: 10px;
+  background: rgba(115, 69, 214, 0.12);
+  color: var(--primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.med-modal-header h3 {
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: var(--text);
+  margin: 0;
+}
+
+.med-modal-header-sub {
+  font-size: 0.78rem;
+  color: var(--text-secondary);
+  margin: 0;
+}
+
+.med-modal-close {
+  margin-left: auto;
+  background: none;
+  border: none;
+  color: var(--text-secondary);
+  font-size: 1.5rem;
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: 8px;
+  line-height: 1;
+  transition: all 0.2s;
+}
+
+.med-modal-close:hover {
+  background: rgba(245, 101, 101, 0.12);
+  color: #fc8181;
+}
+
+.med-modal-body {
+  padding: 1.25rem 1.5rem;
+  overflow-y: auto;
+  flex: 1;
+}
+
+.med-modal-body .form-group {
+  margin-bottom: 1rem;
+}
+
+.med-modal-body .form-group label {
+  display: block;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--text);
+  margin-bottom: 5px;
+}
+
+.med-modal-body .form-group input,
+.med-modal-body .form-group select {
+  width: 100%;
+  padding: 9px 12px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  color: var(--text);
+  font-size: 0.88rem;
+  transition: border-color 0.2s;
+}
+
+.med-modal-body .form-group input:focus,
+.med-modal-body .form-group select:focus {
+  outline: none;
+  border-color: var(--primary);
+}
+
+.med-modal-body .form-group input:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
 .form-row-modal {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 12px;
+}
+
+.med-modal-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  padding: 1rem 1.5rem;
+  border-top: 1px solid var(--border);
+  background: rgba(0, 0, 0, 0.05);
+}
+
+.med-modal-footer .btn {
+  border-radius: 10px;
+  padding: 8px 20px;
+  font-weight: 600;
+}
+
+/* ===== Responsive ===== */
+@media (max-width: 768px) {
+  .medicos-page {
+    padding: 1rem;
+  }
+
+  .med-hero {
+    padding: 1rem 1.15rem;
+  }
+
+  .med-stats-row {
+    gap: 0.5rem;
+  }
+
+  .med-search-box {
+    max-width: 100%;
+  }
+
+  .med-table-container {
+    overflow-x: auto;
+  }
+
+  .form-row-modal {
+    grid-template-columns: 1fr;
+  }
+
+  .med-modal {
+    max-height: 95vh;
+  }
+
+  .med-actions {
+    opacity: 1;
+  }
+}
+
+/* ===== Light Mode ===== */
+body.light-mode .med-hero {
+  background: linear-gradient(135deg, rgba(115, 69, 214, 0.06), rgba(49, 130, 206, 0.04));
+}
+
+body.light-mode .med-table th {
+  background: rgba(0, 0, 0, 0.03);
+}
+
+body.light-mode .med-table tbody tr:hover {
+  background: rgba(115, 69, 214, 0.03);
+}
+
+body.light-mode .med-action-btn:hover {
+  background: rgba(115, 69, 214, 0.08);
+}
+
+body.light-mode .med-modal-overlay {
+  background: rgba(0, 0, 0, 0.35);
+}
+
+body.light-mode .med-modal-footer {
+  background: rgba(0, 0, 0, 0.02);
 }

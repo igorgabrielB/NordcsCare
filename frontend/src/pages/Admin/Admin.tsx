@@ -1,109 +1,134 @@
 import { Link } from 'react-router-dom'
-import { Users, Stethoscope, GraduationCap, FileText, School, Trash2, CalendarDays, ClipboardList, BookOpen, ShieldCheck } from 'lucide-react'
+import { Users, Stethoscope, GraduationCap, FileText, School, Trash2, CalendarDays, ClipboardList, BookOpen, ShieldCheck, Settings, ChevronRight } from 'lucide-react'
 import './Admin.css'
 
-const adminOptions = [
+const adminSections = [
   {
-    to: '/usuarios',
-    label: 'Usuários',
-    desc: 'Gerenciar logins e permissões do sistema',
-    icon: <Users size={26} />,
-    color: 'rgba(49,130,206,0.15)',
-    iconColor: '#63b3ed',
+    title: 'Gestão de Acesso',
+    items: [
+      {
+        to: '/usuarios',
+        label: 'Usuários',
+        desc: 'Gerenciar logins e permissões do sistema',
+        icon: <Users size={22} />,
+        color: '#3182ce',
+      },
+      {
+        to: '/admin/perfis',
+        label: 'Perfis & Permissões',
+        desc: 'Visualizar permissões e alterar perfil dos usuários',
+        icon: <ShieldCheck size={22} />,
+        color: '#805ad5',
+      },
+    ],
   },
   {
-    to: '/admin/perfis',
-    label: 'Gerenciamento de Perfis',
-    desc: 'Visualizar permissões e alterar perfil dos usuários',
-    icon: <ShieldCheck size={26} />,
-    color: 'rgba(128,90,213,0.15)',
-    iconColor: '#b794f4',
+    title: 'Cadastros',
+    items: [
+      {
+        to: '/admin/medicos',
+        label: 'Médicos',
+        desc: 'Registrar médicos e seus CRMs',
+        icon: <Stethoscope size={22} />,
+        color: '#38a169',
+      },
+      {
+        to: '/admin/alunos',
+        label: 'Inclusão de Alunos',
+        desc: 'Importar pacientes/alunos em lote via CSV',
+        icon: <GraduationCap size={22} />,
+        color: '#d69e2e',
+      },
+      {
+        to: '/admin/import-escola',
+        label: 'Importação por Escola',
+        desc: 'Importar CSV separando alunos por escola',
+        icon: <School size={22} />,
+        color: '#c4956a',
+      },
+      {
+        to: '/admin/exclusao-escola',
+        label: 'Exclusão por Escola',
+        desc: 'Remover alunos em lote por escola',
+        icon: <Trash2 size={22} />,
+        color: '#e53e3e',
+      },
+    ],
   },
   {
-    to: '/admin/medicos',
-    label: 'Cadastro de Médicos',
-    desc: 'Registrar médicos e seus CRMs',
-    icon: <Stethoscope size={26} />,
-    color: 'rgba(56,161,105,0.15)',
-    iconColor: '#68d391',
+    title: 'Configurações',
+    items: [
+      {
+        to: '/admin/agenda-escola',
+        label: 'Agenda de Escolas',
+        desc: 'Definir dias de atendimento por escola',
+        icon: <CalendarDays size={22} />,
+        color: '#48bb78',
+      },
+      {
+        to: '/admin/modelos-documentos',
+        label: 'Modelos de Documentos',
+        desc: 'Gerenciar modelos de atestados e receitas',
+        icon: <ClipboardList size={22} />,
+        color: '#ed8936',
+      },
+      {
+        to: '/admin/laudos-prontos',
+        label: 'Laudos Prontos',
+        desc: 'Gerenciar diagnósticos pré-definidos para laudos',
+        icon: <BookOpen size={22} />,
+        color: '#805ad5',
+      },
+    ],
   },
   {
-    to: '/admin/logs',
-    label: 'Logs de Fila',
-    desc: 'Histórico de ações na fila de atendimento',
-    icon: <FileText size={26} />,
-    color: 'rgba(115,69,214,0.15)',
-    iconColor: '#b794f4',
-  },
-  {
-    to: '/admin/alunos',
-    label: 'Inclusão de Alunos',
-    desc: 'Importar pacientes/alunos em lote via CSV',
-    icon: <GraduationCap size={26} />,
-    color: 'rgba(214,158,46,0.15)',
-    iconColor: '#ecc94b',
-  },
-  {
-    to: '/admin/import-escola',
-    label: 'Importação por Escola',
-    desc: 'Importar CSV separando alunos por escola',
-    icon: <School size={26} />,
-    color: 'rgba(196,149,106,0.15)',
-    iconColor: '#c4956a',
-  },
-  {
-    to: '/admin/exclusao-escola',
-    label: 'Exclusão por Escola',
-    desc: 'Remover alunos em lote por escola',
-    icon: <Trash2 size={26} />,
-    color: 'rgba(245,101,101,0.15)',
-    iconColor: '#fc8181',
-  },
-  {
-    to: '/admin/agenda-escola',
-    label: 'Agenda de Escolas',
-    desc: 'Definir dias de atendimento por escola',
-    icon: <CalendarDays size={26} />,
-    color: 'rgba(56,161,105,0.15)',
-    iconColor: '#48bb78',
-  },
-  {
-    to: '/admin/modelos-documentos',
-    label: 'Modelos de Documentos',
-    desc: 'Gerenciar modelos de atestados e receitas',
-    icon: <ClipboardList size={26} />,
-    color: 'rgba(237,137,54,0.15)',
-    iconColor: '#ed8936',
-  },
-  {
-    to: '/admin/laudos-prontos',
-    label: 'Laudos Prontos',
-    desc: 'Gerenciar diagnósticos pré-definidos para laudos',
-    icon: <BookOpen size={26} />,
-    color: 'rgba(115,69,214,0.15)',
-    iconColor: '#b794f4',
+    title: 'Monitoramento',
+    items: [
+      {
+        to: '/admin/logs',
+        label: 'Logs de Auditoria',
+        desc: 'Histórico de ações na fila de atendimento',
+        icon: <FileText size={22} />,
+        color: '#3182ce',
+      },
+    ],
   },
 ]
 
 export default function Admin() {
   return (
     <div className="admin-page">
-      <div className="page-header">
-        <h1>Administração</h1>
-        <p>Gerencie usuários, médicos, alunos e visualize logs do sistema</p>
+      <div className="admin-hero">
+        <div className="admin-hero-icon">
+          <Settings size={28} />
+        </div>
+        <div>
+          <h1>Administração</h1>
+          <p>Gerencie usuários, médicos, alunos e visualize logs do sistema</p>
+        </div>
       </div>
 
-      <div className="admin-grid">
-        {adminOptions.map((opt) => (
-            <Link key={opt.to} to={opt.to} className="admin-card">
-              <div className="admin-card-icon" style={{ background: opt.color, color: opt.iconColor }}>
-                {opt.icon}
-              </div>
-              <span className="admin-card-label">{opt.label}</span>
-              <span className="admin-card-desc">{opt.desc}</span>
-            </Link>
-        ))}
-      </div>
+      {adminSections.map((section) => (
+        <div key={section.title} className="admin-section">
+          <h2 className="admin-section-title">{section.title}</h2>
+          <div className="admin-grid">
+            {section.items.map((opt) => (
+              <Link key={opt.to} to={opt.to} className="admin-card">
+                <div className="admin-card-left">
+                  <div className="admin-card-icon" style={{ background: `${opt.color}18`, color: opt.color }}>
+                    {opt.icon}
+                  </div>
+                  <div className="admin-card-text">
+                    <span className="admin-card-label">{opt.label}</span>
+                    <span className="admin-card-desc">{opt.desc}</span>
+                  </div>
+                </div>
+                <ChevronRight size={16} className="admin-card-arrow" />
+              </Link>
+            ))}
+          </div>
+        </div>
+      ))}
     </div>
   )
 }

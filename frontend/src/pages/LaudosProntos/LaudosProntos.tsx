@@ -1,7 +1,7 @@
-import { useState, useEffect, useCallback, useRef } from 'react'
+import { useState, useEffect, useCallback, useRef, useMemo } from 'react'
 import { Link } from 'react-router-dom'
 import api from '../../services/api.ts'
-import { ArrowLeft, Pencil, Trash2, ClipboardList, Plus } from 'lucide-react'
+import { ArrowLeft, Pencil, Trash2, ClipboardList, Plus, Search, FileText, CheckCircle, XCircle, Filter } from 'lucide-react'
 import './LaudosProntos.css'
 
 interface LaudoPronto {
@@ -75,8 +75,28 @@ export default function LaudosProntos() {
   const [editId, setEditId] = useState<number | null>(null)
   const [form, setForm] = useState<FormData>({ ...emptyForm })
   const [saving, setSaving] = useState(false)
+  const [search, setSearch] = useState('')
+  const [filterStatus, setFilterStatus] = useState<'todos' | 'ativo' | 'inativo'>('todos')
   const diagRef = useRef<HTMLTextAreaElement>(null)
   const obsRef = useRef<HTMLTextAreaElement>(null)
+
+  const filteredItems = useMemo(() => {
+    return items.filter(lp => {
+      const matchSearch = search === '' ||
+        lp.titulo.toLowerCase().includes(search.toLowerCase()) ||
+        lp.diagnostico.toLowerCase().includes(search.toLowerCase())
+      const matchStatus = filterStatus === 'todos' ||
+        (filterStatus === 'ativo' && lp.ativo) ||
+        (filterStatus === 'inativo' && !lp.ativo)
+      return matchSearch && matchStatus
+    })
+  }, [items, search, filterStatus])
+
+  const stats = useMemo(() => ({
+    total: items.length,
+    ativos: items.filter(i => i.ativo).length,
+    inativos: items.filter(i => !i.ativo).length,
+  }), [items])
 
   function inserirTexto(campo: 'diagnostico' | 'observacoes', val: string) {
     const ta = campo === 'diagnostico' ? diagRef.current : obsRef.current
@@ -156,40 +176,126 @@ export default function LaudosProntos() {
 
   return (
     <div className="laudos-prontos-page">
-      <div className="page-header">
-        <div className="page-header-left">
-          <Link to="/admin" className="btn btn-secondary btn-sm"><ArrowLeft size={16} /></Link>
-          <h1>Laudos</h1>
+      {/* Hero Header */}
+      <div className="lp-hero">
+        <div className="lp-hero-top">
+          <Link to="/admin" className="btn btn-secondary btn-sm btn-back">
+            <ArrowLeft size={16} />
+          </Link>
+          <button className="btn btn-primary btn-novo" onClick={openCreate}>
+            <Plus size={16} />
+            <span>Novo Laudo</span>
+          </button>
         </div>
-        <button className="btn btn-primary" onClick={openCreate}>
-          <Plus size={14} style={{ verticalAlign: 'middle', marginRight: 4 }} />Novo Laudo
-        </button>
+        <div className="lp-hero-content">
+          <div className="lp-hero-icon">
+            <FileText size={28} />
+          </div>
+          <div>
+            <h1>Laudos Prontos</h1>
+            <p className="lp-hero-subtitle">Gerencie modelos de laudos para preenchimento rápido</p>
+          </div>
+        </div>
+        <div className="lp-stats-row">
+          <div className="lp-stat">
+            <div className="lp-stat-icon lp-stat-icon-total">
+              <ClipboardList size={16} />
+            </div>
+            <div className="lp-stat-info">
+              <span className="lp-stat-value">{stats.total}</span>
+              <span className="lp-stat-label">Total</span>
+            </div>
+          </div>
+          <div className="lp-stat">
+            <div className="lp-stat-icon lp-stat-icon-ativo">
+              <CheckCircle size={16} />
+            </div>
+            <div className="lp-stat-info">
+              <span className="lp-stat-value lp-stat-ativo">{stats.ativos}</span>
+              <span className="lp-stat-label">Ativos</span>
+            </div>
+          </div>
+          <div className="lp-stat">
+            <div className="lp-stat-icon lp-stat-icon-inativo">
+              <XCircle size={16} />
+            </div>
+            <div className="lp-stat-info">
+              <span className="lp-stat-value lp-stat-inativo">{stats.inativos}</span>
+              <span className="lp-stat-label">Inativos</span>
+            </div>
+          </div>
+        </div>
       </div>
 
+      {/* Toolbar */}
+      {items.length > 0 && (
+        <div className="lp-toolbar">
+          <div className="lp-search-box">
+            <Search size={16} className="lp-search-icon" />
+            <input
+              type="text"
+              placeholder="Buscar por título ou diagnóstico..."
+              value={search}
+              onChange={e => setSearch(e.target.value)}
+            />
+          </div>
+          <div className="lp-filter-group">
+            <Filter size={14} />
+            <button
+              className={`lp-filter-btn ${filterStatus === 'todos' ? 'active' : ''}`}
+              onClick={() => setFilterStatus('todos')}
+            >Todos</button>
+            <button
+              className={`lp-filter-btn ${filterStatus === 'ativo' ? 'active' : ''}`}
+              onClick={() => setFilterStatus('ativo')}
+            >Ativos</button>
+            <button
+              className={`lp-filter-btn ${filterStatus === 'inativo' ? 'active' : ''}`}
+              onClick={() => setFilterStatus('inativo')}
+            >Inativos</button>
+          </div>
+        </div>
+      )}
+
+      {/* Content */}
       {loading ? (
-        <p style={{ color: 'var(--text-secondary)' }}>Carregando...</p>
+        <div className="lp-loading">
+          <div className="lp-loading-spinner" />
+          <p>Carregando laudos...</p>
+        </div>
       ) : items.length === 0 ? (
         <div className="lp-empty">
-          <ClipboardList size={40} />
-          <p>Nenhum laudo cadastrado</p>
-          <button className="btn btn-primary" onClick={openCreate}>Criar primeiro laudo pronto</button>
+          <div className="lp-empty-icon">
+            <ClipboardList size={48} strokeWidth={1.5} />
+          </div>
+          <h3>Nenhum laudo cadastrado</h3>
+          <p>Crie modelos de laudos para agilizar o atendimento</p>
+          <button className="btn btn-primary" onClick={openCreate}>
+            <Plus size={16} style={{ marginRight: 6 }} />Criar primeiro laudo
+          </button>
+        </div>
+      ) : filteredItems.length === 0 ? (
+        <div className="lp-empty lp-empty-search">
+          <Search size={36} strokeWidth={1.5} />
+          <p>Nenhum laudo encontrado para esta busca</p>
         </div>
       ) : (
         <div className="lp-grid">
-          {items.map(lp => {
+          {filteredItems.map((lp, index) => {
             const cc = condutaColor(lp.conduta)
             return (
-              <div key={lp.id} className="lp-card">
+              <div key={lp.id} className="lp-card" style={{ animationDelay: `${index * 0.04}s` }}>
+                <div className="lp-card-top-accent" />
                 <div className="lp-card-header">
                   <span className={`lp-status-badge ${lp.ativo ? 'lp-status-ativo' : 'lp-status-inativo'}`}>
-                    {lp.ativo ? 'Ativo' : 'Inativo'}
+                    {lp.ativo ? <><CheckCircle size={12} /> Ativo</> : <><XCircle size={12} /> Inativo</>}
                   </span>
                   <div className="lp-card-actions">
                     <button className="btn-icon-sm" title="Editar" onClick={() => openEdit(lp)}>
-                      <Pencil size={15} />
+                      <Pencil size={14} />
                     </button>
                     <button className="btn-icon-sm btn-icon-danger" title="Excluir" onClick={() => handleDelete(lp.id)}>
-                      <Trash2 size={15} />
+                      <Trash2 size={14} />
                     </button>
                   </div>
                 </div>
@@ -197,19 +303,18 @@ export default function LaudosProntos() {
                 <p className="lp-card-diagnostico">{lp.diagnostico}</p>
                 {lp.conduta && (
                   <div className="lp-card-conduta">
-                    <strong>Conduta:</strong>
                     <span className="conduta-tag" style={{ backgroundColor: cc.bg, color: cc.color }}>
                       {condutaLabel(lp.conduta)}
                     </span>
                   </div>
                 )}
                 {lp.observacoes && (
-                  <p className="lp-card-diagnostico" style={{ fontSize: '0.8rem' }}>
-                    <strong style={{ color: 'var(--text)' }}>Obs:</strong> {lp.observacoes}
-                  </p>
+                  <div className="lp-card-obs">
+                    <strong>Obs:</strong> {lp.observacoes}
+                  </div>
                 )}
                 <div className="lp-card-footer">
-                  <span>Por: {lp.autor_nome}</span>
+                  <span>{lp.autor_nome}</span>
                   <span>{new Date(lp.created_at).toLocaleDateString('pt-BR')}</span>
                 </div>
               </div>
@@ -220,13 +325,19 @@ export default function LaudosProntos() {
 
       {/* Modal de criação / edição */}
       {showModal && (
-        <div className="modal-overlay" onClick={() => setShowModal(false)}>
-          <div className="modal lp-modal-lg" onClick={e => e.stopPropagation()}>
-            <div className="modal-header">
-              <h3>{editId ? 'Editar Laudo Pronto' : 'Novo Laudo Pronto'}</h3>
-              <button className="btn btn-icon" onClick={() => setShowModal(false)}>&times;</button>
+        <div className="lp-modal-overlay" onClick={() => setShowModal(false)}>
+          <div className="lp-modal" onClick={e => e.stopPropagation()}>
+            <div className="lp-modal-header">
+              <div className="lp-modal-header-icon">
+                {editId ? <Pencil size={18} /> : <Plus size={18} />}
+              </div>
+              <div>
+                <h3>{editId ? 'Editar Laudo Pronto' : 'Novo Laudo Pronto'}</h3>
+                <p className="lp-modal-header-sub">Preencha os campos para {editId ? 'atualizar' : 'criar'} o laudo</p>
+              </div>
+              <button className="lp-modal-close" onClick={() => setShowModal(false)}>&times;</button>
             </div>
-            <div className="modal-body">
+            <div className="lp-modal-body">
               <div className="form-group">
                 <label>Título *</label>
                 <input

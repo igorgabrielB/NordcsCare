@@ -1,7 +1,7 @@
-import { useState, useEffect, useCallback, useRef } from 'react'
+import { useState, useEffect, useCallback, useRef, useMemo } from 'react'
 import { Link } from 'react-router-dom'
 import api from '../../services/api.ts'
-import { ArrowLeft, Pencil, Trash2, FileText, Pill } from 'lucide-react'
+import { ArrowLeft, Pencil, Trash2, FileText, Pill, Plus, Search, FolderOpen } from 'lucide-react'
 import './ModelosDocumentos.css'
 
 interface Modelo {
@@ -58,7 +58,22 @@ export default function ModelosDocumentos() {
   const [editId, setEditId] = useState<number | null>(null)
   const [form, setForm] = useState<FormData>({ ...emptyForm })
   const [saving, setSaving] = useState(false)
+  const [search, setSearch] = useState('')
   const textareaRef = useRef<HTMLTextAreaElement>(null)
+
+  const filteredModelos = useMemo(() => {
+    if (!search) return modelos
+    return modelos.filter(m =>
+      m.nome.toLowerCase().includes(search.toLowerCase()) ||
+      m.conteudo.toLowerCase().includes(search.toLowerCase())
+    )
+  }, [modelos, search])
+
+  const stats = useMemo(() => ({
+    total: modelos.length,
+    atestados: modelos.filter(m => m.tipo === 'atestado').length,
+    receitas: modelos.filter(m => m.tipo === 'receita_medica').length,
+  }), [modelos])
 
   function inserirVariavel(varValue: string) {
     const ta = textareaRef.current
@@ -132,46 +147,112 @@ export default function ModelosDocumentos() {
 
   return (
     <div className="modelos-page">
-      <div className="page-header">
-        <div className="page-header-left">
-          <Link to="/admin" className="btn btn-secondary btn-sm btn-back">
-            <ArrowLeft size={16} /> Voltar
+      {/* Hero Header */}
+      <div className="md-hero">
+        <div className="md-hero-top">
+          <Link to="/admin" className="btn btn-secondary btn-sm md-btn-back">
+            <ArrowLeft size={16} />
           </Link>
-          <h1>Modelos de Documentos</h1>
+          <button className="btn btn-primary md-btn-novo" onClick={openCreate}>
+            <Plus size={16} />
+            <span>Novo Modelo</span>
+          </button>
         </div>
-        <button className="btn btn-primary" onClick={openCreate}>+ Novo Modelo</button>
+        <div className="md-hero-content">
+          <div className="md-hero-icon">
+            <FileText size={28} />
+          </div>
+          <div>
+            <h1>Modelos de Documentos</h1>
+            <p className="md-hero-subtitle">Gerencie templates de atestados e receitas médicas</p>
+          </div>
+        </div>
+        <div className="md-stats-row">
+          <div className="md-stat">
+            <span className="md-stat-value">{stats.total}</span>
+            <span className="md-stat-label">Total</span>
+          </div>
+          <div className="md-stat">
+            <span className="md-stat-value md-stat-atestado">{stats.atestados}</span>
+            <span className="md-stat-label">Atestados</span>
+          </div>
+          <div className="md-stat">
+            <span className="md-stat-value md-stat-receita">{stats.receitas}</span>
+            <span className="md-stat-label">Receitas</span>
+          </div>
+        </div>
       </div>
 
-      <div className="modelos-filter-bar">
-        <select value={filtroTipo} onChange={e => setFiltroTipo(e.target.value)}>
-          <option value="">Todos os tipos</option>
-          <option value="atestado">Atestado</option>
-          <option value="receita_medica">Receita Médica</option>
-        </select>
-      </div>
+      {/* Toolbar */}
+      {modelos.length > 0 && (
+        <div className="md-toolbar">
+          <div className="md-search-box">
+            <Search size={16} className="md-search-icon" />
+            <input
+              type="text"
+              placeholder="Buscar por nome ou conteúdo..."
+              value={search}
+              onChange={e => setSearch(e.target.value)}
+            />
+          </div>
+          <div className="md-filter-group">
+            <button
+              className={`md-filter-btn ${filtroTipo === '' ? 'active' : ''}`}
+              onClick={() => setFiltroTipo('')}
+            >Todos</button>
+            <button
+              className={`md-filter-btn ${filtroTipo === 'atestado' ? 'active' : ''}`}
+              onClick={() => setFiltroTipo('atestado')}
+            >
+              <FileText size={13} /> Atestados
+            </button>
+            <button
+              className={`md-filter-btn ${filtroTipo === 'receita_medica' ? 'active' : ''}`}
+              onClick={() => setFiltroTipo('receita_medica')}
+            >
+              <Pill size={13} /> Receitas
+            </button>
+          </div>
+        </div>
+      )}
 
+      {/* Content */}
       {loading ? (
-        <div className="loading">Carregando...</div>
+        <div className="md-loading">
+          <div className="md-loading-spinner" />
+          <p>Carregando modelos...</p>
+        </div>
       ) : modelos.length === 0 ? (
-        <div className="empty-state-box">
-          <FileText size={40} />
-          <p>Nenhum modelo cadastrado</p>
-          <button className="btn btn-primary" onClick={openCreate}>Criar primeiro modelo</button>
+        <div className="md-empty">
+          <div className="md-empty-icon">
+            <FolderOpen size={48} strokeWidth={1.5} />
+          </div>
+          <h3>Nenhum modelo cadastrado</h3>
+          <p>Crie templates para agilizar a emissão de documentos</p>
+          <button className="btn btn-primary" onClick={openCreate}>
+            <Plus size={16} style={{ marginRight: 6 }} />Criar primeiro modelo
+          </button>
+        </div>
+      ) : filteredModelos.length === 0 ? (
+        <div className="md-empty md-empty-search">
+          <Search size={36} strokeWidth={1.5} />
+          <p>Nenhum modelo encontrado para esta busca</p>
         </div>
       ) : (
         <div className="modelos-grid">
-          {modelos.map(m => (
-            <div key={m.id} className="modelo-card">
+          {filteredModelos.map((m, index) => (
+            <div key={m.id} className="modelo-card" style={{ animationDelay: `${index * 0.04}s` }}>
+              <div className="modelo-card-accent" />
               <div className="modelo-card-header">
                 <span className={`tipo-badge tipo-${m.tipo}`}>
                   {m.tipo === 'atestado' ? <FileText size={12} /> : <Pill size={12} />}
                   {tipoLabel[m.tipo]}
                 </span>
                 <div className="modelo-card-actions">
-                  <button className="btn btn-icon-sm" title="Editar" onClick={() => openEdit(m)}>
+                  <button className="btn-icon-sm" title="Editar" onClick={() => openEdit(m)}>
                     <Pencil size={14} />
                   </button>
-                  <button className="btn btn-icon-sm btn-icon-danger" title="Excluir" onClick={() => handleDelete(m)}>
+                  <button className="btn-icon-sm btn-icon-danger" title="Excluir" onClick={() => handleDelete(m)}>
                     <Trash2 size={14} />
                   </button>
                 </div>
@@ -179,7 +260,8 @@ export default function ModelosDocumentos() {
               <h3 className="modelo-card-nome">{m.nome}</h3>
               <p className="modelo-card-preview">{m.conteudo.length > 120 ? m.conteudo.slice(0, 120) + '...' : m.conteudo}</p>
               <div className="modelo-card-footer">
-                <span>por {m.autor_nome}</span>
+                <span>{m.autor_nome}</span>
+                <span>{new Date(m.created_at).toLocaleDateString('pt-BR')}</span>
               </div>
             </div>
           ))}
@@ -187,10 +269,19 @@ export default function ModelosDocumentos() {
       )}
 
       {showModal && (
-        <div className="modal-overlay" onClick={() => setShowModal(false)}>
-          <div className="modal-content modal-lg" onClick={e => e.stopPropagation()}>
-            <h2>{editId ? 'Editar Modelo' : 'Novo Modelo'}</h2>
-            <div className="modal-form">
+        <div className="md-modal-overlay" onClick={() => setShowModal(false)}>
+          <div className="md-modal" onClick={e => e.stopPropagation()}>
+            <div className="md-modal-header">
+              <div className="md-modal-header-icon">
+                {editId ? <Pencil size={18} /> : <Plus size={18} />}
+              </div>
+              <div>
+                <h3>{editId ? 'Editar Modelo' : 'Novo Modelo'}</h3>
+                <p className="md-modal-header-sub">Preencha os campos do template</p>
+              </div>
+              <button className="md-modal-close" onClick={() => setShowModal(false)}>&times;</button>
+            </div>
+            <div className="md-modal-body">
               {!editId && (
                 <div className="form-group">
                   <label>Tipo *</label>
@@ -235,7 +326,7 @@ export default function ModelosDocumentos() {
                 />
               </div>
             </div>
-            <div className="modal-footer">
+            <div className="md-modal-footer">
               <button className="btn btn-secondary" onClick={() => setShowModal(false)}>Cancelar</button>
               <button className="btn btn-primary" disabled={saving} onClick={handleSave}>
                 {saving ? 'Salvando...' : editId ? 'Salvar Alterações' : 'Criar Modelo'}
