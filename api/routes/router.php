@@ -204,9 +204,14 @@ $router->add('GET', '/api/audit', function() {
     $total = (int)$countStmt->fetchColumn();
 
     $stmt = $db->prepare(
-        "SELECT * FROM audit_log WHERE {$where} ORDER BY created_at DESC LIMIT {$limit} OFFSET {$offset}"
+        "SELECT * FROM audit_log WHERE {$where} ORDER BY created_at DESC LIMIT :limit OFFSET :offset"
     );
-    $stmt->execute($params);
+    foreach ($params as $key => $value) {
+        $stmt->bindValue($key, $value);
+    }
+    $stmt->bindValue(':limit', $limit, PDO::PARAM_INT);
+    $stmt->bindValue(':offset', $offset, PDO::PARAM_INT);
+    $stmt->execute();
 
     echo json_encode([
         'total' => $total,

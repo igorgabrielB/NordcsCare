@@ -52,9 +52,9 @@ class UsuarioController {
             return;
         }
 
-        if (strlen($senha) < 4) {
+        if (strlen($senha) < 8) {
             http_response_code(422);
-            echo json_encode(['error' => 'A senha deve ter pelo menos 4 caracteres']);
+            echo json_encode(['error' => 'A senha deve ter pelo menos 8 caracteres']);
             return;
         }
 
@@ -136,9 +136,9 @@ class UsuarioController {
 
         // Atualizar senha se enviada
         if (!empty($input['senha'])) {
-            if (strlen($input['senha']) < 4) {
+            if (strlen($input['senha']) < 8) {
                 http_response_code(422);
-                echo json_encode(['error' => 'A senha deve ter pelo menos 4 caracteres']);
+                echo json_encode(['error' => 'A senha deve ter pelo menos 8 caracteres']);
                 return;
             }
             $hash = password_hash($input['senha'], PASSWORD_BCRYPT);

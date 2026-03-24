@@ -466,7 +466,7 @@ class ProntuarioController {
             $db->rollBack();
             error_log('Erro ao salvar atendimento: ' . $e->getMessage());
             http_response_code(500);
-            echo json_encode(['error' => 'Erro ao salvar atendimento: ' . $e->getMessage()]);
+            echo json_encode(['error' => 'Erro ao salvar atendimento']);
         }
     }
 

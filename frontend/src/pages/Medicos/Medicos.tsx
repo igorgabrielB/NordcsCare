@@ -336,7 +336,7 @@ export default function Medicos() {
                   </div>
                   <div className="form-group">
                     <label>Senha para Login *</label>
-                    <input type="password" value={form.senha} onChange={e => setForm({ ...form, senha: e.target.value })} placeholder="Mínimo 4 caracteres" />
+                    <input type="password" value={form.senha} onChange={e => setForm({ ...form, senha: e.target.value })} placeholder="Mínimo 8 caracteres" />
                   </div>
                 </div>
               )}

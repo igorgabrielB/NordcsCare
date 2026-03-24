@@ -58,9 +58,9 @@ class MedicoController {
             return;
         }
 
-        if (strlen($senha) < 4) {
+        if (strlen($senha) < 8) {
             http_response_code(422);
-            echo json_encode(['error' => 'A senha deve ter pelo menos 4 caracteres']);
+            echo json_encode(['error' => 'A senha deve ter pelo menos 8 caracteres']);
             return;
         }
 

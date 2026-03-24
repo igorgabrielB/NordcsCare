@@ -358,7 +358,7 @@ class PacienteController {
                 $importados++;
                 $nextCode++;
             } catch (Exception $e) {
-                $erros[] = "Linha {$linha}: Erro ao inserir '{$nome}' — " . $e->getMessage();
+                $erros[] = "Linha {$linha}: Erro ao inserir '{$nome}'";
             }
         }
 

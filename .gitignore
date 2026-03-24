@@ -1,0 +1,32 @@
+# Ambiente
+api/.env
+*.env
+!api/.env.example
+
+# Uploads de usuários
+uploads/*
+!uploads/.gitkeep
+
+# Logs
+api/logs/*
+!api/logs/.gitkeep
+
+# Rate limiting storage
+api/logs/rate_limit/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/*
+!.vscode/extensions.json
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# Node (frontend tem seu próprio .gitignore)
+node_modules/

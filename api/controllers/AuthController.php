@@ -37,6 +37,11 @@ class AuthController {
             'sub' => (int)$user['id'], 'nome' => $user['nome'], 'role' => $user['role']
         ]);
 
+        // Limpar rate limit após login bem-sucedido
+        if (class_exists('RateLimit')) {
+            RateLimit::clearForCurrentIp();
+        }
+
         echo json_encode([
             'token' => $token,
             'user' => [

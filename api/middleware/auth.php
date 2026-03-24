@@ -1,10 +1,20 @@
 <?php
+require_once __DIR__ . '/../config/env.php';
+Env::load();
+
 /**
  * JWT Auth Middleware - Implementação simples sem dependências externas
  */
 class Auth {
-    private const SECRET = 'nordcscare_jwt_secret_key_2026_change_in_production';
     private const EXPIRATION = 28800; // 8 horas
+
+    private static function getSecret(): string {
+        $secret = Env::get('JWT_SECRET', '');
+        if ($secret === '') {
+            throw new RuntimeException('JWT_SECRET não configurado');
+        }
+        return $secret;
+    }
 
     public static function generateToken(array $userData): string {
         $header = self::base64UrlEncode(json_encode(['typ' => 'JWT', 'alg' => 'HS256']));
@@ -16,8 +26,9 @@ class Auth {
             'iat' => time(),
             'exp' => time() + self::EXPIRATION,
         ]));
+        $secret = self::getSecret();
         $signature = self::base64UrlEncode(
-            hash_hmac('sha256', "$header.$payload", self::SECRET, true)
+            hash_hmac('sha256', "$header.$payload", $secret, true)
         );
         return "$header.$payload.$signature";
     }
@@ -30,8 +41,9 @@ class Auth {
 
         [$header, $payload, $signature] = $parts;
 
+        $secret = self::getSecret();
         $validSignature = self::base64UrlEncode(
-            hash_hmac('sha256', "$header.$payload", self::SECRET, true)
+            hash_hmac('sha256', "$header.$payload", $secret, true)
         );
 
         if (!hash_equals($validSignature, $signature)) {

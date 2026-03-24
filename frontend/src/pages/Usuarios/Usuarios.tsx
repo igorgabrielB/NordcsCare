@@ -269,7 +269,7 @@ export default function Usuarios() {
                 </div>
                 <div className="form-group">
                   <label>{editId ? 'Nova Senha (opcional)' : 'Senha *'}</label>
-                  <input type="password" value={form.senha} onChange={e => setForm({ ...form, senha: e.target.value })} placeholder={editId ? 'Manter atual' : 'Mínimo 4 caracteres'} />
+                  <input type="password" value={form.senha} onChange={e => setForm({ ...form, senha: e.target.value })} placeholder={editId ? 'Manter atual' : 'Mínimo 8 caracteres'} />
                 </div>
               </div>
               <div className="form-group">
