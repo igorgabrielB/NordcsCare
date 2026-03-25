@@ -43,10 +43,9 @@ export default function Login() {
       {/* Decorative side panel */}
       <div className="login-side">
         <div className="login-side-content">
-          <div className="login-side-logo">
-            <img src="/imagens/logo_cerof.png" alt="Logo" className="login-logo-img" />
+          <div className="login-side-logo" style={{ display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+            <img src="/imagens/logo-login.png" alt="NordcsCare" style={{ height: '60px' }} />
           </div>
-          <h2>NordcsCare</h2>
           <p className="login-side-subtitle">Prontuário Oftalmológico</p>
           <div className="login-side-decoration">
             <div className="decoration-ring ring-1" />
