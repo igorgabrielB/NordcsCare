@@ -28,6 +28,8 @@ export default function AnamneseTab({ pacienteId }: { pacienteId: number }) {
   const [items, setItems] = useState<Anamnese[]>([])
   const [showForm, setShowForm] = useState(false)
   const [saving, setSaving] = useState(false)
+  const [error, setError] = useState('')
+  const [fieldErrors, setFieldErrors] = useState<Set<string>>(new Set())
   const [form, setForm] = useState({
     queixa_principal: '',
     historico_ocular: '',
@@ -39,6 +41,8 @@ export default function AnamneseTab({ pacienteId }: { pacienteId: number }) {
   })
 
   useEffect(() => { load() }, [pacienteId])
+  useEffect(() => { if (error) { const t = setTimeout(() => setError(''), 3000); return () => clearTimeout(t) } }, [error])
+  useEffect(() => { if (fieldErrors.size > 0) { const t = setTimeout(() => setFieldErrors(new Set()), 3000); return () => clearTimeout(t) } }, [fieldErrors])
 
   async function load() {
     const { data } = await api.get(`/prontuario/${pacienteId}/anamneses`)
@@ -47,6 +51,19 @@ export default function AnamneseTab({ pacienteId }: { pacienteId: number }) {
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
+    const campos: string[] = []
+    if (!form.queixa_principal.trim()) campos.push('queixa_principal')
+    if (!form.historico_ocular.trim()) campos.push('historico_ocular')
+    if (!form.historico_familiar.trim()) campos.push('historico_familiar')
+    if (!form.alergias.trim()) campos.push('alergias')
+    if (!form.medicamentos_em_uso.trim()) campos.push('medicamentos_em_uso')
+    if (!form.cirurgias_anteriores.trim()) campos.push('cirurgias_anteriores')
+    if (!form.observacoes.trim()) campos.push('observacoes')
+    if (campos.length > 0) {
+      setFieldErrors(new Set(campos))
+      setError('Preencha todos os campos obrigatórios destacados.')
+      return
+    }
     setSaving(true)
     try {
       await api.post(`/prontuario/${pacienteId}/anamneses`, form)
@@ -69,37 +86,43 @@ export default function AnamneseTab({ pacienteId }: { pacienteId: number }) {
 
       {showForm && (
         <form className="clinical-form" onSubmit={handleSubmit}>
-          <div className="form-group">
+          {error && (
+            <div className="toast toast-error" style={{position:'relative',top:0,left:0,transform:'none',marginBottom:'1rem'}}>
+              <span>{error}</span>
+              <button className="toast-close" onClick={() => setError('')}>&times;</button>
+            </div>
+          )}
+          <div className={`form-group${fieldErrors.has('queixa_principal') ? ' field-error' : ''}`}>
             <label>Queixa Principal *</label>
-            <textarea rows={3} value={form.queixa_principal} onChange={e => setForm({ ...form, queixa_principal: e.target.value })} required />
+            <textarea rows={3} value={form.queixa_principal} onChange={e => setForm({ ...form, queixa_principal: e.target.value })} />
           </div>
           <div className="form-row">
-            <div className="form-group">
+            <div className={`form-group${fieldErrors.has('historico_ocular') ? ' field-error' : ''}`}>
               <label>Histórico Ocular *</label>
-              <textarea rows={2} value={form.historico_ocular} onChange={e => setForm({ ...form, historico_ocular: e.target.value })} required />
+              <textarea rows={2} value={form.historico_ocular} onChange={e => setForm({ ...form, historico_ocular: e.target.value })} />
             </div>
-            <div className="form-group">
+            <div className={`form-group${fieldErrors.has('historico_familiar') ? ' field-error' : ''}`}>
               <label>Histórico Familiar *</label>
-              <textarea rows={2} value={form.historico_familiar} onChange={e => setForm({ ...form, historico_familiar: e.target.value })} required />
+              <textarea rows={2} value={form.historico_familiar} onChange={e => setForm({ ...form, historico_familiar: e.target.value })} />
             </div>
           </div>
           <div className="form-row">
-            <div className="form-group">
+            <div className={`form-group${fieldErrors.has('alergias') ? ' field-error' : ''}`}>
               <label>Alergias *</label>
-              <input value={form.alergias} onChange={e => setForm({ ...form, alergias: e.target.value })} required />
+              <input value={form.alergias} onChange={e => setForm({ ...form, alergias: e.target.value })} />
             </div>
-            <div className="form-group">
+            <div className={`form-group${fieldErrors.has('medicamentos_em_uso') ? ' field-error' : ''}`}>
               <label>Medicamentos em Uso *</label>
-              <input value={form.medicamentos_em_uso} onChange={e => setForm({ ...form, medicamentos_em_uso: e.target.value })} required />
+              <input value={form.medicamentos_em_uso} onChange={e => setForm({ ...form, medicamentos_em_uso: e.target.value })} />
             </div>
           </div>
-          <div className="form-group">
+          <div className={`form-group${fieldErrors.has('cirurgias_anteriores') ? ' field-error' : ''}`}>
             <label>Cirurgias Anteriores *</label>
-            <input value={form.cirurgias_anteriores} onChange={e => setForm({ ...form, cirurgias_anteriores: e.target.value })} required />
+            <input value={form.cirurgias_anteriores} onChange={e => setForm({ ...form, cirurgias_anteriores: e.target.value })} />
           </div>
-          <div className="form-group">
+          <div className={`form-group${fieldErrors.has('observacoes') ? ' field-error' : ''}`}>
             <label>Observações *</label>
-            <textarea rows={2} value={form.observacoes} onChange={e => setForm({ ...form, observacoes: e.target.value })} required />
+            <textarea rows={2} value={form.observacoes} onChange={e => setForm({ ...form, observacoes: e.target.value })} />
           </div>
           <div className="form-actions">
             <button type="submit" className="btn btn-primary" disabled={saving}>

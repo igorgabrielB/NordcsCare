@@ -142,6 +142,7 @@ export default function Prontuario() {
   const [showForm, setShowForm] = useState<'laudos' | 'onibus' | 'acuidade' | null>(null)
   const [successMsg, setSuccessMsg] = useState('')
   const [errorMsg, setErrorMsg] = useState('')
+  const [fieldErrors, setFieldErrors] = useState<Set<string>>(new Set())
   const [form, setForm] = useState(structuredClone(emptyForm))
   const [modelos, setModelos] = useState<ModeloLaudo[]>([])
   const [showSalvarModelo, setShowSalvarModelo] = useState(false)
@@ -165,6 +166,13 @@ export default function Prontuario() {
       return () => clearTimeout(t)
     }
   }, [errorMsg])
+
+  useEffect(() => {
+    if (fieldErrors.size > 0) {
+      const t = setTimeout(() => setFieldErrors(new Set()), 3000)
+      return () => clearTimeout(t)
+    }
+  }, [fieldErrors])
 
   // Helpers: montar form a partir de dados existentes
   function buildFormFromExisting(d: ProntuarioData) {
@@ -274,6 +282,33 @@ export default function Prontuario() {
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
+    const campos: string[] = []
+    if (showForm === 'laudos') {
+      if (!form.anamnese.queixa_principal.trim()) campos.push('anamnese_queixa_principal')
+      if (!form.anamnese.historico_ocular.trim()) campos.push('anamnese_historico_ocular')
+      if (!form.anamnese.historico_familiar.trim()) campos.push('anamnese_historico_familiar')
+      if (!form.anamnese.alergias.trim()) campos.push('anamnese_alergias')
+      if (!form.anamnese.medicamentos_em_uso.trim()) campos.push('anamnese_medicamentos')
+      if (!form.anamnese.cirurgias_anteriores.trim()) campos.push('anamnese_cirurgias')
+      if (!form.anamnese.observacoes.trim()) campos.push('anamnese_observacoes')
+      if (!form.laudo.diagnostico.trim()) campos.push('laudo_diagnostico')
+    }
+    if (showForm === 'onibus') {
+      if (!form.prescricao.od_esferico.trim()) campos.push('od_esferico')
+      if (!form.prescricao.od_cilindrico.trim()) campos.push('od_cilindrico')
+      if (!form.prescricao.od_eixo.trim()) campos.push('od_eixo')
+      if (!form.prescricao.oe_esferico.trim()) campos.push('oe_esferico')
+      if (!form.prescricao.oe_cilindrico.trim()) campos.push('oe_cilindrico')
+      if (!form.prescricao.oe_eixo.trim()) campos.push('oe_eixo')
+      if (!form.prescricao.observacoes.trim()) campos.push('tipo_lente')
+      if (!form.prescricao.acuidade_od.trim() || form.prescricao.acuidade_od === '__outro__') campos.push('acuidade_od')
+      if (!form.prescricao.acuidade_oe.trim() || form.prescricao.acuidade_oe === '__outro__') campos.push('acuidade_oe')
+    }
+    if (campos.length > 0) {
+      setFieldErrors(new Set(campos))
+      setErrorMsg('Preencha todos os campos obrigatórios destacados.')
+      return
+    }
     setSaving(true)
     setErrorMsg('')
     try {
@@ -640,36 +675,36 @@ export default function Prontuario() {
           {/* --- Anamnese --- */}
           <fieldset className="form-section">
             <legend><FileText size={16} style={{verticalAlign:'middle',marginRight:6}} />Anamnese</legend>
-            <div className="form-group">
-              <label>Queixa Principal</label>
+            <div className={`form-group${fieldErrors.has('anamnese_queixa_principal') ? ' field-error' : ''}`}>
+              <label>Queixa Principal *</label>
               <textarea rows={2} value={form.anamnese.queixa_principal} onChange={e => updateAnamnese('queixa_principal', e.target.value)} placeholder="Descreva a queixa do paciente..." />
             </div>
             <div className="form-row">
-              <div className="form-group">
-                <label>Histórico Ocular</label>
+              <div className={`form-group${fieldErrors.has('anamnese_historico_ocular') ? ' field-error' : ''}`}>
+                <label>Histórico Ocular *</label>
                 <textarea rows={2} value={form.anamnese.historico_ocular} onChange={e => updateAnamnese('historico_ocular', e.target.value)} />
               </div>
-              <div className="form-group">
-                <label>Histórico Familiar</label>
+              <div className={`form-group${fieldErrors.has('anamnese_historico_familiar') ? ' field-error' : ''}`}>
+                <label>Histórico Familiar *</label>
                 <textarea rows={2} value={form.anamnese.historico_familiar} onChange={e => updateAnamnese('historico_familiar', e.target.value)} />
               </div>
             </div>
             <div className="form-row form-row-3">
-              <div className="form-group">
-                <label>Alergias</label>
+              <div className={`form-group${fieldErrors.has('anamnese_alergias') ? ' field-error' : ''}`}>
+                <label>Alergias *</label>
                 <input value={form.anamnese.alergias} onChange={e => updateAnamnese('alergias', e.target.value)} />
               </div>
-              <div className="form-group">
-                <label>Medicamentos em Uso</label>
+              <div className={`form-group${fieldErrors.has('anamnese_medicamentos') ? ' field-error' : ''}`}>
+                <label>Medicamentos em Uso *</label>
                 <input value={form.anamnese.medicamentos_em_uso} onChange={e => updateAnamnese('medicamentos_em_uso', e.target.value)} />
               </div>
-              <div className="form-group">
-                <label>Cirurgias Anteriores</label>
+              <div className={`form-group${fieldErrors.has('anamnese_cirurgias') ? ' field-error' : ''}`}>
+                <label>Cirurgias Anteriores *</label>
                 <input value={form.anamnese.cirurgias_anteriores} onChange={e => updateAnamnese('cirurgias_anteriores', e.target.value)} />
               </div>
             </div>
-            <div className="form-group">
-              <label>Observações (Anamnese)</label>
+            <div className={`form-group${fieldErrors.has('anamnese_observacoes') ? ' field-error' : ''}`}>
+              <label>Observações (Anamnese) *</label>
               <textarea rows={1} value={form.anamnese.observacoes} onChange={e => updateAnamnese('observacoes', e.target.value)} />
             </div>
           </fieldset>
@@ -729,8 +764,8 @@ export default function Prontuario() {
                 </select>
               </div>
             )}
-            <div className="form-group">
-              <label>Diagnóstico</label>
+            <div className={`form-group${fieldErrors.has('laudo_diagnostico') ? ' field-error' : ''}`}>
+              <label>Diagnóstico *</label>
               <textarea rows={2} value={form.laudo.diagnostico} onChange={e => updateLaudo('diagnostico', e.target.value)} placeholder="Descreva o diagnóstico..." />
             </div>
             <div className="form-group">
@@ -787,15 +822,15 @@ export default function Prontuario() {
                 <tbody>
                   <tr>
                     <td className="eye-label"><Eye size={12} style={{marginRight:2}} />OD</td>
-                    <td><input type="text" value={form.prescricao.od_esferico} onChange={e => updatePrescricao('od_esferico', e.target.value)} placeholder="+0.00" required /></td>
-                    <td><input type="text" value={form.prescricao.od_cilindrico} onChange={e => updatePrescricao('od_cilindrico', e.target.value)} placeholder="-0.00" required /></td>
-                    <td><input type="text" value={form.prescricao.od_eixo} onChange={e => updatePrescricao('od_eixo', e.target.value)} placeholder="0°" required /></td>
+                    <td className={fieldErrors.has('od_esferico') ? 'field-error' : ''}><input type="text" value={form.prescricao.od_esferico} onChange={e => updatePrescricao('od_esferico', e.target.value)} placeholder="+0.00" /></td>
+                    <td className={fieldErrors.has('od_cilindrico') ? 'field-error' : ''}><input type="text" value={form.prescricao.od_cilindrico} onChange={e => updatePrescricao('od_cilindrico', e.target.value)} placeholder="-0.00" /></td>
+                    <td className={fieldErrors.has('od_eixo') ? 'field-error' : ''}><input type="text" value={form.prescricao.od_eixo} onChange={e => updatePrescricao('od_eixo', e.target.value)} placeholder="0°" /></td>
                   </tr>
                   <tr>
                     <td className="eye-label"><Eye size={12} style={{marginRight:2}} />OE</td>
-                    <td><input type="text" value={form.prescricao.oe_esferico} onChange={e => updatePrescricao('oe_esferico', e.target.value)} placeholder="+0.00" required /></td>
-                    <td><input type="text" value={form.prescricao.oe_cilindrico} onChange={e => updatePrescricao('oe_cilindrico', e.target.value)} placeholder="-0.00" required /></td>
-                    <td><input type="text" value={form.prescricao.oe_eixo} onChange={e => updatePrescricao('oe_eixo', e.target.value)} placeholder="0°" required /></td>
+                    <td className={fieldErrors.has('oe_esferico') ? 'field-error' : ''}><input type="text" value={form.prescricao.oe_esferico} onChange={e => updatePrescricao('oe_esferico', e.target.value)} placeholder="+0.00" /></td>
+                    <td className={fieldErrors.has('oe_cilindrico') ? 'field-error' : ''}><input type="text" value={form.prescricao.oe_cilindrico} onChange={e => updatePrescricao('oe_cilindrico', e.target.value)} placeholder="-0.00" /></td>
+                    <td className={fieldErrors.has('oe_eixo') ? 'field-error' : ''}><input type="text" value={form.prescricao.oe_eixo} onChange={e => updatePrescricao('oe_eixo', e.target.value)} placeholder="0°" /></td>
                   </tr>
                 </tbody>
               </table>
@@ -809,9 +844,9 @@ export default function Prontuario() {
                 <label>DP (mm)</label>
                 <input type="text" value={form.prescricao.dp} onChange={e => updatePrescricao('dp', e.target.value)} placeholder="63" />
               </div>
-              <div className="rx-extra-item rx-extra-wide">
+              <div className={`rx-extra-item rx-extra-wide${fieldErrors.has('tipo_lente') ? ' field-error' : ''}`}>
                 <label>Tipo de Lente *</label>
-                <select value={form.prescricao.observacoes} onChange={e => updatePrescricao('observacoes', e.target.value)} required>
+                <select value={form.prescricao.observacoes} onChange={e => updatePrescricao('observacoes', e.target.value)}>
                   <option value="">— Selecione —</option>
                   <option value="Monofocal para longe">Monofocal para longe</option>
                   <option value="Monofocal para perto">Monofocal para perto</option>
@@ -830,9 +865,9 @@ export default function Prontuario() {
             <div className="acuidade-eyes-row">
               <div className="acuidade-eye-card">
                 <div className="acuidade-eye-indicator od">OD</div>
-                <div className="form-group">
+                <div className={`form-group${fieldErrors.has('acuidade_od') ? ' field-error' : ''}`}>
                   <label>Olho Direito *</label>
-                  <select value={ACUIDADE_OPTIONS.includes(form.prescricao.acuidade_od) || form.prescricao.acuidade_od === '' ? form.prescricao.acuidade_od : 'outro'} onChange={e => updatePrescricao('acuidade_od', e.target.value === 'outro' ? '__outro__' : e.target.value)} required>
+                  <select value={ACUIDADE_OPTIONS.includes(form.prescricao.acuidade_od) || form.prescricao.acuidade_od === '' ? form.prescricao.acuidade_od : 'outro'} onChange={e => updatePrescricao('acuidade_od', e.target.value === 'outro' ? '__outro__' : e.target.value)}>
                     <option value="">— Selecione —</option>
                     {ACUIDADE_OPTIONS.map(o => <option key={o} value={o}>{o}</option>)}
                     <option value="outro">Outro</option>
@@ -844,9 +879,9 @@ export default function Prontuario() {
               </div>
               <div className="acuidade-eye-card">
                 <div className="acuidade-eye-indicator oe">OE</div>
-                <div className="form-group">
+                <div className={`form-group${fieldErrors.has('acuidade_oe') ? ' field-error' : ''}`}>
                   <label>Olho Esquerdo *</label>
-                  <select value={ACUIDADE_OPTIONS.includes(form.prescricao.acuidade_oe) || form.prescricao.acuidade_oe === '' ? form.prescricao.acuidade_oe : 'outro'} onChange={e => updatePrescricao('acuidade_oe', e.target.value === 'outro' ? '__outro__' : e.target.value)} required>
+                  <select value={ACUIDADE_OPTIONS.includes(form.prescricao.acuidade_oe) || form.prescricao.acuidade_oe === '' ? form.prescricao.acuidade_oe : 'outro'} onChange={e => updatePrescricao('acuidade_oe', e.target.value === 'outro' ? '__outro__' : e.target.value)}>
                     <option value="">— Selecione —</option>
                     {ACUIDADE_OPTIONS.map(o => <option key={o} value={o}>{o}</option>)}
                     <option value="outro">Outro</option>

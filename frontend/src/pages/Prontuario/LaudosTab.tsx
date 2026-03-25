@@ -32,6 +32,8 @@ export default function LaudosTab({ pacienteId }: { pacienteId: number }) {
   const [items, setItems] = useState<Laudo[]>([])
   const [showForm, setShowForm] = useState(false)
   const [saving, setSaving] = useState(false)
+  const [error, setError] = useState('')
+  const [fieldErrors, setFieldErrors] = useState<Set<string>>(new Set())
   const [form, setForm] = useState({
     diagnostico: '',
     conduta: 'alta',
@@ -39,6 +41,8 @@ export default function LaudosTab({ pacienteId }: { pacienteId: number }) {
   })
 
   useEffect(() => { load() }, [pacienteId])
+  useEffect(() => { if (error) { const t = setTimeout(() => setError(''), 3000); return () => clearTimeout(t) } }, [error])
+  useEffect(() => { if (fieldErrors.size > 0) { const t = setTimeout(() => setFieldErrors(new Set()), 3000); return () => clearTimeout(t) } }, [fieldErrors])
 
   async function load() {
     const { data } = await api.get(`/prontuario/${pacienteId}/laudos`)
@@ -47,6 +51,14 @@ export default function LaudosTab({ pacienteId }: { pacienteId: number }) {
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
+    const campos: string[] = []
+    if (!form.diagnostico.trim()) campos.push('diagnostico')
+    if (!form.observacoes.trim()) campos.push('observacoes')
+    if (campos.length > 0) {
+      setFieldErrors(new Set(campos))
+      setError('Preencha todos os campos obrigatórios destacados.')
+      return
+    }
     setSaving(true)
     try {
       await api.post(`/prontuario/${pacienteId}/laudos`, form)
@@ -83,9 +95,15 @@ export default function LaudosTab({ pacienteId }: { pacienteId: number }) {
 
       {showForm && (
         <form className="clinical-form" onSubmit={handleSubmit}>
-          <div className="form-group">
+          {error && (
+            <div className="toast toast-error" style={{position:'relative',top:0,left:0,transform:'none',marginBottom:'1rem'}}>
+              <span>{error}</span>
+              <button className="toast-close" onClick={() => setError('')}>&times;</button>
+            </div>
+          )}
+          <div className={`form-group${fieldErrors.has('diagnostico') ? ' field-error' : ''}`}>
             <label>Diagnóstico *</label>
-            <textarea rows={3} value={form.diagnostico} onChange={e => setForm({ ...form, diagnostico: e.target.value })} placeholder="Descreva o diagnóstico..." required />
+            <textarea rows={3} value={form.diagnostico} onChange={e => setForm({ ...form, diagnostico: e.target.value })} placeholder="Descreva o diagnóstico..." />
           </div>
           <div className="form-group" style={{ maxWidth: 280 }}>
             <label>Conduta *</label>
@@ -93,9 +111,9 @@ export default function LaudosTab({ pacienteId }: { pacienteId: number }) {
               {CONDUTAS.map(c => <option key={c.value} value={c.value}>{c.label}</option>)}
             </select>
           </div>
-          <div className="form-group">
+          <div className={`form-group${fieldErrors.has('observacoes') ? ' field-error' : ''}`}>
             <label>Observações *</label>
-            <textarea rows={2} value={form.observacoes} onChange={e => setForm({ ...form, observacoes: e.target.value })} required />
+            <textarea rows={2} value={form.observacoes} onChange={e => setForm({ ...form, observacoes: e.target.value })} />
           </div>
           <div className="form-actions">
             <button type="submit" className="btn btn-primary" disabled={saving}>
