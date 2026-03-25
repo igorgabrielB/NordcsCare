@@ -1,7 +1,7 @@
 import { useState, type FormEvent } from 'react'
 import { useNavigate, Navigate } from 'react-router-dom'
 import { useAuth } from '../../contexts/AuthContext.tsx'
-import { User, Lock, LogIn, Eye, EyeOff, AlertCircle } from 'lucide-react'
+import { User, Lock, LogIn, Eye, EyeOff, AlertCircle, Mail } from 'lucide-react'
 import './Login.css'
 
 function getHomeRoute(role?: string) {
@@ -12,7 +12,7 @@ function getHomeRoute(role?: string) {
 export default function Login() {
   const { login, isAuthenticated, user } = useAuth()
   const navigate = useNavigate()
-  const [loginName, setLoginName] = useState('')
+  const [email, setEmail] = useState('')
   const [senha, setSenha] = useState('')
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
@@ -28,7 +28,7 @@ export default function Login() {
     setLoading(true)
 
     try {
-      const loggedUser = await login(loginName, senha)
+      const loggedUser = await login(email, senha)
       navigate(getHomeRoute(loggedUser?.role))
     } catch (err: unknown) {
       const axiosError = err as { response?: { data?: { error?: string } } }
@@ -73,15 +73,15 @@ export default function Login() {
             )}
 
             <div className="form-group">
-              <label htmlFor="login">Login</label>
+              <label htmlFor="email">Email</label>
               <div className="input-wrapper">
-                <User size={18} className="input-icon" />
+                <Mail size={18} className="input-icon" />
                 <input
-                  id="login"
-                  type="text"
-                  value={loginName}
-                  onChange={(e) => setLoginName(e.target.value)}
-                  placeholder="Digite seu usuário"
+                  id="email"
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="Digite seu email"
                   required
                   autoFocus
                 />

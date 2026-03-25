@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useMemo } from 'react'
 import { Link } from 'react-router-dom'
 import api from '../../services/api.ts'
-import { ArrowLeft, Pencil, Trash2, Plus, Search, Users, UserCheck, UserX, Shield, Mail, LogIn } from 'lucide-react'
+import { ArrowLeft, Pencil, Trash2, Plus, Search, Users, UserCheck, UserX, Shield, Mail } from 'lucide-react'
 import './Usuarios.css'
 
 interface Usuario {
@@ -17,13 +17,12 @@ interface Usuario {
 interface FormData {
   nome: string
   email: string
-  login: string
   senha: string
   role: string
   ativo: number
 }
 
-const emptyForm: FormData = { nome: '', email: '', login: '', senha: '', role: 'administrativo', ativo: 1 }
+const emptyForm: FormData = { nome: '', email: '', senha: '', role: 'administrativo', ativo: 1 }
 
 export default function Usuarios() {
   const [usuarios, setUsuarios] = useState<Usuario[]>([])
@@ -50,7 +49,7 @@ export default function Usuarios() {
 
   const filtered = usuarios.filter(u =>
     u.nome.toLowerCase().includes(search.toLowerCase()) ||
-    u.login.toLowerCase().includes(search.toLowerCase())
+    (u.email || '').toLowerCase().includes(search.toLowerCase())
   )
 
   const stats = useMemo(() => ({
@@ -67,13 +66,13 @@ export default function Usuarios() {
 
   const openEdit = (u: Usuario) => {
     setEditId(u.id)
-    setForm({ nome: u.nome, email: u.email || '', login: u.login, senha: '', role: u.role, ativo: u.ativo })
+    setForm({ nome: u.nome, email: u.email || '', senha: '', role: u.role, ativo: u.ativo })
     setShowModal(true)
   }
 
   const handleSave = async () => {
-    if (!form.nome.trim() || !form.login.trim()) {
-      alert('Nome e login são obrigatórios')
+    if (!form.nome.trim() || !form.email.trim()) {
+      alert('Nome e email são obrigatórios')
       return
     }
     if (!editId && !form.senha) {
@@ -84,11 +83,11 @@ export default function Usuarios() {
     setSaving(true)
     try {
       if (editId) {
-        const payload: Record<string, unknown> = { nome: form.nome, email: form.email || null, login: form.login, role: form.role, ativo: form.ativo }
+        const payload: Record<string, unknown> = { nome: form.nome, email: form.email, role: form.role, ativo: form.ativo }
         if (form.senha) payload.senha = form.senha
         await api.put(`/usuarios/${editId}`, payload)
       } else {
-        await api.post('/usuarios', { nome: form.nome, email: form.email || null, login: form.login, senha: form.senha, role: form.role })
+        await api.post('/usuarios', { nome: form.nome, email: form.email, senha: form.senha, role: form.role })
       }
       setShowModal(false)
       fetchUsuarios()
@@ -161,7 +160,7 @@ export default function Usuarios() {
           <Search size={16} className="usr-search-icon" />
           <input
             type="text"
-            placeholder="Buscar por nome ou login..."
+            placeholder="Buscar por nome ou email..."
             value={search}
             onChange={e => setSearch(e.target.value)}
           />
@@ -193,7 +192,6 @@ export default function Usuarios() {
             <thead>
               <tr>
                 <th>Usuário</th>
-                <th>Login</th>
                 <th>Email</th>
                 <th>Perfil</th>
                 <th>Status</th>
@@ -212,14 +210,7 @@ export default function Usuarios() {
                     </div>
                   </td>
                   <td>
-                    <span className="usr-login"><LogIn size={13} /> {u.login}</span>
-                  </td>
-                  <td>
-                    {u.email ? (
-                      <span className="usr-email"><Mail size={13} /> {u.email}</span>
-                    ) : (
-                      <span className="usr-email-vazio">—</span>
-                    )}
+                    <span className="usr-email"><Mail size={13} /> {u.email || '—'}</span>
                   </td>
                   <td>{roleBadge(u.role)}</td>
                   <td>
@@ -264,17 +255,13 @@ export default function Usuarios() {
               </div>
               <div className="usr-form-row">
                 <div className="form-group">
-                  <label>Login *</label>
-                  <input value={form.login} onChange={e => setForm({ ...form, login: e.target.value })} placeholder="Login de acesso" />
+                  <label>Email *</label>
+                  <input type="email" value={form.email} onChange={e => setForm({ ...form, email: e.target.value })} placeholder="usuario@email.com" />
                 </div>
                 <div className="form-group">
                   <label>{editId ? 'Nova Senha (opcional)' : 'Senha *'}</label>
                   <input type="password" value={form.senha} onChange={e => setForm({ ...form, senha: e.target.value })} placeholder={editId ? 'Manter atual' : 'Mínimo 8 caracteres'} />
                 </div>
-              </div>
-              <div className="form-group">
-                <label>Email</label>
-                <input type="email" value={form.email} onChange={e => setForm({ ...form, email: e.target.value })} placeholder="usuario@email.com" />
               </div>
               <div className="usr-form-row">
                 <div className="form-group">

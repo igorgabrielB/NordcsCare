@@ -42,19 +42,29 @@ class UsuarioController {
         $db = Database::getInstance();
 
         $nome = trim($input['nome'] ?? '');
-        $login = trim($input['login'] ?? '');
+        $email = trim($input['email'] ?? '');
+        $login = trim($input['login'] ?? '') ?: $email;
         $senha = $input['senha'] ?? '';
         $role = $input['role'] ?? 'administrativo';
 
-        if ($nome === '' || $login === '' || $senha === '') {
+        if ($nome === '' || $email === '' || $senha === '') {
             http_response_code(422);
-            echo json_encode(['error' => 'Nome, login e senha são obrigatórios']);
+            echo json_encode(['error' => 'Nome, email e senha são obrigatórios']);
             return;
         }
 
         if (strlen($senha) < 8) {
             http_response_code(422);
             echo json_encode(['error' => 'A senha deve ter pelo menos 8 caracteres']);
+            return;
+        }
+
+        // Verificar email único
+        $stmt = $db->prepare('SELECT id FROM usuarios WHERE email = :email');
+        $stmt->execute([':email' => $email]);
+        if ($stmt->fetch()) {
+            http_response_code(422);
+            echo json_encode(['error' => 'Este email já está em uso']);
             return;
         }
 
@@ -75,7 +85,7 @@ class UsuarioController {
         );
         $stmt->execute([
             ':nome' => $nome,
-            ':email' => $input['email'] ?? null,
+            ':email' => $email,
             ':login' => $login,
             ':senha' => $hash,
             ':role' => $role,
@@ -103,12 +113,22 @@ class UsuarioController {
         }
 
         $nome = trim($input['nome'] ?? '');
-        $login = trim($input['login'] ?? '');
+        $email = trim($input['email'] ?? '');
+        $login = trim($input['login'] ?? '') ?: $email;
         $role = $input['role'] ?? 'administrativo';
 
-        if ($nome === '' || $login === '') {
+        if ($nome === '' || $email === '') {
             http_response_code(422);
-            echo json_encode(['error' => 'Nome e login são obrigatórios']);
+            echo json_encode(['error' => 'Nome e email são obrigatórios']);
+            return;
+        }
+
+        // Verificar email único (excluindo o próprio)
+        $stmt = $db->prepare('SELECT id FROM usuarios WHERE email = :email AND id != :id');
+        $stmt->execute([':email' => $email, ':id' => $id]);
+        if ($stmt->fetch()) {
+            http_response_code(422);
+            echo json_encode(['error' => 'Este email já está em uso']);
             return;
         }
 
@@ -127,7 +147,7 @@ class UsuarioController {
         );
         $stmt->execute([
             ':nome' => $nome,
-            ':email' => $input['email'] ?? null,
+            ':email' => $email,
             ':login' => $login,
             ':role' => $role,
             ':ativo' => isset($input['ativo']) ? (int) $input['ativo'] : 1,

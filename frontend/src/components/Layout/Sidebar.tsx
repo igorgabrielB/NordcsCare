@@ -39,10 +39,12 @@ export default function Sidebar({ isOpen }: SidebarProps) {
             <span className="icon"><ClipboardList size={18} /></span>
             <span className={`sidebar-text ${isOpen ? 'show' : ''}`}>Fila de Atendimento</span>
           </NavLink>
-          <NavLink to="/relatorios" className={({ isActive }) => `sidebar-link${isActive ? ' active' : ''}`} title="Relatórios">
-            <span className="icon"><BarChart2 size={18} /></span>
-            <span className={`sidebar-text ${isOpen ? 'show' : ''}`}>Relatórios</span>
-          </NavLink>
+          {isAdmin && (
+            <NavLink to="/relatorios" className={({ isActive }) => `sidebar-link${isActive ? ' active' : ''}`} title="Relatórios">
+              <span className="icon"><BarChart2 size={18} /></span>
+              <span className={`sidebar-text ${isOpen ? 'show' : ''}`}>Relatórios</span>
+            </NavLink>
+          )}
         </div>
       </nav>
     </aside>

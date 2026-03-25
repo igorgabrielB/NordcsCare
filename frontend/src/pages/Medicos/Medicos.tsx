@@ -23,7 +23,6 @@ interface FormData {
   especialidade: string
   telefone: string
   email: string
-  login: string
   senha: string
   ativo: number
 }
@@ -34,16 +33,7 @@ const ESTADOS_BR = [
   'RS', 'RO', 'RR', 'SC', 'SP', 'SE', 'TO'
 ]
 
-const emptyForm: FormData = { nome: '', crm: '', uf: 'CE', especialidade: 'Oftalmologia', telefone: '', email: '', login: '', senha: '', ativo: 1 }
-
-function generateLogin(nomeCompleto: string): string {
-  if (!nomeCompleto.trim()) return ''
-  const partes = nomeCompleto.trim().split(/\s+/)
-  if (partes.length < 2) return partes[0].toLowerCase()
-  const primeiroNome = partes[0].toLowerCase()
-  const primeiraLetraSobrenome = partes[partes.length - 1].charAt(0).toUpperCase()
-  return `${primeiroNome}.${primeiraLetraSobrenome}`
-}
+const emptyForm: FormData = { nome: '', crm: '', uf: 'CE', especialidade: 'Oftalmologia', telefone: '', email: '', senha: '', ativo: 1 }
 
 export default function Medicos() {
   const [medicos, setMedicos] = useState<Medico[]>([])
@@ -94,7 +84,6 @@ export default function Medicos() {
       especialidade: m.especialidade || 'Oftalmologia',
       telefone: m.telefone || '',
       email: m.email || '',
-      login: '',
       senha: '',
       ativo: m.ativo,
     })
@@ -102,8 +91,8 @@ export default function Medicos() {
   }
 
   const handleSave = async () => {
-    if (!form.nome.trim() || !form.crm.trim()) {
-      alert('Nome e CRM são obrigatórios')
+    if (!form.nome.trim() || !form.crm.trim() || !form.email.trim()) {
+      alert('Nome, CRM e email são obrigatórios')
       return
     }
     if (!editId && !form.senha.trim()) {
@@ -124,15 +113,13 @@ export default function Medicos() {
           ativo: form.ativo,
         })
       } else {
-        const loginGerado = generateLogin(form.nome)
         await api.post('/medicos', {
           nome: form.nome,
           crm: form.crm,
           uf: form.uf,
           especialidade: form.especialidade,
           telefone: form.telefone || null,
-          email: form.email || null,
-          login: loginGerado,
+          email: form.email,
           senha: form.senha,
         })
       }
@@ -324,20 +311,14 @@ export default function Medicos() {
                   <input value={form.telefone} onChange={e => setForm({ ...form, telefone: e.target.value })} placeholder="(85) 99999-0000" />
                 </div>
                 <div className="form-group">
-                  <label>Email</label>
+                  <label>Email *</label>
                   <input type="email" value={form.email} onChange={e => setForm({ ...form, email: e.target.value })} placeholder="medico@email.com" />
                 </div>
               </div>
               {!editId && (
-                <div className="form-row-modal">
-                  <div className="form-group">
-                    <label>Login (auto-gerado) *</label>
-                    <input type="text" value={generateLogin(form.nome)} readOnly disabled placeholder="nome.S" />
-                  </div>
-                  <div className="form-group">
-                    <label>Senha para Login *</label>
-                    <input type="password" value={form.senha} onChange={e => setForm({ ...form, senha: e.target.value })} placeholder="Mínimo 8 caracteres" />
-                  </div>
+                <div className="form-group">
+                  <label>Senha para Login *</label>
+                  <input type="password" value={form.senha} onChange={e => setForm({ ...form, senha: e.target.value })} placeholder="Mínimo 8 caracteres" />
                 </div>
               )}
               {editId && (

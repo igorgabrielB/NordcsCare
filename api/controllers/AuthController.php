@@ -8,15 +8,15 @@ class AuthController {
     public static function login(): void {
         $input = json_decode(file_get_contents('php://input'), true);
 
-        if (empty($input['login']) || empty($input['senha'])) {
+        if (empty($input['email']) || empty($input['senha'])) {
             http_response_code(400);
-            echo json_encode(['error' => 'Login e senha são obrigatórios']);
+            echo json_encode(['error' => 'Email e senha são obrigatórios']);
             return;
         }
 
         $db = Database::getInstance();
-        $stmt = $db->prepare('SELECT id, nome, login, senha, role, ativo FROM usuarios WHERE login = :login');
-        $stmt->execute([':login' => $input['login']]);
+        $stmt = $db->prepare('SELECT id, nome, email, login, senha, role, ativo FROM usuarios WHERE email = :email');
+        $stmt->execute([':email' => $input['email']]);
         $user = $stmt->fetch();
 
         if (!$user || !password_verify($input['senha'], $user['senha'])) {
@@ -47,6 +47,7 @@ class AuthController {
             'user' => [
                 'id' => (int)$user['id'],
                 'nome' => $user['nome'],
+                'email' => $user['email'],
                 'login' => $user['login'],
                 'role' => $user['role'],
             ]
@@ -58,7 +59,7 @@ class AuthController {
 
         $input = json_decode(file_get_contents('php://input'), true);
 
-        $required = ['nome', 'login', 'senha', 'role'];
+        $required = ['nome', 'email', 'senha', 'role'];
         foreach ($required as $field) {
             if (empty($input[$field])) {
                 http_response_code(400);
@@ -76,6 +77,15 @@ class AuthController {
 
         $db = Database::getInstance();
 
+        // Verificar email duplicado
+        $stmt = $db->prepare('SELECT COUNT(*) FROM usuarios WHERE email = :email');
+        $stmt->execute([':email' => $input['email']]);
+        if ($stmt->fetchColumn() > 0) {
+            http_response_code(409);
+            echo json_encode(['error' => 'Email já cadastrado']);
+            return;
+        }
+
         // Verificar login duplicado
         $stmt = $db->prepare('SELECT COUNT(*) FROM usuarios WHERE login = :login');
         $stmt->execute([':login' => $input['login']]);
@@ -86,14 +96,15 @@ class AuthController {
         }
 
         $senhaHash = password_hash($input['senha'], PASSWORD_BCRYPT);
+        $login = trim($input['login'] ?? '') ?: $input['email'];
 
         $stmt = $db->prepare(
             'INSERT INTO usuarios (nome, email, login, senha, role) VALUES (:nome, :email, :login, :senha, :role)'
         );
         $stmt->execute([
             ':nome' => $input['nome'],
-            ':email' => $input['email'] ?? null,
-            ':login' => $input['login'],
+            ':email' => $input['email'],
+            ':login' => $login,
             ':senha' => $senhaHash,
             ':role' => $input['role'],
         ]);

@@ -55,12 +55,12 @@ export default function App() {
             <Route path="/pacientes/:id/editar" element={<PacienteForm />} />
             <Route path="/fila" element={<FilaPage />} />
             <Route path="/prontuario/:pacienteId" element={<Prontuario />} />
-            <Route path="/relatorios" element={<Relatorios />} />
-            <Route path="/relatorios/atendimentos" element={<RelatorioAtendimentos />} />
           </Route>
 
           {/* Rotas somente para admin */}
           <Route element={<Layout allowedRoles={['admin']} />}>
+            <Route path="/relatorios" element={<Relatorios />} />
+            <Route path="/relatorios/atendimentos" element={<RelatorioAtendimentos />} />
             <Route path="/usuarios" element={<Usuarios />} />
             <Route path="/admin" element={<Admin />} />
             <Route path="/admin/medicos" element={<Medicos />} />

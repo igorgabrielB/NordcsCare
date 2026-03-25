@@ -1110,9 +1110,6 @@ export default function Prontuario() {
                         </div>
                         {l.diagnostico && <p><strong>Diagnóstico:</strong> <span dangerouslySetInnerHTML={{ __html: formatTexto(l.diagnostico) }} /></p>}
                         {l.conduta_inicial && <p><strong>Conduta Inicial:</strong> <span className="conduta-badge" style={{backgroundColor: condutaColor(l.conduta_inicial)}}>{condutaInicialLabel(l.conduta_inicial)}</span></p>}
-                        {data.acuidade_visual && (
-                          <p><strong>Dilatou:</strong> <span className={`dilata-badge ${data.acuidade_visual.dilata === 1 ? 'dilata-sim' : 'dilata-nao'}`}>{data.acuidade_visual.dilata === 1 ? 'Sim' : 'Não'}</span></p>
-                        )}
                         {l.observacoes && <p><strong>Obs:</strong> <span dangerouslySetInnerHTML={{ __html: formatTexto(l.observacoes) }} /></p>}
                       </div>
                     )

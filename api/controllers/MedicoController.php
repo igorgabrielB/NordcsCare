@@ -43,18 +43,19 @@ class MedicoController {
         $nome = trim($input['nome'] ?? '');
         $crm = trim($input['crm'] ?? '');
         $especialidade = trim($input['especialidade'] ?? 'Oftalmologia');
-        $login = trim($input['login'] ?? '');
+        $email = trim($input['email'] ?? '');
+        $login = trim($input['login'] ?? '') ?: $email;
         $senha = $input['senha'] ?? '';
 
-        if ($nome === '' || $crm === '') {
+        if ($nome === '' || $crm === '' || $email === '') {
             http_response_code(422);
-            echo json_encode(['error' => 'Nome e CRM são obrigatórios']);
+            echo json_encode(['error' => 'Nome, CRM e email são obrigatórios']);
             return;
         }
 
-        if ($login === '' || $senha === '') {
+        if ($senha === '') {
             http_response_code(422);
-            echo json_encode(['error' => 'Login e senha são obrigatórios']);
+            echo json_encode(['error' => 'Senha é obrigatória']);
             return;
         }
 
@@ -70,6 +71,15 @@ class MedicoController {
         if ($stmt->fetch()) {
             http_response_code(422);
             echo json_encode(['error' => 'Este CRM já está cadastrado']);
+            return;
+        }
+
+        // Verificar email único na tabela usuarios
+        $stmt = $db->prepare('SELECT id FROM usuarios WHERE email = :email');
+        $stmt->execute([':email' => $email]);
+        if ($stmt->fetch()) {
+            http_response_code(422);
+            echo json_encode(['error' => 'Este email já está em uso']);
             return;
         }
 
@@ -95,7 +105,7 @@ class MedicoController {
                 ':login' => $login,
                 ':senha' => $hash,
                 ':role' => 'medico',
-                ':email' => $input['email'] ?? null,
+                ':email' => $email,
             ]);
             $usuarioId = (int)$db->lastInsertId();
 
@@ -110,7 +120,7 @@ class MedicoController {
                 ':uf' => $input['uf'] ?? 'CE',
                 ':especialidade' => $especialidade ?: 'Oftalmologia',
                 ':telefone' => $input['telefone'] ?? null,
-                ':email' => $input['email'] ?? null,
+                ':email' => $email,
             ]);
 
             $db->commit();

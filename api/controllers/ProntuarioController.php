@@ -69,7 +69,7 @@ class ProntuarioController {
             $logFile = __DIR__ . '/../logs/fila.log';
 
             // Buscar dados do paciente (escola)
-            $stmt = $db->prepare('SELECT convenio FROM pacientes WHERE id = :id');
+            $stmt = $db->prepare('SELECT escola FROM pacientes WHERE id = :id');
             $stmt->execute([':id' => $pacienteId]);
             $escola = $stmt->fetchColumn();
 

@@ -4,8 +4,8 @@
  * Em produção, considere usar Redis para melhor performance.
  */
 class RateLimit {
-    private const MAX_ATTEMPTS = 5;       // Máximo de tentativas
-    private const WINDOW_SECONDS = 300;   // Janela de 5 minutos
+    private const MAX_ATTEMPTS = 3;       // Máximo de tentativas
+    private const WINDOW_SECONDS = 60;    // Janela de 1 minuto
     private const STORAGE_DIR = __DIR__ . '/../logs/rate_limit';
 
     public static function check(): void {
