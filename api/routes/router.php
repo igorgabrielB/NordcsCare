@@ -11,6 +11,7 @@ require_once __DIR__ . '/../controllers/EscolaAgendaController.php';
 require_once __DIR__ . '/../controllers/ModeloDocumentoController.php';
 require_once __DIR__ . '/../controllers/RedCheckController.php';
 require_once __DIR__ . '/../controllers/LaudoProntoController.php';
+require_once __DIR__ . '/../controllers/HistoricoController.php';
 
 class Router {
     private array $routes = [];
@@ -141,6 +142,12 @@ $router->add('GET', '/api/laudos-prontos/ativos', [LaudoProntoController::class,
 $router->add('POST', '/api/laudos-prontos', [LaudoProntoController::class, 'store']);
 $router->add('PUT', '/api/laudos-prontos/{id}', [LaudoProntoController::class, 'update']);
 $router->add('DELETE', '/api/laudos-prontos/{id}', [LaudoProntoController::class, 'destroy']);
+
+// Histórico de Atendimentos (Relatórios)
+$router->add('GET', '/api/historico', [HistoricoController::class, 'index']);
+$router->add('GET', '/api/historico/resumo', [HistoricoController::class, 'resumo']);
+$router->add('GET', '/api/historico/escolas', [HistoricoController::class, 'escolas']);
+$router->add('GET', '/api/historico/exportar', [HistoricoController::class, 'exportar']);
 
 // Logs (apenas admin)
 $router->add('GET', '/api/logs/fila', function() {

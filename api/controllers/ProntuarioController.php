@@ -12,8 +12,8 @@ class ProntuarioController {
             $logMsg = "[" . date('Y-m-d H:i:s') . "] Tentando mover paciente {$pacienteId} para fila '{$estacao}'" . ($estacaoAnterior ? " (saindo de '{$estacaoAnterior}')" : '') . "\n";
             file_put_contents($logFile, $logMsg, FILE_APPEND);
 
-            // Preservar o created_at original (hora de entrada na fila) antes de deletar
-            $stmtOrig = $db->prepare('SELECT created_at FROM fila WHERE paciente_id = :pid ORDER BY created_at ASC LIMIT 1');
+            // Preservar o created_at original (hora de entrada na fila HOJE) antes de deletar
+            $stmtOrig = $db->prepare('SELECT created_at FROM fila WHERE paciente_id = :pid AND DATE(created_at) = CURDATE() ORDER BY created_at ASC LIMIT 1');
             $stmtOrig->execute([':pid' => $pacienteId]);
             $originalCreatedAt = $stmtOrig->fetchColumn();
 
@@ -49,10 +49,111 @@ class ProntuarioController {
                 ]);
             }
             file_put_contents($logFile, "[" . date('Y-m-d H:i:s') . "] INSERT resultado: " . ($result ? 'SUCCESS' : 'FAIL') . " (created_at preservado: " . ($originalCreatedAt ?: 'N/A') . ")\n", FILE_APPEND);
+
+            // Salvar no histórico quando paciente chega em altas ou encaminhamentos
+            if (in_array($estacao, ['altas', 'encaminhamentos'])) {
+                self::salvarHistoricoAtendimento($db, $pacienteId, $estacao, $originalCreatedAt);
+            }
         } catch (Exception $e) {
             $logFile = __DIR__ . '/../logs/fila.log';
             file_put_contents($logFile, "[" . date('Y-m-d H:i:s') . "] ERRO: " . $e->getMessage() . "\n", FILE_APPEND);
             error_log("Erro ao adicionar à fila: " . $e->getMessage());
+        }
+    }
+
+    /**
+     * Salva registro no histórico de atendimentos quando paciente é finalizado (alta/encaminhamento).
+     */
+    private static function salvarHistoricoAtendimento($db, $pacienteId, $resultado, $horaEntrada): void {
+        try {
+            $logFile = __DIR__ . '/../logs/fila.log';
+
+            // Buscar dados do paciente (escola)
+            $stmt = $db->prepare('SELECT convenio FROM pacientes WHERE id = :id');
+            $stmt->execute([':id' => $pacienteId]);
+            $escola = $stmt->fetchColumn();
+
+            // Buscar laudo (diagnostico, conduta)
+            $stmt = $db->prepare('SELECT diagnostico, conduta_inicial, conduta_final, medico_id FROM laudos WHERE paciente_id = :pid ORDER BY created_at DESC LIMIT 1');
+            $stmt->execute([':pid' => $pacienteId]);
+            $laudo = $stmt->fetch();
+
+            // Buscar nome do médico
+            $medicoNome = null;
+            $medicoId = $laudo['medico_id'] ?? null;
+            if ($medicoId) {
+                $stmt = $db->prepare('SELECT nome FROM usuarios WHERE id = :id');
+                $stmt->execute([':id' => $medicoId]);
+                $medicoNome = $stmt->fetchColumn();
+            }
+
+            // Mapear resultado: estação da fila → valor do ENUM
+            $resultadoMap = [
+                'altas' => 'alta',
+                'encaminhamentos' => 'encaminhamento',
+            ];
+            // Verificar se tem óculos + encaminhamento
+            $condutaInicial = strtolower(trim($laudo['conduta_inicial'] ?? ''));
+            if ($resultado === 'encaminhamentos' && in_array($condutaInicial, ['onibus_encaminhamento'])) {
+                $resultadoFinal = 'oculos_encaminhamento';
+            } elseif ($resultado === 'altas' && in_array($condutaInicial, ['onibus'])) {
+                $resultadoFinal = 'oculos';
+            } else {
+                $resultadoFinal = $resultadoMap[$resultado] ?? 'alta';
+            }
+
+            $dataAtendimento = date('Y-m-d');
+            $horaEntradaTime = $horaEntrada ? date('H:i:s', strtotime($horaEntrada)) : date('H:i:s');
+            $horaSaida = date('H:i:s');
+
+            // Evitar duplicata: não inserir se já existe registro para esse paciente hoje
+            $stmt = $db->prepare('SELECT id FROM atendimentos_historico WHERE paciente_id = :pid AND data_atendimento = CURDATE() LIMIT 1');
+            $stmt->execute([':pid' => $pacienteId]);
+            if ($stmt->fetch()) {
+                // Atualizar registro existente
+                $stmt = $db->prepare(
+                    'UPDATE atendimentos_historico SET hora_saida = :hora_saida, resultado = :resultado,
+                     diagnostico = :diagnostico, conduta_inicial = :conduta_ini, conduta_final = :conduta_fin,
+                     medico_id = :medico_id, medico_nome = :medico_nome
+                     WHERE paciente_id = :pid AND data_atendimento = CURDATE()'
+                );
+                $stmt->execute([
+                    ':hora_saida' => $horaSaida,
+                    ':resultado' => $resultadoFinal,
+                    ':diagnostico' => $laudo['diagnostico'] ?? null,
+                    ':conduta_ini' => $laudo['conduta_inicial'] ?? null,
+                    ':conduta_fin' => $laudo['conduta_final'] ?? null,
+                    ':medico_id' => $medicoId,
+                    ':medico_nome' => $medicoNome,
+                    ':pid' => $pacienteId,
+                ]);
+                file_put_contents($logFile, "[" . date('Y-m-d H:i:s') . "] Histórico ATUALIZADO para paciente {$pacienteId} (resultado: {$resultadoFinal})\n", FILE_APPEND);
+            } else {
+                // Inserir novo registro
+                $stmt = $db->prepare(
+                    'INSERT INTO atendimentos_historico (paciente_id, escola, data_atendimento, hora_entrada, hora_saida, resultado, diagnostico, conduta_inicial, conduta_final, medico_id, medico_nome)
+                     VALUES (:pid, :escola, :data, :hora_entrada, :hora_saida, :resultado, :diagnostico, :conduta_ini, :conduta_fin, :medico_id, :medico_nome)'
+                );
+                $stmt->execute([
+                    ':pid' => $pacienteId,
+                    ':escola' => $escola,
+                    ':data' => $dataAtendimento,
+                    ':hora_entrada' => $horaEntradaTime,
+                    ':hora_saida' => $horaSaida,
+                    ':resultado' => $resultadoFinal,
+                    ':diagnostico' => $laudo['diagnostico'] ?? null,
+                    ':conduta_ini' => $laudo['conduta_inicial'] ?? null,
+                    ':conduta_fin' => $laudo['conduta_final'] ?? null,
+                    ':medico_id' => $medicoId,
+                    ':medico_nome' => $medicoNome,
+                ]);
+                file_put_contents($logFile, "[" . date('Y-m-d H:i:s') . "] Histórico SALVO para paciente {$pacienteId} (resultado: {$resultadoFinal})\n", FILE_APPEND);
+            }
+        } catch (Exception $e) {
+            // Não impedir o fluxo principal se o histórico falhar
+            error_log("Erro ao salvar histórico: " . $e->getMessage());
+            $logFile = __DIR__ . '/../logs/fila.log';
+            file_put_contents($logFile, "[" . date('Y-m-d H:i:s') . "] ERRO histórico: " . $e->getMessage() . "\n", FILE_APPEND);
         }
     }
     // ========== PRONTUÁRIO COMPLETO ==========

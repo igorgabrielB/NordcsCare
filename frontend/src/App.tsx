@@ -16,6 +16,7 @@ import ImportEscola from './pages/ImportEscola/ImportEscola.tsx'
 import ExclusaoEscola from './pages/ExclusaoEscola/ExclusaoEscola.tsx'
 import AgendaEscola from './pages/AgendaEscola/AgendaEscola.tsx'
 import Relatorios from './pages/Relatorios/Relatorios.tsx'
+import RelatorioAtendimentos from './pages/RelatorioAtendimentos/RelatorioAtendimentos.tsx'
 import ModelosDocumentos from './pages/ModelosDocumentos/ModelosDocumentos.tsx'
 import LaudosProntos from './pages/LaudosProntos/LaudosProntos.tsx'
 import GerenciamentoRoles from './pages/GerenciamentoRoles/GerenciamentoRoles.tsx'
@@ -43,6 +44,7 @@ export default function App() {
             <Route path="/fila" element={<FilaPage />} />
             <Route path="/prontuario/:pacienteId" element={<Prontuario />} />
             <Route path="/relatorios" element={<Relatorios />} />
+            <Route path="/relatorios/atendimentos" element={<RelatorioAtendimentos />} />
           </Route>
 
           {/* Rotas somente para admin */}

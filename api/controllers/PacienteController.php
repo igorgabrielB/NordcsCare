@@ -130,8 +130,8 @@ class PacienteController {
         }
 
         $stmt = $db->prepare(
-            'INSERT INTO pacientes (codigo, nome_completo, cpf, data_nascimento, sexo, telefone, email, cep, rua, numero, complemento, bairro, cidade, estado, convenio, escola, responsavel, observacoes)
-             VALUES (:codigo, :nome_completo, :cpf, :data_nascimento, :sexo, :telefone, :email, :cep, :rua, :numero, :complemento, :bairro, :cidade, :estado, :convenio, :escola, :responsavel, :observacoes)'
+            'INSERT INTO pacientes (codigo, nome_completo, cpf, data_nascimento, sexo, nacionalidade, naturalidade, telefone, email, cep, rua, numero, complemento, bairro, cidade, estado, convenio, escola, responsavel, observacoes)
+             VALUES (:codigo, :nome_completo, :cpf, :data_nascimento, :sexo, :nacionalidade, :naturalidade, :telefone, :email, :cep, :rua, :numero, :complemento, :bairro, :cidade, :estado, :convenio, :escola, :responsavel, :observacoes)'
         );
 
         $stmt->execute([
@@ -140,6 +140,8 @@ class PacienteController {
             ':cpf' => $input['cpf'] ?? null,
             ':data_nascimento' => $input['data_nascimento'] ?? null,
             ':sexo' => $input['sexo'] ?? null,
+            ':nacionalidade' => $input['nacionalidade'] ?? null,
+            ':naturalidade' => $input['naturalidade'] ?? null,
             ':telefone' => $input['telefone'] ?? null,
             ':email' => $input['email'] ?? null,
             ':cep' => $input['cep'] ?? null,
@@ -192,7 +194,8 @@ class PacienteController {
 
         $stmt = $db->prepare(
             'UPDATE pacientes SET nome_completo = :nome_completo, cpf = :cpf, data_nascimento = :data_nascimento,
-             sexo = :sexo, telefone = :telefone, email = :email, cep = :cep, rua = :rua, numero = :numero,
+             sexo = :sexo, nacionalidade = :nacionalidade, naturalidade = :naturalidade,
+             telefone = :telefone, email = :email, cep = :cep, rua = :rua, numero = :numero,
              complemento = :complemento, bairro = :bairro, cidade = :cidade, estado = :estado,
              convenio = :convenio, escola = :escola, responsavel = :responsavel, observacoes = :observacoes
              WHERE id = :id'
@@ -204,6 +207,8 @@ class PacienteController {
             ':cpf' => $input['cpf'] ?? null,
             ':data_nascimento' => $input['data_nascimento'] ?? null,
             ':sexo' => $input['sexo'] ?? null,
+            ':nacionalidade' => $input['nacionalidade'] ?? null,
+            ':naturalidade' => $input['naturalidade'] ?? null,
             ':telefone' => $input['telefone'] ?? null,
             ':email' => $input['email'] ?? null,
             ':cep' => $input['cep'] ?? null,

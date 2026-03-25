@@ -1,5 +1,8 @@
-import { createContext, useContext, useState, useEffect, type ReactNode } from 'react'
+import { createContext, useContext, useState, useEffect, useRef, useCallback, type ReactNode } from 'react'
 import api from '../services/api.ts'
+
+const INACTIVITY_TIMEOUT = 15 * 60 * 1000 // 15 minutos
+const ACTIVITY_EVENTS: (keyof WindowEventMap)[] = ['mousedown', 'keydown', 'scroll', 'touchstart', 'mousemove']
 
 interface User {
   id: number
@@ -30,6 +33,42 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   });
   const [token, setToken] = useState<string | null>(() => localStorage.getItem('token'))
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const isAuthenticated = !!token && !!user
+
+  const logout = useCallback(() => {
+    setToken(null)
+    setUser(null)
+    localStorage.removeItem('token')
+    localStorage.removeItem('user')
+    if (timerRef.current) {
+      clearTimeout(timerRef.current)
+      timerRef.current = null
+    }
+  }, [])
+
+  const resetInactivityTimer = useCallback(() => {
+    if (timerRef.current) clearTimeout(timerRef.current)
+    timerRef.current = setTimeout(() => {
+      logout()
+      window.location.href = '/login'
+    }, INACTIVITY_TIMEOUT)
+  }, [logout])
+
+  // Inactivity tracker
+  useEffect(() => {
+    if (!isAuthenticated) return
+
+    const handleActivity = () => resetInactivityTimer()
+
+    ACTIVITY_EVENTS.forEach(evt => window.addEventListener(evt, handleActivity, { passive: true }))
+    resetInactivityTimer()
+
+    return () => {
+      ACTIVITY_EVENTS.forEach(evt => window.removeEventListener(evt, handleActivity))
+      if (timerRef.current) clearTimeout(timerRef.current)
+    }
+  }, [isAuthenticated, resetInactivityTimer])
 
   useEffect(() => {
     if (token && !user) {
@@ -63,15 +102,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return userData
   }
 
-  const logout = () => {
-    setToken(null)
-    setUser(null)
-    localStorage.removeItem('token')
-    localStorage.removeItem('user')
-  }
-
   return (
-    <AuthContext.Provider value={{ user, token, login, logout, isAuthenticated: !!token && !!user }}>
+    <AuthContext.Provider value={{ user, token, login, logout, isAuthenticated }}>
       {children}
     </AuthContext.Provider>
   )

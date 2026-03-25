@@ -34,6 +34,8 @@ CREATE TABLE IF NOT EXISTS pacientes (
     cpf VARCHAR(14) UNIQUE,
     data_nascimento DATE,
     sexo ENUM('M', 'F', 'Outro') DEFAULT NULL,
+    nacionalidade VARCHAR(60) DEFAULT NULL,
+    naturalidade VARCHAR(100) DEFAULT NULL,
     telefone VARCHAR(20),
     email VARCHAR(100),
     cep VARCHAR(10),
@@ -240,6 +242,33 @@ CREATE TABLE IF NOT EXISTS audit_log (
     INDEX idx_audit_usuario (usuario_id),
     INDEX idx_audit_acao (acao),
     INDEX idx_audit_entidade (entidade, entidade_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- =============================================
+-- Tabela: atendimentos_historico
+-- Armazena histórico completo de atendimentos finalizados para relatórios.
+-- =============================================
+CREATE TABLE IF NOT EXISTS atendimentos_historico (
+    id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    paciente_id INT UNSIGNED NOT NULL,
+    escola VARCHAR(255) DEFAULT NULL,
+    data_atendimento DATE NOT NULL,
+    hora_entrada TIME NOT NULL,
+    hora_saida TIME DEFAULT NULL,
+    resultado ENUM('alta', 'encaminhamento', 'oculos', 'oculos_encaminhamento') NOT NULL,
+    diagnostico TEXT DEFAULT NULL,
+    conduta_inicial VARCHAR(50) DEFAULT NULL,
+    conduta_final VARCHAR(50) DEFAULT NULL,
+    medico_id INT UNSIGNED DEFAULT NULL,
+    medico_nome VARCHAR(255) DEFAULT NULL,
+    observacoes TEXT DEFAULT NULL,
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (paciente_id) REFERENCES pacientes(id) ON DELETE CASCADE,
+    FOREIGN KEY (medico_id) REFERENCES usuarios(id) ON DELETE SET NULL,
+    INDEX idx_data (data_atendimento),
+    INDEX idx_paciente_data (paciente_id, data_atendimento),
+    INDEX idx_resultado (resultado),
+    INDEX idx_escola (escola)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- =============================================

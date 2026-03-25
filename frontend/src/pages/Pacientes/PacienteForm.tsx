@@ -9,6 +9,8 @@ interface PacienteForm {
   cpf: string
   data_nascimento: string
   sexo: string
+  nacionalidade: string
+  naturalidade: string
   telefone: string
   email: string
   cep: string
@@ -24,11 +26,55 @@ interface PacienteForm {
   observacoes: string
 }
 
+const NACIONALIDADES = [
+  'Brasil', 'Afeganistão', 'Albânia', 'Alemanha', 'Andorra', 'Angola', 'Antígua e Barbuda',
+  'Arábia Saudita', 'Argélia', 'Argentina', 'Armênia', 'Austrália', 'Áustria', 'Azerbaijão',
+  'Bahamas', 'Bangladesh', 'Barbados', 'Barein', 'Bélgica', 'Belize', 'Benim',
+  'Bielorrússia', 'Bolívia', 'Bósnia e Herzegovina', 'Botsuana', 'Brunei', 'Bulgária',
+  'Burkina Faso', 'Burundi', 'Butão',
+  'Cabo Verde', 'Camarões', 'Camboja', 'Canadá', 'Catar', 'Cazaquistão',
+  'Chade', 'Chile', 'China', 'Chipre', 'Colômbia', 'Comores', 'Congo',
+  'Coreia do Norte', 'Coreia do Sul', 'Costa do Marfim', 'Costa Rica', 'Croácia', 'Cuba',
+  'Dinamarca', 'Djibuti', 'Dominica',
+  'Egito', 'El Salvador', 'Emirados Árabes Unidos', 'Equador', 'Eritreia', 'Eslováquia',
+  'Eslovênia', 'Espanha', 'Estados Unidos', 'Estônia', 'Etiópia',
+  'Fiji', 'Filipinas', 'Finlândia', 'França',
+  'Gabão', 'Gâmbia', 'Gana', 'Geórgia', 'Granada', 'Grécia', 'Guatemala',
+  'Guiana', 'Guiné', 'Guiné-Bissau', 'Guiné Equatorial',
+  'Haiti', 'Holanda', 'Honduras', 'Hungria',
+  'Iêmen', 'Índia', 'Indonésia', 'Irã', 'Iraque', 'Irlanda', 'Islândia', 'Israel', 'Itália',
+  'Jamaica', 'Japão', 'Jordânia',
+  'Kuwait', 'Quirguistão',
+  'Laos', 'Lesoto', 'Letônia', 'Líbano', 'Libéria', 'Líbia',
+  'Liechtenstein', 'Lituânia', 'Luxemburgo',
+  'Macedônia do Norte', 'Madagascar', 'Malásia', 'Malauí', 'Maldivas', 'Mali',
+  'Malta', 'Marrocos', 'Maurício', 'Mauritânia', 'México', 'Mianmar',
+  'Micronésia', 'Moçambique', 'Moldávia', 'Mônaco', 'Mongólia', 'Montenegro',
+  'Namíbia', 'Nauru', 'Nepal', 'Nicarágua', 'Níger', 'Nigéria',
+  'Noruega', 'Nova Zelândia',
+  'Omã',
+  'Palau', 'Palestina', 'Panamá', 'Papua-Nova Guiné', 'Paquistão', 'Paraguai',
+  'Peru', 'Polônia', 'Portugal',
+  'Quênia',
+  'República Dominicana', 'República Tcheca', 'Romênia', 'Ruanda', 'Rússia',
+  'Ilhas Salomão', 'Samoa', 'Santa Lúcia', 'São Cristóvão e Névis',
+  'São Tomé e Príncipe', 'São Vicente e Granadinas', 'Senegal', 'Serra Leoa', 'Sérvia',
+  'Seychelles', 'Singapura', 'Síria', 'Somália', 'Sri Lanka',
+  'Suazilândia', 'Sudão', 'Sudão do Sul', 'Suécia', 'Suíça', 'Suriname',
+  'Tailândia', 'Taiwan', 'Tajiquistão', 'Tanzânia', 'Timor-Leste', 'Togo',
+  'Tonga', 'Trinidad e Tobago', 'Tunísia', 'Turcomenistão', 'Turquia', 'Tuvalu',
+  'Ucrânia', 'Uganda', 'Uruguai', 'Uzbequistão',
+  'Vanuatu', 'Vaticano', 'Venezuela', 'Vietnã',
+  'Zâmbia', 'Zimbábue',
+]
+
 const emptyForm: PacienteForm = {
   nome_completo: '',
   cpf: '',
   data_nascimento: '',
   sexo: '',
+  nacionalidade: '',
+  naturalidade: '',
   telefone: '',
   email: '',
   cep: '',
@@ -87,6 +133,8 @@ export default function PacienteForm() {
           cpf: data.cpf || '',
           data_nascimento: data.data_nascimento || '',
           sexo: data.sexo || '',
+          nacionalidade: data.nacionalidade || '',
+          naturalidade: data.naturalidade || '',
           telefone: data.telefone || '',
           email: data.email || '',
           cep: data.cep || '',
@@ -144,6 +192,8 @@ export default function PacienteForm() {
     if (!form.cpf.trim()) campos.push('cpf')
     if (!form.data_nascimento) campos.push('data_nascimento')
     if (!form.sexo) campos.push('sexo')
+    if (!form.nacionalidade) campos.push('nacionalidade')
+    if (!form.naturalidade.trim()) campos.push('naturalidade')
     if (!form.convenio) campos.push('convenio')
     if (isMenor && !form.responsavel.trim()) campos.push('responsavel')
 
@@ -260,6 +310,19 @@ export default function PacienteForm() {
                   <span>Outro</span>
                 </label>
               </div>
+            </div>
+
+            <div className={`form-group${fieldErrors.has('nacionalidade') ? ' field-error' : ''}`}>
+              <label htmlFor="nacionalidade">Nacionalidade <span className="required-asterisk">*</span></label>
+              <select id="nacionalidade" name="nacionalidade" value={form.nacionalidade} onChange={handleChange}>
+                <option value="">Selecione</option>
+                {NACIONALIDADES.map(n => <option key={n} value={n}>{n}</option>)}
+              </select>
+            </div>
+
+            <div className={`form-group${fieldErrors.has('naturalidade') ? ' field-error' : ''}`}>
+              <label htmlFor="naturalidade">Naturalidade <span className="required-asterisk">*</span></label>
+              <input id="naturalidade" name="naturalidade" type="text" value={form.naturalidade} onChange={handleChange} placeholder="Ex: Goiânia - GO" />
             </div>
 
             <div className={`form-group${fieldErrors.has('responsavel') ? ' field-error' : ''}`}>

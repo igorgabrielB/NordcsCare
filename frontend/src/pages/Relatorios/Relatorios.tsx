@@ -1,8 +1,12 @@
-import { BarChart3, FileBarChart, PieChart, TrendingUp, Clock, Wrench, Layers, FileSpreadsheet, Download } from 'lucide-react'
+import { Link } from 'react-router-dom'
+import { BarChart3, FileBarChart, PieChart, TrendingUp, Clock, Wrench, Layers, FileSpreadsheet, Download, ArrowRight } from 'lucide-react'
 import './Relatorios.css'
 
+const AVAILABLE_REPORTS = [
+  { icon: <FileBarChart size={20} />, title: 'Relatório de Atendimentos', desc: 'Histórico de atendimentos por período, escola, médico e resultado', link: '/relatorios/atendimentos', ready: true },
+]
+
 const PLANNED_FEATURES = [
-  { icon: <FileBarChart size={20} />, title: 'Relatório de Atendimentos', desc: 'Quantidade de atendimentos por período, médico e tipo' },
   { icon: <PieChart size={20} />, title: 'Distribuição por Escola', desc: 'Visão geral dos alunos atendidos por escola' },
   { icon: <TrendingUp size={20} />, title: 'Evolução Mensal', desc: 'Gráficos de evolução de consultas e laudos ao longo do tempo' },
   { icon: <BarChart3 size={20} />, title: 'Exportação de Dados', desc: 'Exporte relatórios em PDF e Excel para análises externas' },
@@ -54,6 +58,23 @@ export default function Relatorios() {
         </div>
       </div>
 
+      {/* Available Reports */}
+      <div className="rel-available">
+        <h3 className="rel-section-title">Disponíveis</h3>
+        <div className="rel-available-grid">
+          {AVAILABLE_REPORTS.map((r, i) => (
+            <Link key={i} to={r.link} className="rel-report-card">
+              <div className="rel-report-icon-ready">{r.icon}</div>
+              <div className="rel-report-info">
+                <h4>{r.title}</h4>
+                <p>{r.desc}</p>
+              </div>
+              <ArrowRight size={18} className="rel-report-arrow" />
+            </Link>
+          ))}
+        </div>
+      </div>
+
       {/* Coming Soon Card */}
       <div className="rel-coming-soon">
         <div className="rel-cs-visual">
@@ -70,9 +91,9 @@ export default function Relatorios() {
           <span>Em Construção</span>
         </div>
 
-        <h2>Estamos preparando algo incrível</h2>
+        <h2>Mais relatórios em breve</h2>
         <p className="rel-cs-desc">
-          O módulo de relatórios está sendo desenvolvido para oferecer
+          Novos módulos de relatórios estão sendo desenvolvidos para oferecer
           insights completos sobre os atendimentos e operações do sistema.
         </p>
 

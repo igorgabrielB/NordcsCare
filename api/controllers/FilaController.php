@@ -80,15 +80,34 @@ class FilaController {
             return;
         }
 
-        // Verificar se já está na fila (apenas 1 registro por paciente)
+        // Verificar se já está na fila ativa hoje
         $stmt = $db->prepare(
-            'SELECT id FROM fila WHERE paciente_id = :pid LIMIT 1'
+            'SELECT id FROM fila WHERE paciente_id = :pid AND estacao NOT IN ("altas", "encaminhamentos") AND DATE(created_at) = CURDATE() LIMIT 1'
         );
         $stmt->execute([':pid' => $input['paciente_id']]);
         if ($stmt->fetch()) {
             http_response_code(409);
             echo json_encode(['error' => 'Paciente já está na fila']);
             return;
+        }
+
+        // Verificar se paciente já foi atendido hoje (está em altas/encaminhamentos)
+        $warning = null;
+        $stmt = $db->prepare(
+            'SELECT resultado, hora_saida FROM atendimentos_historico WHERE paciente_id = :pid AND data_atendimento = CURDATE() LIMIT 1'
+        );
+        $stmt->execute([':pid' => $input['paciente_id']]);
+        $historicoHoje = $stmt->fetch();
+        if ($historicoHoje) {
+            $resultadoLabel = match($historicoHoje['resultado']) {
+                'alta' => 'Alta',
+                'encaminhamento' => 'Encaminhamento',
+                'oculos' => 'Óculos (Alta)',
+                'oculos_encaminhamento' => 'Óculos (Encaminhamento)',
+                default => $historicoHoje['resultado'],
+            };
+            $horaSaida = $historicoHoje['hora_saida'] ? date('H:i', strtotime($historicoHoje['hora_saida'])) : '';
+            $warning = "Paciente já foi atendido hoje ({$resultadoLabel}" . ($horaSaida ? " às {$horaSaida}" : '') . ")";
         }
 
         $stmt = $db->prepare(
@@ -108,7 +127,11 @@ class FilaController {
         AuditLog::registrar('criar', 'fila', $filaId, "Paciente {$input['paciente_id']} adicionado à fila", $user);
 
         http_response_code(201);
-        echo json_encode(['message' => 'Paciente adicionado à fila', 'id' => $filaId]);
+        $response = ['message' => 'Paciente adicionado à fila', 'id' => $filaId];
+        if ($warning) {
+            $response['warning'] = $warning;
+        }
+        echo json_encode($response);
     }
 
     /**

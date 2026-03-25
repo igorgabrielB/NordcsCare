@@ -1,0 +1,639 @@
+/* ===== Relatório de Atendimentos ===== */
+.rela-page {
+  padding: 0;
+}
+
+/* ── Hero ── */
+.rela-hero {
+  background: linear-gradient(135deg, rgba(115, 69, 214, 0.10), rgba(49, 130, 206, 0.06));
+  border: 1px solid rgba(115, 69, 214, 0.12);
+  border-radius: 16px;
+  padding: 28px 32px 24px;
+  margin-bottom: 20px;
+  position: relative;
+  overflow: hidden;
+}
+
+.rela-hero-bg-deco {
+  position: absolute;
+  top: -40px;
+  right: -40px;
+  width: 160px;
+  height: 160px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(115, 69, 214, 0.08) 0%, transparent 70%);
+  pointer-events: none;
+}
+
+.rela-hero-top {
+  margin-bottom: 14px;
+  position: relative;
+  z-index: 1;
+}
+
+.rela-btn-back {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border-radius: 8px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  text-decoration: none;
+  transition: color 0.2s, background 0.2s;
+}
+
+.rela-btn-back:hover {
+  color: var(--primary);
+  background: rgba(115, 69, 214, 0.08);
+}
+
+.rela-hero-content {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 22px;
+  position: relative;
+  z-index: 1;
+}
+
+.rela-hero-icon {
+  width: 52px;
+  height: 52px;
+  border-radius: 14px;
+  background: linear-gradient(135deg, var(--primary), #9f7aea);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  flex-shrink: 0;
+}
+
+.rela-hero h1 {
+  font-size: 1.5rem;
+  font-weight: 800;
+  color: var(--text);
+  margin: 0;
+}
+
+.rela-hero-subtitle {
+  font-size: 0.88rem;
+  color: var(--text-secondary, #9896a3);
+  margin: 2px 0 0;
+}
+
+/* Hero Stats */
+.rela-hero-stats {
+  display: flex;
+  gap: 12px;
+  position: relative;
+  z-index: 1;
+}
+
+.rela-hero-stat {
+  flex: 1;
+  background: var(--bg-card, #1e1e2a);
+  border: 1px solid var(--border, #2a2a3a);
+  border-radius: 12px;
+  padding: 14px 18px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  transition: border-color 0.2s;
+}
+
+.rela-hero-stat:hover {
+  border-color: rgba(115, 69, 214, 0.18);
+}
+
+.rela-hero-stat-icon {
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.rela-hsi-total {
+  background: rgba(115, 69, 214, 0.12);
+  color: var(--primary);
+}
+
+.rela-hsi-tempo {
+  background: rgba(72, 187, 120, 0.12);
+  color: #48bb78;
+}
+
+.rela-hsi-medicos {
+  background: rgba(49, 130, 206, 0.12);
+  color: #63b3ed;
+}
+
+.rela-hero-stat-info {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.rela-hero-stat-value {
+  font-size: 1.3rem;
+  font-weight: 800;
+  color: var(--text);
+  line-height: 1;
+}
+
+.rela-hero-stat-label {
+  font-size: 0.70rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  font-weight: 600;
+  color: var(--text-secondary, #9896a3);
+}
+
+/* ── Filtros ── */
+.rela-filters {
+  background: var(--bg-card, #1e1e2a);
+  border: 1px solid var(--border, #2a2a3a);
+  border-radius: 14px;
+  padding: 16px 20px;
+  margin-bottom: 16px;
+}
+
+.rela-filters-row {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.rela-filter-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--text-secondary);
+}
+
+.rela-filter-group input[type="date"],
+.rela-filter-group select {
+  background: var(--bg, #13131a);
+  border: 1px solid var(--border, #2a2a3a);
+  border-radius: 8px;
+  padding: 7px 12px;
+  color: var(--text);
+  font-size: 0.82rem;
+  outline: none;
+  transition: border-color 0.2s;
+}
+
+.rela-filter-group input[type="date"]:focus,
+.rela-filter-group select:focus {
+  border-color: var(--primary);
+}
+
+.rela-filter-sep {
+  font-size: 0.78rem;
+  color: var(--text-secondary);
+}
+
+.rela-btn-export {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 16px;
+  background: linear-gradient(135deg, var(--primary), #9f7aea);
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: opacity 0.2s;
+}
+
+.rela-btn-export:hover {
+  opacity: 0.9;
+}
+
+/* ── Tabs ── */
+.rela-tabs {
+  display: flex;
+  gap: 4px;
+  margin-bottom: 20px;
+  background: var(--bg-card, #1e1e2a);
+  border: 1px solid var(--border, #2a2a3a);
+  border-radius: 12px;
+  padding: 4px;
+}
+
+.rela-tab {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 10px 16px;
+  border: none;
+  border-radius: 9px;
+  background: transparent;
+  color: var(--text-secondary);
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.rela-tab.active {
+  background: linear-gradient(135deg, rgba(115, 69, 214, 0.15), rgba(99, 102, 241, 0.10));
+  color: var(--primary);
+}
+
+.rela-tab:hover:not(.active) {
+  color: var(--text);
+}
+
+.rela-loading {
+  text-align: center;
+  padding: 40px;
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+}
+
+/* ── Resumo ── */
+.rela-resumo {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+
+.rela-card {
+  background: var(--bg-card, #1e1e2a);
+  border: 1px solid var(--border, #2a2a3a);
+  border-radius: 14px;
+  padding: 20px 24px;
+}
+
+.rela-card-full {
+  grid-column: 1 / -1;
+}
+
+.rela-card h3 {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--text);
+  margin: 0 0 16px;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+}
+
+.rela-empty {
+  color: var(--text-secondary);
+  font-size: 0.85rem;
+  text-align: center;
+  padding: 20px 0;
+}
+
+/* Resultado distribution */
+.rela-resultado-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.rela-resultado-item {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.rela-resultado-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.rela-resultado-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.rela-resultado-label {
+  font-size: 0.82rem;
+  color: var(--text);
+  font-weight: 600;
+  flex: 1;
+}
+
+.rela-resultado-count {
+  font-size: 0.9rem;
+  font-weight: 800;
+  color: var(--text);
+}
+
+.rela-resultado-bar-bg {
+  height: 6px;
+  border-radius: 3px;
+  background: rgba(115, 69, 214, 0.08);
+  overflow: hidden;
+}
+
+.rela-resultado-bar {
+  height: 100%;
+  border-radius: 3px;
+  transition: width 0.6s ease;
+}
+
+.rela-resultado-pct {
+  font-size: 0.72rem;
+  color: var(--text-secondary);
+  font-weight: 600;
+}
+
+/* Escola bars */
+.rela-escola-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.rela-escola-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.rela-escola-nome {
+  font-size: 0.8rem;
+  color: var(--text);
+  font-weight: 500;
+  min-width: 120px;
+  max-width: 180px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.rela-escola-bar-bg {
+  flex: 1;
+  height: 8px;
+  border-radius: 4px;
+  background: rgba(72, 187, 120, 0.08);
+  overflow: hidden;
+}
+
+.rela-escola-bar {
+  height: 100%;
+  border-radius: 4px;
+  background: linear-gradient(90deg, #48bb78, #38a169);
+  transition: width 0.6s ease;
+}
+
+.rela-escola-count {
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: var(--text);
+  min-width: 30px;
+  text-align: right;
+}
+
+/* Chart bars (daily) */
+.rela-chart-bars {
+  display: flex;
+  align-items: flex-end;
+  gap: 4px;
+  height: 180px;
+  padding: 10px 0;
+  overflow-x: auto;
+}
+
+.rela-chart-col {
+  flex: 1;
+  min-width: 32px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  height: 100%;
+  justify-content: flex-end;
+}
+
+.rela-chart-val {
+  font-size: 0.68rem;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.rela-chart-bar {
+  width: 100%;
+  max-width: 28px;
+  border-radius: 4px 4px 0 0;
+  background: linear-gradient(180deg, var(--primary), #9f7aea);
+  min-height: 4px;
+  transition: height 0.6s ease;
+}
+
+.rela-chart-label {
+  font-size: 0.62rem;
+  color: var(--text-secondary);
+  transform: rotate(-45deg);
+  white-space: nowrap;
+  margin-top: 4px;
+}
+
+/* ── Lista Tab ── */
+.rela-lista-search {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--bg-card, #1e1e2a);
+  border: 1px solid var(--border, #2a2a3a);
+  border-radius: 10px;
+  padding: 8px 14px;
+  margin-bottom: 12px;
+  color: var(--text-secondary);
+}
+
+.rela-lista-search input {
+  flex: 1;
+  background: transparent;
+  border: none;
+  outline: none;
+  color: var(--text);
+  font-size: 0.85rem;
+}
+
+.rela-table-wrap {
+  overflow-x: auto;
+  border-radius: 14px;
+  border: 1px solid var(--border, #2a2a3a);
+}
+
+.rela-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.82rem;
+}
+
+.rela-table thead {
+  background: var(--bg-card, #1e1e2a);
+}
+
+.rela-table th {
+  padding: 12px 14px;
+  text-align: left;
+  font-weight: 700;
+  color: var(--text-secondary);
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  border-bottom: 1px solid var(--border, #2a2a3a);
+}
+
+.rela-table td {
+  padding: 10px 14px;
+  color: var(--text);
+  border-bottom: 1px solid var(--border, #2a2a3a);
+}
+
+.rela-table tbody tr:hover {
+  background: rgba(115, 69, 214, 0.04);
+}
+
+.rela-td-diag {
+  max-width: 200px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.rela-resultado-badge {
+  display: inline-block;
+  padding: 3px 10px;
+  border-radius: 6px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+/* Pagination */
+.rela-pagination {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  margin-top: 16px;
+  padding: 12px;
+}
+
+.rela-pagination button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  background: var(--bg-card, #1e1e2a);
+  border: 1px solid var(--border, #2a2a3a);
+  border-radius: 8px;
+  color: var(--text);
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.rela-pagination button:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.rela-pagination button:hover:not(:disabled) {
+  border-color: var(--primary);
+  color: var(--primary);
+}
+
+.rela-pagination span {
+  font-size: 0.82rem;
+  color: var(--text-secondary);
+}
+
+/* ── Responsive ── */
+@media (max-width: 768px) {
+  .rela-hero-stats {
+    flex-direction: column;
+  }
+
+  .rela-filters-row {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .rela-btn-export {
+    margin-left: 0;
+  }
+
+  .rela-resumo {
+    grid-template-columns: 1fr;
+  }
+
+  .rela-table {
+    font-size: 0.75rem;
+  }
+}
+
+/* ── Light mode ── */
+body.light-mode .rela-hero {
+  background: linear-gradient(135deg, rgba(115, 69, 214, 0.07), rgba(49, 130, 206, 0.04));
+  border-color: rgba(115, 69, 214, 0.10);
+}
+
+body.light-mode .rela-hero-stat {
+  background: #fff;
+  border-color: #e2e8f0;
+}
+
+body.light-mode .rela-filters {
+  background: #fff;
+  border-color: #e2e8f0;
+}
+
+body.light-mode .rela-filter-group input[type="date"],
+body.light-mode .rela-filter-group select {
+  background: #f7fafc;
+  border-color: #e2e8f0;
+}
+
+body.light-mode .rela-tabs {
+  background: #fff;
+  border-color: #e2e8f0;
+}
+
+body.light-mode .rela-card {
+  background: #fff;
+  border-color: #e2e8f0;
+}
+
+body.light-mode .rela-lista-search {
+  background: #fff;
+  border-color: #e2e8f0;
+}
+
+body.light-mode .rela-table-wrap {
+  border-color: #e2e8f0;
+}
+
+body.light-mode .rela-table thead {
+  background: #f7fafc;
+}
+
+body.light-mode .rela-table th,
+body.light-mode .rela-table td {
+  border-color: #e2e8f0;
+}
+
+body.light-mode .rela-pagination button {
+  background: #fff;
+  border-color: #e2e8f0;
+}
