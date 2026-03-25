@@ -1,7 +1,9 @@
 import { useState, useEffect, useCallback } from 'react'
 import { Link } from 'react-router-dom'
+import jsPDF from 'jspdf'
+import html2canvas from 'html2canvas'
 import api from '../../services/api.ts'
-import { BarChart3, Download, FileSpreadsheet, Search, Filter, Calendar, Building2, Activity, Users, Clock, ChevronLeft, ChevronRight, ArrowLeft } from 'lucide-react'
+import { BarChart3, Download, FileSpreadsheet, Search, Filter, Calendar, Building2, Activity, Users, Clock, ChevronLeft, ChevronRight, ArrowLeft, FileText } from 'lucide-react'
 import './RelatorioAtendimentos.css'
 
 interface Resumo {
@@ -121,6 +123,220 @@ export default function RelatorioAtendimentos() {
     window.open(`${baseUrl}/historico/exportar?${params.toString()}&token=${token}`, '_blank')
   }
 
+  const exportarPDF = async () => {
+    const win = window.open('', '_blank')
+    if (!win) { alert('Permita pop-ups para gerar o relatório.'); return }
+    win.document.write('<html><body style="display:flex;justify-content:center;align-items:center;height:100vh;font-family:sans-serif;color:#555"><p>Gerando PDF...</p></body></html>')
+
+    try {
+      // Load logo as base64
+      const logoSrc: string = await new Promise((resolve) => {
+        const img = new Image()
+        img.crossOrigin = 'anonymous'
+        img.onload = () => {
+          const c = document.createElement('canvas')
+          c.width = img.naturalWidth; c.height = img.naturalHeight
+          c.getContext('2d')!.drawImage(img, 0, 0)
+          resolve(c.toDataURL('image/png'))
+        }
+        img.onerror = () => resolve('')
+        img.src = '/imagens/logo_cerof.png'
+      })
+      const logoTag = logoSrc ? `<img class="logo-cerof" src="${logoSrc}" alt="Logo CEROF" />` : '<div></div>'
+
+      const params = buildParams()
+      const [resResumo, resLista] = await Promise.all([
+        api.get('/historico/resumo', { params }),
+        api.get('/historico', { params: { ...params, page: 1, limit: 9999 } }),
+      ])
+      const dadosResumo: Resumo = resResumo.data
+      const dadosLista: HistoricoItem[] = resLista.data.data || []
+      const periodoTexto = `${dataInicio ? new Date(dataInicio + 'T12:00:00').toLocaleDateString('pt-BR') : '—'} a ${dataFim ? new Date(dataFim + 'T12:00:00').toLocaleDateString('pt-BR') : '—'}`
+      const hoje = new Date().toLocaleDateString('pt-BR', { day: '2-digit', month: 'long', year: 'numeric' })
+
+      const resultadosRows = dadosResumo.por_resultado.map(r => {
+        const pct = dadosResumo.total_atendimentos > 0 ? ((r.total / dadosResumo.total_atendimentos) * 100).toFixed(1) : '0'
+        const colors: Record<string, string> = { alta: '#48bb78', encaminhamento: '#ed8936', oculos: '#4299e1', oculos_encaminhamento: '#ed64a6' }
+        const color = colors[r.resultado] || '#a0aec0'
+        return `<tr>
+          <td style="padding:6px 10px"><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${color};margin-right:6px"></span>${RESULTADO_LABELS[r.resultado] || r.resultado}</td>
+          <td style="padding:6px 10px;text-align:center;font-weight:600">${r.total}</td>
+          <td style="padding:6px 10px;text-align:center">${pct}%</td>
+        </tr>`
+      }).join('')
+
+      const escolasRows = dadosResumo.por_escola.slice(0, 15).map(e =>
+        `<tr><td style="padding:5px 10px">${e.escola}</td><td style="padding:5px 10px;text-align:center;font-weight:600">${e.total}</td></tr>`
+      ).join('')
+
+      const medicosRows = dadosResumo.por_medico.map(m =>
+        `<tr><td style="padding:5px 10px">${m.medico_nome}</td><td style="padding:5px 10px;text-align:center;font-weight:600">${m.total}</td></tr>`
+      ).join('')
+
+      const listaRows = dadosLista.map(item => {
+        const colors: Record<string, string> = { alta: '#48bb78', encaminhamento: '#ed8936', oculos: '#4299e1', oculos_encaminhamento: '#ed64a6' }
+        const color = colors[item.resultado] || '#a0aec0'
+        return `<tr>
+          <td>${new Date(item.data_atendimento + 'T12:00:00').toLocaleDateString('pt-BR')}</td>
+          <td>${item.nome_completo}</td>
+          <td>${item.escola || '—'}</td>
+          <td>${item.hora_entrada?.substring(0, 5) || '—'}</td>
+          <td>${item.hora_saida?.substring(0, 5) || '—'}</td>
+          <td><span style="background:${color}18;color:${color};padding:1px 6px;border-radius:8px;font-size:7pt;font-weight:600">${RESULTADO_LABELS[item.resultado] || item.resultado}</span></td>
+          <td>${item.medico_nome || '—'}</td>
+        </tr>`
+      }).join('')
+
+      const cssReport = `
+        * { margin:0; padding:0; box-sizing:border-box; }
+        body { font-family:'Segoe UI',Arial,sans-serif; font-size:9pt; color:#222; background:#fff;
+               -webkit-print-color-adjust:exact; print-color-adjust:exact; }
+        .page { width:100%; padding:0 24px 10px; }
+
+        /* Header identico ao pdfService */
+        .doc-header {
+          display:flex; align-items:center; justify-content:space-between;
+          padding-bottom:14px; margin-bottom:6px; border-bottom:3px solid #6743a5;
+          position:relative;
+        }
+        .doc-header::after {
+          content:''; position:absolute; bottom:-6px; left:0; right:0;
+          height:1px; background:#d4c8ef;
+        }
+        .doc-header .logo-cerof { max-height:72px; }
+        .doc-header .header-brand { text-align:right; }
+        .doc-header h1 { font-size:20pt; font-weight:800; color:#6743a5; margin-bottom:2px; letter-spacing:1.5px; }
+        .doc-header .subtitle { font-size:9.5pt; color:#666; letter-spacing:0.5px; }
+
+        /* Titulo do documento */
+        .doc-title { text-align:center; font-size:13pt; font-weight:700; color:#6743a5;
+                     margin:22px 0 6px; text-transform:uppercase; letter-spacing:3px; }
+        .doc-title-line { width:60px; height:3px; background:linear-gradient(90deg,#6743a5,#9b6dff);
+                          margin:0 auto 16px; border-radius:2px; }
+
+        /* Periodo info */
+        .periodo-info { text-align:center; font-size:8.5pt; color:#777; margin-bottom:18px; }
+        .periodo-info strong { color:#6743a5; }
+
+        .stats-row { display:flex; gap:12px; margin-bottom:18px; }
+        .stat-card { flex:1; background:#f8f5ff; border:1px solid #e8e0f3; border-radius:8px; padding:10px 12px; text-align:center; }
+        .stat-card .sv { font-size:18pt; font-weight:800; color:#6743a5; display:block; line-height:1.1; }
+        .stat-card .sl { font-size:7pt; color:#999; text-transform:uppercase; letter-spacing:0.8px; margin-top:2px; }
+        .section { margin-bottom:16px; }
+        .section h3 { font-size:9.5pt; font-weight:700; color:#6743a5; text-transform:uppercase; letter-spacing:0.8px; padding-bottom:5px; margin-bottom:8px; border-bottom:2px solid #e8e0f3; }
+        .grid-2 { display:grid; grid-template-columns:1fr 1fr; gap:14px; margin-bottom:16px; }
+        table { width:100%; border-collapse:collapse; font-size:8pt; }
+        table th { background:#6743a5; color:#fff; padding:6px 10px; text-align:left; font-size:7pt; text-transform:uppercase; letter-spacing:0.4px; }
+        table td { padding:5px 10px; border-bottom:1px solid #ece6f5; }
+        table tbody tr:nth-child(even) { background:#faf8ff; }
+        .lista-table th { font-size:6.5pt; padding:5px 6px; }
+        .lista-table td { padding:4px 6px; font-size:7.5pt; }
+        .footer { text-align:center; margin-top:20px; padding-top:8px; border-top:1px solid #e8e0f3; font-size:7pt; color:#bbb; }
+      `
+
+      const headerBlock = `
+    <div class="doc-header">
+      ${logoTag}
+      <div class="header-brand">
+        <h1>NordcsCare</h1>
+        <p class="subtitle">Saúde Ocular — Atendimento Oftalmológico</p>
+      </div>
+    </div>`
+
+      // Part 1: Summary (portrait)
+      const htmlSummary = `
+<div class="page">
+  ${headerBlock}
+  <div class="doc-title">Relatório de Atendimentos</div>
+  <div class="doc-title-line"></div>
+  <div class="periodo-info"><strong>Período:</strong> ${periodoTexto} &nbsp;•&nbsp; Gerado em ${hoje}</div>
+  <div class="stats-row">
+    <div class="stat-card"><span class="sv">${dadosResumo.total_atendimentos}</span><span class="sl">Atendimentos</span></div>
+    <div class="stat-card"><span class="sv">${dadosResumo.media_minutos ? dadosResumo.media_minutos + 'min' : '—'}</span><span class="sl">Tempo Médio</span></div>
+    <div class="stat-card"><span class="sv">${dadosResumo.por_medico?.length ?? 0}</span><span class="sl">Médicos</span></div>
+    <div class="stat-card"><span class="sv">${dadosResumo.por_escola?.length ?? 0}</span><span class="sl">Escolas</span></div>
+  </div>
+  ${dadosResumo.por_resultado.length > 0 ? `<div class="section"><h3>Distribuição por Resultado</h3><table><thead><tr><th>Resultado</th><th style="text-align:center">Total</th><th style="text-align:center">%</th></tr></thead><tbody>${resultadosRows}</tbody></table></div>` : ''}
+  <div class="grid-2">
+    ${dadosResumo.por_escola.length > 0 ? `<div class="section"><h3>Por Escola</h3><table><thead><tr><th>Escola</th><th style="text-align:center">Total</th></tr></thead><tbody>${escolasRows}</tbody></table></div>` : ''}
+    ${dadosResumo.por_medico.length > 0 ? `<div class="section"><h3>Por Médico</h3><table><thead><tr><th>Médico</th><th style="text-align:center">Total</th></tr></thead><tbody>${medicosRows}</tbody></table></div>` : ''}
+  </div>
+  <div class="footer">NordcsCare — Saúde Ocular • Relatório gerado em ${hoje}</div>
+</div>`
+
+      // Part 2: Attendance list (portrait)
+      const htmlLista = `
+<div class="page">
+  ${headerBlock}
+  <div class="doc-title">Lista de Atendimentos</div>
+  <div class="doc-title-line"></div>
+  <div class="periodo-info">${dadosLista.length} registros &nbsp;•&nbsp; <strong>Período:</strong> ${periodoTexto}</div>
+  <table class="lista-table">
+    <thead><tr><th>Data</th><th>Paciente</th><th>Escola</th><th>Entrada</th><th>Saída</th><th>Resultado</th><th>Médico</th></tr></thead>
+    <tbody>${listaRows}</tbody>
+  </table>
+  <div class="footer">NordcsCare — Saúde Ocular • Relatório gerado em ${hoje}</div>
+</div>`
+
+      const RENDER_WIDTH = 794 // A4 portrait px
+
+      // Helper: render HTML to canvas
+      const renderToCanvas = async (html: string) => {
+        const el = document.createElement('div')
+        el.style.cssText = `position:fixed;left:-9999px;top:0;width:${RENDER_WIDTH}px;background:#fff;padding:0;z-index:-1;`
+        el.innerHTML = `<style>${cssReport}</style>${html}`
+        document.body.appendChild(el)
+        const c = await html2canvas(el, { scale: 2, useCORS: true, backgroundColor: '#ffffff', width: RENDER_WIDTH, windowWidth: RENDER_WIDTH })
+        document.body.removeChild(el)
+        return c
+      }
+
+      // Helper: add canvas pages to PDF
+      const addCanvasPages = (pdf: jsPDF, canvas: HTMLCanvasElement, startNewPage: boolean) => {
+        const pageWidth = pdf.internal.pageSize.getWidth()
+        const pageHeight = pdf.internal.pageSize.getHeight()
+        const marginTop = 2
+        const marginBottom = 8
+        const pxPerMm = canvas.width / pageWidth
+        const usableHeightPx = Math.floor((pageHeight - marginTop - marginBottom) * pxPerMm)
+        let yOffset = 0
+        let first = true
+
+        while (yOffset < canvas.height) {
+          if (!first || startNewPage) pdf.addPage()
+          first = false
+          const sliceH = Math.min(usableHeightPx, canvas.height - yOffset)
+          const pc = document.createElement('canvas')
+          pc.width = canvas.width
+          pc.height = sliceH
+          const ctx = pc.getContext('2d')!
+          ctx.fillStyle = '#ffffff'
+          ctx.fillRect(0, 0, pc.width, pc.height)
+          ctx.drawImage(canvas, 0, yOffset, canvas.width, sliceH, 0, 0, canvas.width, sliceH)
+          pdf.addImage(pc.toDataURL('image/png'), 'PNG', 0, marginTop, pageWidth, sliceH / pxPerMm)
+          yOffset += sliceH
+        }
+      }
+
+      const [canvasSummary, canvasLista] = await Promise.all([
+        renderToCanvas(htmlSummary),
+        renderToCanvas(htmlLista),
+      ])
+
+      const pdf = new jsPDF('p', 'mm', 'a4')
+      addCanvasPages(pdf, canvasSummary, false)
+      addCanvasPages(pdf, canvasLista, true)
+
+      const pdfBlob = pdf.output('blob')
+      const url = URL.createObjectURL(pdfBlob)
+      win.location.href = url
+      setTimeout(() => URL.revokeObjectURL(url), 120000)
+    } catch {
+      win.close()
+      alert('Erro ao gerar relatório. Tente novamente.')
+    }
+  }
+
   const maxBar = resumo?.por_escola?.length
     ? Math.max(...resumo.por_escola.map(e => e.total))
     : 0
@@ -212,6 +428,10 @@ export default function RelatorioAtendimentos() {
           <button className="rela-btn-export" onClick={exportarCSV}>
             <Download size={14} />
             Exportar CSV
+          </button>
+          <button className="rela-btn-export rela-btn-pdf" onClick={exportarPDF}>
+            <FileText size={14} />
+            Exportar PDF
           </button>
         </div>
       </div>

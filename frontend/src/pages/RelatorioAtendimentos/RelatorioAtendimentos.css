@@ -218,6 +218,11 @@
   opacity: 0.9;
 }
 
+.rela-btn-pdf {
+  margin-left: 0;
+  background: linear-gradient(135deg, #c53030, #e53e3e);
+}
+
 /* ── Tabs ── */
 .rela-tabs {
   display: flex;

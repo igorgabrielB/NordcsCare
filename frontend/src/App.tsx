@@ -1,5 +1,6 @@
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
+import { MemoryRouter, Routes, Route, Navigate, useNavigate } from 'react-router-dom'
 import { AuthProvider } from './contexts/AuthContext.tsx'
+import { useEffect } from 'react'
 import Layout from './components/Layout/Layout.tsx'
 import Login from './pages/Login/Login.tsx'
 import Dashboard from './pages/Dashboard/Dashboard.tsx'
@@ -22,9 +23,20 @@ import LaudosProntos from './pages/LaudosProntos/LaudosProntos.tsx'
 import GerenciamentoRoles from './pages/GerenciamentoRoles/GerenciamentoRoles.tsx'
 import Home from './pages/Home/Home.tsx'
 
+function AuthLogoutListener() {
+  const navigate = useNavigate()
+  useEffect(() => {
+    const handler = () => navigate('/login', { replace: true })
+    window.addEventListener('auth:logout', handler)
+    return () => window.removeEventListener('auth:logout', handler)
+  }, [navigate])
+  return null
+}
+
 export default function App() {
   return (
-    <BrowserRouter>
+    <MemoryRouter initialEntries={['/login']}>
+      <AuthLogoutListener />
       <AuthProvider>
         <Routes>
           {/* Public */}
@@ -66,6 +78,6 @@ export default function App() {
           <Route path="*" element={<Navigate to="/fila" replace />} />
         </Routes>
       </AuthProvider>
-    </BrowserRouter>
+    </MemoryRouter>
   )
 }

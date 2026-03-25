@@ -51,7 +51,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (timerRef.current) clearTimeout(timerRef.current)
     timerRef.current = setTimeout(() => {
       logout()
-      window.location.href = '/login'
+      window.dispatchEvent(new CustomEvent('auth:logout'))
     }, INACTIVITY_TIMEOUT)
   }, [logout])
 
