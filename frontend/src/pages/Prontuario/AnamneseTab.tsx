@@ -75,31 +75,31 @@ export default function AnamneseTab({ pacienteId }: { pacienteId: number }) {
           </div>
           <div className="form-row">
             <div className="form-group">
-              <label>Histórico Ocular</label>
-              <textarea rows={2} value={form.historico_ocular} onChange={e => setForm({ ...form, historico_ocular: e.target.value })} />
+              <label>Histórico Ocular *</label>
+              <textarea rows={2} value={form.historico_ocular} onChange={e => setForm({ ...form, historico_ocular: e.target.value })} required />
             </div>
             <div className="form-group">
-              <label>Histórico Familiar</label>
-              <textarea rows={2} value={form.historico_familiar} onChange={e => setForm({ ...form, historico_familiar: e.target.value })} />
+              <label>Histórico Familiar *</label>
+              <textarea rows={2} value={form.historico_familiar} onChange={e => setForm({ ...form, historico_familiar: e.target.value })} required />
             </div>
           </div>
           <div className="form-row">
             <div className="form-group">
-              <label>Alergias</label>
-              <input value={form.alergias} onChange={e => setForm({ ...form, alergias: e.target.value })} />
+              <label>Alergias *</label>
+              <input value={form.alergias} onChange={e => setForm({ ...form, alergias: e.target.value })} required />
             </div>
             <div className="form-group">
-              <label>Medicamentos em Uso</label>
-              <input value={form.medicamentos_em_uso} onChange={e => setForm({ ...form, medicamentos_em_uso: e.target.value })} />
+              <label>Medicamentos em Uso *</label>
+              <input value={form.medicamentos_em_uso} onChange={e => setForm({ ...form, medicamentos_em_uso: e.target.value })} required />
             </div>
           </div>
           <div className="form-group">
-            <label>Cirurgias Anteriores</label>
-            <input value={form.cirurgias_anteriores} onChange={e => setForm({ ...form, cirurgias_anteriores: e.target.value })} />
+            <label>Cirurgias Anteriores *</label>
+            <input value={form.cirurgias_anteriores} onChange={e => setForm({ ...form, cirurgias_anteriores: e.target.value })} required />
           </div>
           <div className="form-group">
-            <label>Observações</label>
-            <textarea rows={2} value={form.observacoes} onChange={e => setForm({ ...form, observacoes: e.target.value })} />
+            <label>Observações *</label>
+            <textarea rows={2} value={form.observacoes} onChange={e => setForm({ ...form, observacoes: e.target.value })} required />
           </div>
           <div className="form-actions">
             <button type="submit" className="btn btn-primary" disabled={saving}>

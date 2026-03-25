@@ -84,8 +84,8 @@ export default function LaudosTab({ pacienteId }: { pacienteId: number }) {
       {showForm && (
         <form className="clinical-form" onSubmit={handleSubmit}>
           <div className="form-group">
-            <label>Diagnóstico</label>
-            <textarea rows={3} value={form.diagnostico} onChange={e => setForm({ ...form, diagnostico: e.target.value })} placeholder="Descreva o diagnóstico..." />
+            <label>Diagnóstico *</label>
+            <textarea rows={3} value={form.diagnostico} onChange={e => setForm({ ...form, diagnostico: e.target.value })} placeholder="Descreva o diagnóstico..." required />
           </div>
           <div className="form-group" style={{ maxWidth: 280 }}>
             <label>Conduta *</label>
@@ -94,8 +94,8 @@ export default function LaudosTab({ pacienteId }: { pacienteId: number }) {
             </select>
           </div>
           <div className="form-group">
-            <label>Observações</label>
-            <textarea rows={2} value={form.observacoes} onChange={e => setForm({ ...form, observacoes: e.target.value })} />
+            <label>Observações *</label>
+            <textarea rows={2} value={form.observacoes} onChange={e => setForm({ ...form, observacoes: e.target.value })} required />
           </div>
           <div className="form-actions">
             <button type="submit" className="btn btn-primary" disabled={saving}>

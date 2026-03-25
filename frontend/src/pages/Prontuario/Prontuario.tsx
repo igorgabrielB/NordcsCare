@@ -124,7 +124,7 @@ const emptyForm = {
     tipo: 'oculos',
     od_esferico: '', od_cilindrico: '', od_eixo: '', od_adicao: '',
     oe_esferico: '', oe_cilindrico: '', oe_eixo: '', oe_adicao: '',
-    dp: '', acuidade_od: '', acuidade_oe: '', observacoes: 'Monofocal para longe',
+    dp: '', acuidade_od: '', acuidade_oe: '', observacoes: '',
   },
   laudo: { diagnostico: '', conduta_inicial: '', conduta_final: '', observacoes: '' },
   acuidade: {
@@ -787,15 +787,15 @@ export default function Prontuario() {
                 <tbody>
                   <tr>
                     <td className="eye-label"><Eye size={12} style={{marginRight:2}} />OD</td>
-                    <td><input type="text" value={form.prescricao.od_esferico} onChange={e => updatePrescricao('od_esferico', e.target.value)} placeholder="+0.00" /></td>
-                    <td><input type="text" value={form.prescricao.od_cilindrico} onChange={e => updatePrescricao('od_cilindrico', e.target.value)} placeholder="-0.00" /></td>
-                    <td><input type="text" value={form.prescricao.od_eixo} onChange={e => updatePrescricao('od_eixo', e.target.value)} placeholder="0°" /></td>
+                    <td><input type="text" value={form.prescricao.od_esferico} onChange={e => updatePrescricao('od_esferico', e.target.value)} placeholder="+0.00" required /></td>
+                    <td><input type="text" value={form.prescricao.od_cilindrico} onChange={e => updatePrescricao('od_cilindrico', e.target.value)} placeholder="-0.00" required /></td>
+                    <td><input type="text" value={form.prescricao.od_eixo} onChange={e => updatePrescricao('od_eixo', e.target.value)} placeholder="0°" required /></td>
                   </tr>
                   <tr>
                     <td className="eye-label"><Eye size={12} style={{marginRight:2}} />OE</td>
-                    <td><input type="text" value={form.prescricao.oe_esferico} onChange={e => updatePrescricao('oe_esferico', e.target.value)} placeholder="+0.00" /></td>
-                    <td><input type="text" value={form.prescricao.oe_cilindrico} onChange={e => updatePrescricao('oe_cilindrico', e.target.value)} placeholder="-0.00" /></td>
-                    <td><input type="text" value={form.prescricao.oe_eixo} onChange={e => updatePrescricao('oe_eixo', e.target.value)} placeholder="0°" /></td>
+                    <td><input type="text" value={form.prescricao.oe_esferico} onChange={e => updatePrescricao('oe_esferico', e.target.value)} placeholder="+0.00" required /></td>
+                    <td><input type="text" value={form.prescricao.oe_cilindrico} onChange={e => updatePrescricao('oe_cilindrico', e.target.value)} placeholder="-0.00" required /></td>
+                    <td><input type="text" value={form.prescricao.oe_eixo} onChange={e => updatePrescricao('oe_eixo', e.target.value)} placeholder="0°" required /></td>
                   </tr>
                 </tbody>
               </table>
@@ -810,8 +810,9 @@ export default function Prontuario() {
                 <input type="text" value={form.prescricao.dp} onChange={e => updatePrescricao('dp', e.target.value)} placeholder="63" />
               </div>
               <div className="rx-extra-item rx-extra-wide">
-                <label>Tipo de Lente</label>
-                <select value={form.prescricao.observacoes} onChange={e => updatePrescricao('observacoes', e.target.value)}>
+                <label>Tipo de Lente *</label>
+                <select value={form.prescricao.observacoes} onChange={e => updatePrescricao('observacoes', e.target.value)} required>
+                  <option value="">— Selecione —</option>
                   <option value="Monofocal para longe">Monofocal para longe</option>
                   <option value="Monofocal para perto">Monofocal para perto</option>
                   <option value="Multifocal">Multifocal</option>
@@ -830,8 +831,8 @@ export default function Prontuario() {
               <div className="acuidade-eye-card">
                 <div className="acuidade-eye-indicator od">OD</div>
                 <div className="form-group">
-                  <label>Olho Direito</label>
-                  <select value={ACUIDADE_OPTIONS.includes(form.prescricao.acuidade_od) || form.prescricao.acuidade_od === '' ? form.prescricao.acuidade_od : 'outro'} onChange={e => updatePrescricao('acuidade_od', e.target.value === 'outro' ? '__outro__' : e.target.value)}>
+                  <label>Olho Direito *</label>
+                  <select value={ACUIDADE_OPTIONS.includes(form.prescricao.acuidade_od) || form.prescricao.acuidade_od === '' ? form.prescricao.acuidade_od : 'outro'} onChange={e => updatePrescricao('acuidade_od', e.target.value === 'outro' ? '__outro__' : e.target.value)} required>
                     <option value="">— Selecione —</option>
                     {ACUIDADE_OPTIONS.map(o => <option key={o} value={o}>{o}</option>)}
                     <option value="outro">Outro</option>
@@ -844,8 +845,8 @@ export default function Prontuario() {
               <div className="acuidade-eye-card">
                 <div className="acuidade-eye-indicator oe">OE</div>
                 <div className="form-group">
-                  <label>Olho Esquerdo</label>
-                  <select value={ACUIDADE_OPTIONS.includes(form.prescricao.acuidade_oe) || form.prescricao.acuidade_oe === '' ? form.prescricao.acuidade_oe : 'outro'} onChange={e => updatePrescricao('acuidade_oe', e.target.value === 'outro' ? '__outro__' : e.target.value)}>
+                  <label>Olho Esquerdo *</label>
+                  <select value={ACUIDADE_OPTIONS.includes(form.prescricao.acuidade_oe) || form.prescricao.acuidade_oe === '' ? form.prescricao.acuidade_oe : 'outro'} onChange={e => updatePrescricao('acuidade_oe', e.target.value === 'outro' ? '__outro__' : e.target.value)} required>
                     <option value="">— Selecione —</option>
                     {ACUIDADE_OPTIONS.map(o => <option key={o} value={o}>{o}</option>)}
                     <option value="outro">Outro</option>

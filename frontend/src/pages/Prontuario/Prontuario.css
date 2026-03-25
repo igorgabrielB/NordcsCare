@@ -86,6 +86,26 @@
   box-shadow: 0 0 0 3px rgba(115, 69, 214, 0.15);
 }
 
+/* Campos obrigatórios - borda e indicador visual */
+.clinical-form .form-group input:required,
+.clinical-form .form-group select:required,
+.clinical-form .form-group textarea:required,
+.form-section input:required,
+.form-section select:required,
+.form-section textarea:required {
+  border-color: var(--primary, #7345d6);
+}
+
+.clinical-form .form-group input:required:invalid,
+.clinical-form .form-group select:required:invalid,
+.clinical-form .form-group textarea:required:invalid,
+.form-section input:required:invalid,
+.form-section select:required:invalid,
+.form-section textarea:required:invalid {
+  border-color: #e53e3e;
+  box-shadow: 0 0 0 2px rgba(229, 62, 62, 0.15);
+}
+
 .form-row {
   display: grid;
   grid-template-columns: 1fr 1fr;
