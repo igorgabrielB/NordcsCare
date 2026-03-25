@@ -8,7 +8,7 @@ const roleLabels: Record<string, string> = {
   administrativo: 'Administrativo',
 }
 
-import { ReactNode } from 'react';
+import type { ReactNode } from 'react';
 interface HeaderProps {
   onToggleSidebar: () => void
   sidebarOpen: boolean

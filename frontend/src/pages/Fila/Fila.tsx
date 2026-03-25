@@ -195,7 +195,7 @@ export default function Fila() {
                             <div className="card-top-left">
                               <span className={`card-chevron ${isExpanded ? '' : 'chevron-collapsed'}`}>▼</span>
                               <strong className="card-nome">{item.nome_completo}</strong>
-                              {estacao.key === 'altas' && <Lock size={14} className="card-lock" title="Atendimento finalizado — somente admin pode alterar" />}
+                              {estacao.key === 'altas' && <span title="Atendimento finalizado — somente admin pode alterar"><Lock size={14} className="card-lock" /></span>}
                             </div>
                             <div className="card-top-right">
                               {item.prioridade > 0 && <span className="card-prioridade"><Zap size={14} /></span>}
