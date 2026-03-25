@@ -12,6 +12,10 @@ export default function Sidebar({ isOpen }: SidebarProps) {
 
   return (
     <aside className={`sidebar ${isOpen ? 'open' : 'closed'}`}>
+      <div className="sidebar-logo-container">
+        <img src="/imagens/icon_pag.png" alt="NordcsCare" className={`sidebar-logo-icon ${isOpen ? 'hide' : ''}`} />
+        <img src="/imagens/logo-escrita.png" alt="NordcsCare" className={`sidebar-logo-full ${isOpen ? 'show' : ''}`} />
+      </div>
       <nav className="sidebar-nav">
         <div className="sidebar-section">
           <div className={`sidebar-section-title ${isOpen ? 'show' : ''}`}>Principal</div>

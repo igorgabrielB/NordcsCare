@@ -126,11 +126,31 @@ export default function RelatorioAtendimentos() {
   const exportarPDF = async () => {
     const win = window.open('', '_blank')
     if (!win) { alert('Permita pop-ups para gerar o relatório.'); return }
-    win.document.write('<html><body style="display:flex;justify-content:center;align-items:center;height:100vh;font-family:sans-serif;color:#555"><p>Gerando PDF...</p></body></html>')
+    win.document.write(`<!DOCTYPE html>
+<html lang="pt-BR"><head><meta charset="UTF-8"><title>Relatório de Atendimentos</title>
+<style>
+  *{margin:0;padding:0;box-sizing:border-box}
+  body{display:flex;flex-direction:column;justify-content:center;align-items:center;height:100vh;background:#f5f3fa;font-family:'Segoe UI',Arial,sans-serif;color:#444}
+  .loader-container{text-align:center}
+  .spinner{width:48px;height:48px;border:4px solid #e8e0f3;border-top:4px solid #6743a5;border-radius:50%;animation:spin 0.8s linear infinite;margin:0 auto 20px}
+  @keyframes spin{to{transform:rotate(360deg)}}
+  .loader-text{font-size:14pt;font-weight:600;color:#6743a5;letter-spacing:0.5px}
+  .loader-sub{font-size:10pt;color:#999;margin-top:6px}
+  .pulse-bar{width:120px;height:3px;background:#e8e0f3;border-radius:2px;margin:16px auto 0;overflow:hidden;position:relative}
+  .pulse-bar::after{content:'';position:absolute;left:-40%;width:40%;height:100%;background:linear-gradient(90deg,transparent,#6743a5,transparent);animation:pulse 1.2s ease-in-out infinite}
+  @keyframes pulse{to{left:100%}}
+</style></head><body>
+  <div class="loader-container">
+    <div class="spinner"></div>
+    <p class="loader-text">Gerando relatório...</p>
+    <p class="loader-sub">Relatório de Atendimentos</p>
+    <div class="pulse-bar"></div>
+  </div>
+</body></html>`)
 
     try {
-      // Load logo as base64
-      const logoSrc: string = await new Promise((resolve) => {
+      // Load logos as base64
+      const loadImg = (src: string): Promise<string> => new Promise((resolve) => {
         const img = new Image()
         img.crossOrigin = 'anonymous'
         img.onload = () => {
@@ -140,9 +160,14 @@ export default function RelatorioAtendimentos() {
           resolve(c.toDataURL('image/png'))
         }
         img.onerror = () => resolve('')
-        img.src = '/imagens/logo_cerof.png'
+        img.src = src
       })
+      const [logoSrc, logoCareSrc] = await Promise.all([
+        loadImg('/imagens/logo_cerof.png'),
+        loadImg('/imagens/logo_care.png'),
+      ])
       const logoTag = logoSrc ? `<img class="logo-cerof" src="${logoSrc}" alt="Logo CEROF" />` : '<div></div>'
+      const logoCareTag = logoCareSrc ? `<img class="logo-care" src="${logoCareSrc}" alt="Logo Care" />` : '<div></div>'
 
       const params = buildParams()
       const [resResumo, resLista] = await Promise.all([
@@ -197,16 +222,9 @@ export default function RelatorioAtendimentos() {
         .doc-header {
           display:flex; align-items:center; justify-content:space-between;
           padding-bottom:14px; margin-bottom:6px; border-bottom:3px solid #6743a5;
-          position:relative;
-        }
-        .doc-header::after {
-          content:''; position:absolute; bottom:-6px; left:0; right:0;
-          height:1px; background:#d4c8ef;
         }
         .doc-header .logo-cerof { max-height:72px; }
-        .doc-header .header-brand { text-align:right; }
-        .doc-header h1 { font-size:20pt; font-weight:800; color:#6743a5; margin-bottom:2px; letter-spacing:1.5px; }
-        .doc-header .subtitle { font-size:9.5pt; color:#666; letter-spacing:0.5px; }
+        .doc-header .logo-care { max-height:48px; }
 
         /* Titulo do documento */
         .doc-title { text-align:center; font-size:13pt; font-weight:700; color:#6743a5;
@@ -237,10 +255,7 @@ export default function RelatorioAtendimentos() {
       const headerBlock = `
     <div class="doc-header">
       ${logoTag}
-      <div class="header-brand">
-        <h1>NordcsCare</h1>
-        <p class="subtitle">Saúde Ocular — Atendimento Oftalmológico</p>
-      </div>
+      ${logoCareTag}
     </div>`
 
       // Part 1: Summary (portrait)

@@ -30,7 +30,6 @@ export default function Header({ onToggleSidebar, sidebarOpen, children }: Heade
         <button className={`btn-toggle-sidebar ${sidebarOpen ? 'open' : ''}`} onClick={onToggleSidebar} title={sidebarOpen ? 'Fechar menu' : 'Abrir menu'}>
           <Menu size={20} />
         </button>
-        <h2>Nordcs Care</h2>
       </div>
       <div className="header-right" style={{display:'flex',alignItems:'center',gap:12}}>
         {user?.role === 'admin' && (
