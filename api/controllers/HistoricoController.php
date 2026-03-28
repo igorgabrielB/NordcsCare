@@ -51,7 +51,7 @@ class HistoricoController {
         $total = (int)$stmtCount->fetchColumn();
 
         // Buscar registros com dados do paciente
-        $sql = "SELECT h.*, p.nome_completo, p.cpf, p.codigo
+        $sql = "SELECT h.*, p.nome_completo, p.cpf, p.codigo, p.sexo, p.data_nascimento
                 FROM atendimentos_historico h
                 JOIN pacientes p ON p.id = h.paciente_id
                 WHERE {$where}
@@ -178,7 +178,7 @@ class HistoricoController {
             $params[':resultado'] = $_GET['resultado'];
         }
 
-        $sql = "SELECT h.data_atendimento, h.hora_entrada, h.hora_saida, p.nome_completo, p.cpf, h.escola, h.resultado, h.diagnostico, h.conduta_inicial, h.conduta_final, h.medico_nome
+        $sql = "SELECT h.data_atendimento, h.hora_entrada, h.hora_saida, p.nome_completo, p.cpf, p.sexo, p.data_nascimento, h.escola, h.resultado, h.diagnostico, h.conduta_inicial, h.conduta_final, h.medico_nome
                 FROM atendimentos_historico h
                 JOIN pacientes p ON p.id = h.paciente_id
                 WHERE {$where}
@@ -193,21 +193,25 @@ class HistoricoController {
         $output = fopen('php://output', 'w');
         // BOM para Excel reconhecer UTF-8
         fprintf($output, chr(0xEF) . chr(0xBB) . chr(0xBF));
-        fputcsv($output, ['Data', 'Hora Entrada', 'Hora Saída', 'Paciente', 'CPF', 'Escola', 'Resultado', 'Diagnóstico', 'Conduta Inicial', 'Conduta Final', 'Médico'], ';');
+        fputcsv($output, ['Data', 'Paciente', 'Sexo', 'Data Nasc.', 'CPF', 'Escola', 'Desfecho', 'Diagnóstico/Especialidade', 'Conduta Inicial', 'Conduta Final', 'Médico', 'Hora Entrada', 'Hora Saída'], ';');
 
+        $sexoLabel = ['M' => 'Masculino', 'F' => 'Feminino', 'Outro' => 'Outro'];
+        $resultadoLabel = ['alta' => 'Alta', 'encaminhamento' => 'Encaminhamento', 'oculos' => 'Óculos (Alta)', 'oculos_encaminhamento' => 'Óculos (Encaminhamento)'];
         foreach ($items as $row) {
             fputcsv($output, [
                 date('d/m/Y', strtotime($row['data_atendimento'])),
-                $row['hora_entrada'],
-                $row['hora_saida'],
                 $row['nome_completo'],
+                $sexoLabel[$row['sexo']] ?? $row['sexo'] ?? '',
+                $row['data_nascimento'] ? date('d/m/Y', strtotime($row['data_nascimento'])) : '',
                 $row['cpf'],
                 $row['escola'],
-                $row['resultado'],
+                $resultadoLabel[$row['resultado']] ?? $row['resultado'],
                 $row['diagnostico'],
                 $row['conduta_inicial'],
                 $row['conduta_final'],
                 $row['medico_nome'],
+                $row['hora_entrada'],
+                $row['hora_saida'],
             ], ';');
         }
 

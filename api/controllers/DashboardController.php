@@ -47,8 +47,25 @@ class DashboardController {
         }
         $atendimentosHoje = (int) $stmt->fetchColumn();
 
-        // Pacientes na fila agora (não concluídos e não de alta/encaminhamento, somente hoje)
-        $naFila = (int) $db->query("SELECT COUNT(*) FROM fila WHERE DATE(created_at) = CURDATE() AND status != 'concluido' AND estacao NOT IN ('altas', 'encaminhamentos')")->fetchColumn();
+        // Pacientes na fila agora (inclui multi-dia: entradas de dia anterior se escola agendada hoje)
+        $stmtNaFila = $db->query(
+            "SELECT COUNT(*) FROM fila f
+             JOIN pacientes p ON p.id = f.paciente_id
+             WHERE f.status != 'concluido' AND f.estacao NOT IN ('altas', 'encaminhamentos')
+               AND (
+                   DATE(f.created_at) = CURDATE()
+                   OR (
+                       DATE(f.created_at) IN (
+                           SELECT ea.data_atendimento FROM escola_agenda ea WHERE ea.escola = p.escola
+                       )
+                       AND EXISTS (
+                           SELECT 1 FROM escola_agenda ea2
+                           WHERE ea2.escola = p.escola AND ea2.data_atendimento = CURDATE()
+                       )
+                   )
+               )"
+        );
+        $naFila = (int) $stmtNaFila->fetchColumn();
 
         // Total exames no período
         $stmtEx = $db->prepare('SELECT COUNT(*) FROM exames WHERE DATE(created_at) BETWEEN :di AND :df');

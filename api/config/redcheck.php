@@ -1,10 +1,13 @@
 <?php
+// RedCheck API desativada temporariamente
+/*
 require_once __DIR__ . '/env.php';
 Env::load();
 
 /**
  * Configuração da API RedCheck
  */
+
 class RedCheckConfig {
     /** URL base da API */
     public const BASE_URL = 'https://api.redcheck.com.br/api/v1';
@@ -31,3 +34,5 @@ class RedCheckConfig {
         return self::getPartnerName() !== '' && self::getPartnerToken() !== '';
     }
 }
+// Fim da configuração da API RedCheck
+

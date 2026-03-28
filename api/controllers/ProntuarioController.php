@@ -339,6 +339,23 @@ class ProntuarioController {
             self::adicionarNaFilaAutomatico($db, $pacienteId, 'laudos', 'exames');
         }
 
+        // --- Tonometria manual (OD / OE) — salva como exame ---
+        $tonoOD = trim($input['tonometria_od'] ?? '');
+        $tonoOE = trim($input['tonometria_oe'] ?? '');
+        if ($tonoOD !== '' || $tonoOE !== '') {
+            // Remove registros anteriores de tonometria manual desse paciente
+            $db->prepare("DELETE FROM exames WHERE paciente_id = :pid AND tipo_exame = 'tonometria'")->execute([':pid' => $pacienteId]);
+            $stmtTono = $db->prepare(
+                'INSERT INTO exames (paciente_id, medico_id, tipo_exame, olho, resultado) VALUES (:pid, :mid, :tipo, :olho, :resultado)'
+            );
+            if ($tonoOD !== '') {
+                $stmtTono->execute([':pid' => $pacienteId, ':mid' => $medicoId, ':tipo' => 'tonometria', ':olho' => 'OD', ':resultado' => $tonoOD]);
+            }
+            if ($tonoOE !== '') {
+                $stmtTono->execute([':pid' => $pacienteId, ':mid' => $medicoId, ':tipo' => 'tonometria', ':olho' => 'OE', ':resultado' => $tonoOE]);
+            }
+        }
+
         // --- Prescrição (upsert — máx 1 por paciente) ---
         $prescricao = $input['prescricao'] ?? [];
         // Sanitizar valores: remover caracteres de formatação (°, +) mantendo apenas números, ponto e sinal negativo
@@ -545,16 +562,8 @@ class ProntuarioController {
                 $ids['acuidade_id'] = (int)$db->lastInsertId();
             }
 
-            // Mover automaticamente: acuidade → laudos (se já tem exames) ou → exames (se não tem)
-            $stmtCheckExames = $db->prepare('SELECT COUNT(*) as total FROM exames WHERE paciente_id = :pid');
-            $stmtCheckExames->execute([':pid' => $pacienteId]);
-            $totalExames = (int)$stmtCheckExames->fetch()['total'];
-
-            if ($totalExames > 0) {
-                self::adicionarNaFilaAutomatico($db, $pacienteId, 'laudos', 'acuidade');
-            } else {
-                self::adicionarNaFilaAutomatico($db, $pacienteId, 'exames', 'acuidade');
-            }
+            // Mover automaticamente: acuidade → laudos
+            self::adicionarNaFilaAutomatico($db, $pacienteId, 'laudos', 'acuidade');
         }
 
         $db->commit();

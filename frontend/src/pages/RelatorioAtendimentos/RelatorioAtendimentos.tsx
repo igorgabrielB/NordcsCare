@@ -20,6 +20,8 @@ interface HistoricoItem {
   paciente_id: number
   nome_completo: string
   cpf: string
+  sexo: string | null
+  data_nascimento: string | null
   codigo: string | null
   escola: string | null
   data_atendimento: string
@@ -201,14 +203,16 @@ export default function RelatorioAtendimentos() {
       const listaRows = dadosLista.map(item => {
         const colors: Record<string, string> = { alta: '#48bb78', encaminhamento: '#ed8936', oculos: '#4299e1', oculos_encaminhamento: '#ed64a6' }
         const color = colors[item.resultado] || '#a0aec0'
+        const sexoLabel = item.sexo === 'M' ? 'Masc.' : item.sexo === 'F' ? 'Fem.' : item.sexo || '—'
+        const dataNasc = item.data_nascimento ? new Date(item.data_nascimento + 'T12:00:00').toLocaleDateString('pt-BR') : '—'
         return `<tr>
           <td>${new Date(item.data_atendimento + 'T12:00:00').toLocaleDateString('pt-BR')}</td>
           <td>${item.nome_completo}</td>
-          <td>${item.escola || '—'}</td>
-          <td>${item.hora_entrada?.substring(0, 5) || '—'}</td>
-          <td>${item.hora_saida?.substring(0, 5) || '—'}</td>
+          <td>${sexoLabel}</td>
+          <td>${dataNasc}</td>
+          <td>${item.cpf || '—'}</td>
           <td><span style="background:${color}18;color:${color};padding:1px 6px;border-radius:8px;font-size:7pt;font-weight:600">${RESULTADO_LABELS[item.resultado] || item.resultado}</span></td>
-          <td>${item.medico_nome || '—'}</td>
+          <td>${item.resultado.includes('encaminhamento') ? (item.diagnostico || '—') : '—'}</td>
         </tr>`
       }).join('')
 
@@ -285,9 +289,9 @@ export default function RelatorioAtendimentos() {
   ${headerBlock}
   <div class="doc-title">Lista de Atendimentos</div>
   <div class="doc-title-line"></div>
-  <div class="periodo-info">${dadosLista.length} registros &nbsp;•&nbsp; <strong>Período:</strong> ${periodoTexto}</div>
+  <div class="periodo-info">${dadosLista.length} registros &nbsp;•&nbsp; <strong>Período:</strong> ${periodoTexto}${escola ? ` &nbsp;•&nbsp; <strong>Escola:</strong> ${escola}` : ''}</div>
   <table class="lista-table">
-    <thead><tr><th>Data</th><th>Paciente</th><th>Escola</th><th>Entrada</th><th>Saída</th><th>Resultado</th><th>Médico</th></tr></thead>
+    <thead><tr><th>Data</th><th>Paciente</th><th>Sexo</th><th>Nasc.</th><th>CPF</th><th>Desfecho</th><th>Diagnóstico / Especialidade</th></tr></thead>
     <tbody>${listaRows}</tbody>
   </table>
   <div class="footer">NordcsCare — Saúde Ocular • Relatório gerado em ${hoje}</div>
@@ -566,17 +570,17 @@ export default function RelatorioAtendimentos() {
           </div>
 
           <div className="rela-table-wrap">
-            <table className="rela-table">
+              <table className="rela-table">
               <thead>
                 <tr>
                   <th>Data</th>
                   <th>Paciente</th>
+                  <th>Sexo</th>
+                  <th>Nasc.</th>
+                  <th>CPF</th>
                   <th>Escola</th>
-                  <th>Entrada</th>
-                  <th>Saída</th>
-                  <th>Resultado</th>
-                  <th>Diagnóstico</th>
-                  <th>Médico</th>
+                  <th>Desfecho</th>
+                  <th>Diagnóstico / Especialidade</th>
                 </tr>
               </thead>
               <tbody>
@@ -587,16 +591,16 @@ export default function RelatorioAtendimentos() {
                     <tr key={item.id}>
                       <td>{new Date(item.data_atendimento + 'T12:00:00').toLocaleDateString('pt-BR')}</td>
                       <td><strong>{item.nome_completo}</strong></td>
+                      <td>{item.sexo === 'M' ? 'Masc.' : item.sexo === 'F' ? 'Fem.' : item.sexo || '—'}</td>
+                      <td>{item.data_nascimento ? new Date(item.data_nascimento + 'T12:00:00').toLocaleDateString('pt-BR') : '—'}</td>
+                      <td>{item.cpf || '—'}</td>
                       <td>{item.escola || '—'}</td>
-                      <td>{item.hora_entrada?.substring(0, 5)}</td>
-                      <td>{item.hora_saida?.substring(0, 5) || '—'}</td>
                       <td>
                         <span className="rela-resultado-badge" style={{ background: (RESULTADO_COLORS[item.resultado] || '#a0aec0') + '22', color: RESULTADO_COLORS[item.resultado] || '#a0aec0' }}>
                           {RESULTADO_LABELS[item.resultado] || item.resultado}
                         </span>
                       </td>
-                      <td className="rela-td-diag">{item.diagnostico || '—'}</td>
-                      <td>{item.medico_nome || '—'}</td>
+                      <td className="rela-td-diag">{item.resultado.includes('encaminhamento') ? (item.diagnostico || '—') : '—'}</td>
                     </tr>
                   ))
                 )}

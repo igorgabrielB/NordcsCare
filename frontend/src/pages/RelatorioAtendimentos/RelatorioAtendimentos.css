@@ -472,6 +472,22 @@
   font-size: 0.85rem;
 }
 
+.rela-escola-filtro-label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 12px;
+  margin-bottom: 10px;
+  background: var(--bg-elevated);
+  border-left: 3px solid var(--primary);
+  border-radius: 6px;
+  font-size: 0.9rem;
+  color: var(--text-secondary);
+}
+.rela-escola-filtro-label strong {
+  color: var(--text);
+}
+
 .rela-table-wrap {
   overflow-x: auto;
   border-radius: 14px;

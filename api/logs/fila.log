@@ -9342,3 +9342,30 @@
 [2026-03-25 03:43:14] Removido paciente de 1 filas anteriores
 [2026-03-25 03:43:14] INSERT resultado: SUCCESS (created_at preservado: 2026-03-24 23:31:00)
 [2026-03-25 03:43:14] Histórico SALVO para paciente 2926 (resultado: oculos_encaminhamento)
+[2026-03-27 22:46:56] Conduta Inicial recebida: 'onibus_encaminhamento'
+[2026-03-27 22:46:56] Detectada conduta ONIBUS+ENCAMINHAMENTO para paciente 2926
+[2026-03-27 22:46:56] Tentando mover paciente 2926 para fila 'oculos' (saindo de 'laudos')
+[2026-03-27 22:46:56] Removido paciente de 1 filas anteriores
+[2026-03-27 22:46:56] INSERT resultado: SUCCESS (created_at preservado: N/A)
+[2026-03-27 22:57:50] Conduta Inicial recebida: 'onibus'
+[2026-03-27 22:57:50] Detectada conduta ONIBUS para paciente 2926
+[2026-03-27 22:57:50] Tentando mover paciente 2926 para fila 'oculos' (saindo de 'laudos')
+[2026-03-27 22:57:50] Removido paciente de 1 filas anteriores
+[2026-03-27 22:57:50] INSERT resultado: SUCCESS (created_at preservado: 2026-03-27 22:46:56)
+[2026-03-27 22:58:16] Prescricao salva com conduta_final alta - movendo paciente 2926 para altas
+[2026-03-27 22:58:17] Tentando mover paciente 2926 para fila 'altas'
+[2026-03-27 22:58:17] Removido paciente de 1 filas anteriores
+[2026-03-27 22:58:17] INSERT resultado: SUCCESS (created_at preservado: 2026-03-27 22:46:56)
+[2026-03-27 22:58:17] Histórico SALVO para paciente 2926 (resultado: oculos)
+[2026-03-27 23:09:11] Tentando mover paciente 1286 para fila 'exames' (saindo de 'acuidade')
+[2026-03-27 23:09:11] Removido paciente de 1 filas anteriores
+[2026-03-27 23:09:11] INSERT resultado: SUCCESS (created_at preservado: 2026-03-27 23:08:59)
+[2026-03-27 23:11:51] Tentando mover paciente 1286 para fila 'laudos' (saindo de 'acuidade')
+[2026-03-27 23:11:51] Removido paciente de 1 filas anteriores
+[2026-03-27 23:11:51] INSERT resultado: SUCCESS (created_at preservado: 2026-03-27 23:08:59)
+[2026-03-27 23:12:20] Conduta Inicial recebida: 'alta'
+[2026-03-27 23:12:20] Detectada conduta ALTA para paciente 1286
+[2026-03-27 23:12:20] Tentando mover paciente 1286 para fila 'altas'
+[2026-03-27 23:12:20] Removido paciente de 1 filas anteriores
+[2026-03-27 23:12:20] INSERT resultado: SUCCESS (created_at preservado: 2026-03-27 23:08:59)
+[2026-03-27 23:12:20] Histórico SALVO para paciente 1286 (resultado: alta)

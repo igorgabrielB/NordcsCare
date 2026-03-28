@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from 'react'
 import { Link } from 'react-router-dom'
 import api from '../../services/api.ts'
 import { useAuth } from '../../contexts/AuthContext.tsx'
-import { Eye, Microscope, FileText, Glasses, Zap, Timer, Building2, User, ClipboardList, X, ArrowRight, CheckCircle2, Send, Lock, Search } from 'lucide-react'
+import { Eye, FileText, Glasses, Zap, Timer, Building2, User, ClipboardList, X, ArrowRight, CheckCircle2, Send, Lock, Search } from 'lucide-react'
 import './Fila.css'
 
 interface FilaItem {
@@ -25,7 +25,6 @@ type FilaAgrupada = Record<string, FilaItem[]>
 
 const ESTACOES = [
   { key: 'acuidade', label: 'Acuidade', icon: <Eye size={18} />, color: '#38a169', isAtendimento: true },
-  { key: 'exames', label: 'Exames', icon: <Microscope size={18} />, color: '#d69e2e', isAtendimento: true },
   { key: 'laudos', label: 'Laudos', icon: <FileText size={18} />, color: '#805ad5', isAtendimento: true },
   { key: 'oculos', label: 'Óculos', icon: <Glasses size={18} />, color: '#e53e3e', isAtendimento: true },
   { key: 'altas', label: 'Altas', icon: <CheckCircle2 size={18} />, color: '#22863a', isAtendimento: false },

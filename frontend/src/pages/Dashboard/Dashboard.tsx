@@ -26,14 +26,12 @@ interface Metricas {
 
 const ESTACAO_LABELS: Record<string, string> = {
   acuidade: 'Acuidade',
-  exames: 'Exames',
   laudos: 'Laudos',
   oculos: 'Óculos',
 }
 
 const ESTACAO_COLORS: Record<string, string> = {
   acuidade: '#3182ce',
-  exames: '#805ad5',
   laudos: '#38a169',
   oculos: '#d69e2e',
 }

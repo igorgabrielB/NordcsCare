@@ -864,10 +864,15 @@ export async function gerarRelatorio(
   // Exames
   if (exames && exames.length > 0) {
     sections += `<div class="section"><h3>Exames</h3>`
-    exames.forEach(ex => {
+    exames.filter(ex => ex.tipo_exame !== 'tonometria').forEach(ex => {
       sections += `<p><strong>${tipoExameLabel(ex.tipo_exame)}</strong> — ${ex.olho} ${ex.resultado ? `— ${ex.resultado}` : ''}</p>`
       if (ex.observacoes) sections += `<p style="margin-left:12px;font-size:10pt"><em>Obs: ${ex.observacoes}</em></p>`
     })
+    const tonoOD = exames.find(ex => ex.tipo_exame === 'tonometria' && ex.olho === 'OD')
+    const tonoOE = exames.find(ex => ex.tipo_exame === 'tonometria' && ex.olho === 'OE')
+    if (tonoOD || tonoOE) {
+      sections += `<p><strong>Tonometria</strong>${tonoOD?.resultado ? ` — OD: ${tonoOD.resultado} mmHg` : ''}${tonoOE?.resultado ? ` / OE: ${tonoOE.resultado} mmHg` : ''}</p>`
+    }
     sections += `</div>`
   }
 

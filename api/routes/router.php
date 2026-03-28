@@ -9,7 +9,7 @@ require_once __DIR__ . '/../controllers/UsuarioController.php';
 require_once __DIR__ . '/../controllers/MedicoController.php';
 require_once __DIR__ . '/../controllers/EscolaAgendaController.php';
 require_once __DIR__ . '/../controllers/ModeloDocumentoController.php';
-require_once __DIR__ . '/../controllers/RedCheckController.php';
+// require_once __DIR__ . '/../controllers/RedCheckController.php'; // RedCheck desativado temporariamente
 require_once __DIR__ . '/../controllers/LaudoProntoController.php';
 require_once __DIR__ . '/../controllers/HistoricoController.php';
 
@@ -122,13 +122,13 @@ $router->add('DELETE', '/api/medicos/{id}', [MedicoController::class, 'destroy']
 // Escola Agenda
 $router->add('GET', '/api/escola-agenda', [EscolaAgendaController::class, 'index']);
 
-// RedCheck (SpotVision / Retinografia) — somente leitura
-$router->add('GET', '/api/redcheck/status', [RedCheckController::class, 'status']);
-$router->add('GET', '/api/redcheck/exames/{pacienteId}', [RedCheckController::class, 'exames']);
-$router->add('GET', '/api/redcheck/laudo/{id}', [RedCheckController::class, 'laudo']);
-$router->add('GET', '/api/redcheck/recentes', [RedCheckController::class, 'recentes']);
-$router->add('GET', '/api/redcheck/exames-demo/{redcheckPatientId}', [RedCheckController::class, 'examesDemo']);
-$router->add('GET', '/api/redcheck/imagem/{laudoId}', [RedCheckController::class, 'imagem']);
+// RedCheck (SpotVision / Retinografia) — desativado temporariamente
+// $router->add('GET', '/api/redcheck/status', [RedCheckController::class, 'status']);
+// $router->add('GET', '/api/redcheck/exames/{pacienteId}', [RedCheckController::class, 'exames']);
+// $router->add('GET', '/api/redcheck/laudo/{id}', [RedCheckController::class, 'laudo']);
+// $router->add('GET', '/api/redcheck/recentes', [RedCheckController::class, 'recentes']);
+// $router->add('GET', '/api/redcheck/exames-demo/{redcheckPatientId}', [RedCheckController::class, 'examesDemo']);
+// $router->add('GET', '/api/redcheck/imagem/{laudoId}', [RedCheckController::class, 'imagem']);
 
 // Escola Agenda (cont.)
 $router->add('GET', '/api/escola-agenda/hoje', [EscolaAgendaController::class, 'hoje']);

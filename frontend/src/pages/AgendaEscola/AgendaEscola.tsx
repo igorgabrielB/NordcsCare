@@ -102,7 +102,14 @@ export default function AgendaEscola() {
   const stats = useMemo(() => {
     const escolasAgendadas = new Set(agenda.map(a => a.escola)).size
     const datasAgendadas = new Set(agenda.map(a => a.data_atendimento)).size
-    const totalAlunos = agenda.reduce((sum, a) => sum + a.total_alunos, 0)
+    const escolasVistas = new Set<string>()
+    let totalAlunos = 0
+    for (const a of agenda) {
+      if (!escolasVistas.has(a.escola)) {
+        escolasVistas.add(a.escola)
+        totalAlunos += a.total_alunos
+      }
+    }
     return { escolasAgendadas, datasAgendadas, totalAlunos }
   }, [agenda])
 

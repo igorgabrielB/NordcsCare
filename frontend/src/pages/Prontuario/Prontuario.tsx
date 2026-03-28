@@ -4,7 +4,7 @@ import api from '../../services/api'
 import { useAuth } from '../../contexts/AuthContext'
 import { User, X, Pencil, ClipboardList, Bus, Save, FileText, Microscope, Glasses, CheckCircle2, BookOpen, Eye, Trash2, Printer } from 'lucide-react'
 import { gerarReceitaOcular, gerarAtestado, gerarReceitaMedica, gerarRelatorio, formatTexto } from '../../services/pdfService'
-import RedCheckExames from './RedCheckUpload'
+// import RedCheckExames from './RedCheckUpload'
 import './Prontuario.css'
 
 interface Paciente {
@@ -120,6 +120,8 @@ const emptyForm = {
     alergias: '', medicamentos_em_uso: '', cirurgias_anteriores: '', observacoes: '',
   },
   exames_observacoes: '',
+  tonometria_od: '',
+  tonometria_oe: '',
   prescricao: {
     tipo: 'oculos',
     od_esferico: '', od_cilindrico: '', od_eixo: '', od_adicao: '',
@@ -229,6 +231,10 @@ export default function Prontuario() {
         observacoes: a.observacoes || '',
       }
     }
+    const tonoOD = d.exames?.find((ex: any) => ex.tipo_exame === 'tonometria' && ex.olho === 'OD')
+    const tonoOE = d.exames?.find((ex: any) => ex.tipo_exame === 'tonometria' && ex.olho === 'OE')
+    if (tonoOD) f.tonometria_od = tonoOD.resultado || ''
+    if (tonoOE) f.tonometria_oe = tonoOE.resultado || ''
     return f
   }
 
@@ -290,7 +296,6 @@ export default function Prontuario() {
       if (!form.anamnese.alergias.trim()) campos.push('anamnese_alergias')
       if (!form.anamnese.medicamentos_em_uso.trim()) campos.push('anamnese_medicamentos')
       if (!form.anamnese.cirurgias_anteriores.trim()) campos.push('anamnese_cirurgias')
-      if (!form.anamnese.observacoes.trim()) campos.push('anamnese_observacoes')
       if (!form.laudo.diagnostico.trim()) campos.push('laudo_diagnostico')
     }
     if (showForm === 'onibus') {
@@ -317,6 +322,8 @@ export default function Prontuario() {
       if (showForm === 'laudos') {
         payload.anamnese = form.anamnese
         payload.laudo = form.laudo
+        payload.tonometria_od = form.tonometria_od
+        payload.tonometria_oe = form.tonometria_oe
       } else if (showForm === 'onibus') {
         const rx = { ...form.prescricao }
         if (rx.acuidade_od === '__outro__') rx.acuidade_od = ''
@@ -717,21 +724,40 @@ export default function Prontuario() {
               <div className="exames-recebidos">
                 <div className="exames-recebidos-header"><CheckCircle2 size={14} /> Exames Recebidos</div>
                 <div className="exames-recebidos-list">
-                  {exames.map((ex, idx) => (
+                  {exames.filter(ex => ex.tipo_exame !== 'tonometria').map((ex, idx) => (
                     <div key={idx} className="exames-recebidos-item">
                       <span className="exame-tipo-badge">{tipoExameLabel(ex.tipo_exame)}</span>
                       <span className="exame-olho">{ex.olho}</span>
                       {ex.resultado && <span className="exame-resultado">{ex.resultado}</span>}
                     </div>
                   ))}
+                  {exames.some(ex => ex.tipo_exame === 'tonometria') && (() => {
+                    const tonoOD = exames.find(ex => ex.tipo_exame === 'tonometria' && ex.olho === 'OD')
+                    const tonoOE = exames.find(ex => ex.tipo_exame === 'tonometria' && ex.olho === 'OE')
+                    return (
+                      <div className="exames-recebidos-item">
+                        <span className="exame-tipo-badge">Tonometria</span>
+                        {tonoOD?.resultado && <span className="exame-resultado">OD: {tonoOD.resultado} mmHg</span>}
+                        {tonoOE?.resultado && <span className="exame-resultado">OE: {tonoOE.resultado} mmHg</span>}
+                      </div>
+                    )
+                  })()}
                 </div>
               </div>
             )}
-            <RedCheckExames
-              pacienteId={Number(pacienteId)}
-              onSuccess={msg => { setSuccessMsg(msg); setTimeout(() => setSuccessMsg(''), 4000) }}
-              onError={msg => { setErrorMsg(msg); setTimeout(() => setErrorMsg(''), 6000) }}
-            />
+            <div className="redcheck-em-breve">
+              <span>📡 Integração com equipamentos — <strong>Em breve</strong></span>
+            </div>
+            <div className="form-row">
+              <div className="form-group">
+                <label>Tonometria OD (mmHg)</label>
+                <input type="text" inputMode="decimal" placeholder="ex: 14" value={form.tonometria_od} onChange={e => setForm(f => ({ ...f, tonometria_od: e.target.value }))} />
+              </div>
+              <div className="form-group">
+                <label>Tonometria OE (mmHg)</label>
+                <input type="text" inputMode="decimal" placeholder="ex: 14" value={form.tonometria_oe} onChange={e => setForm(f => ({ ...f, tonometria_oe: e.target.value }))} />
+              </div>
+            </div>
             <div className="form-group">
               <label>Observações sobre Exames</label>
               <textarea rows={2} value={form.exames_observacoes} onChange={e => updateExamesObservacoes(e.target.value)} placeholder="Adicione qualquer observação pertinente aos exames realizados..." />
@@ -1126,12 +1152,21 @@ export default function Prontuario() {
                       <div className="laudo-section-header">
                         <h4><Microscope size={14} style={{verticalAlign:'middle',marginRight:4}} />Exames</h4>
                       </div>
-                      {exames.map(ex => (
+                      {exames.filter(ex => ex.tipo_exame !== 'tonometria').map(ex => (
                         <div key={ex.id} style={{marginBottom:6}}>
                           <p><strong>{tipoExameLabel(ex.tipo_exame)}</strong> — {ex.olho} {ex.resultado ? `— ${ex.resultado}` : ''}</p>
                           {ex.observacoes && <p style={{marginLeft:12, fontSize:'0.85rem'}}><em>Obs: {ex.observacoes}</em></p>}
                         </div>
                       ))}
+                      {exames.some(ex => ex.tipo_exame === 'tonometria') && (() => {
+                        const tonoOD = exames.find(ex => ex.tipo_exame === 'tonometria' && ex.olho === 'OD')
+                        const tonoOE = exames.find(ex => ex.tipo_exame === 'tonometria' && ex.olho === 'OE')
+                        return (
+                          <div style={{marginBottom:6}}>
+                            <p><strong>Tonometria</strong>{tonoOD?.resultado ? ` — OD: ${tonoOD.resultado} mmHg` : ''}{tonoOE?.resultado ? ` / OE: ${tonoOE.resultado} mmHg` : ''}</p>
+                          </div>
+                        )
+                      })()}
                     </div>
                   )}
 

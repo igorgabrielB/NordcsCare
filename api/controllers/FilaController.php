@@ -5,7 +5,7 @@ require_once __DIR__ . '/../utils/AuditLog.php';
 
 class FilaController {
 
-    private static array $estacoesOrdem = ['acuidade', 'exames', 'laudos', 'oculos', 'altas', 'encaminhamentos'];
+    private static array $estacoesOrdem = ['acuidade', 'laudos', 'oculos', 'altas', 'encaminhamentos'];
 
     /**
      * GET /api/fila — Lista toda a fila do dia, agrupada por estação.
@@ -16,28 +16,60 @@ class FilaController {
         $db = Database::getInstance();
         $dataParam = $_GET['data'] ?? null;
 
+        // Subquery multi-dia: também exibe entradas não concluídas de dias anteriores
+        // quando a escola do paciente está agendada para a data consultada.
+        $sqlMultiDia = '(
+                DATE(f.created_at) = :data
+                OR (
+                    f.status != \'concluido\'
+                    AND f.estacao NOT IN (\'altas\', \'encaminhamentos\')
+                    AND DATE(f.created_at) IN (
+                        SELECT ea.data_atendimento FROM escola_agenda ea WHERE ea.escola = p.escola
+                    )
+                    AND EXISTS (
+                        SELECT 1 FROM escola_agenda ea2
+                        WHERE ea2.escola = p.escola AND ea2.data_atendimento = :data2
+                    )
+                )
+            )';
+
+        $sqlMultiDiaCurdate = '(
+                DATE(f.created_at) = CURDATE()
+                OR (
+                    f.status != \'concluido\'
+                    AND f.estacao NOT IN (\'altas\', \'encaminhamentos\')
+                    AND DATE(f.created_at) IN (
+                        SELECT ea.data_atendimento FROM escola_agenda ea WHERE ea.escola = p.escola
+                    )
+                    AND EXISTS (
+                        SELECT 1 FROM escola_agenda ea2
+                        WHERE ea2.escola = p.escola AND ea2.data_atendimento = CURDATE()
+                    )
+                )
+            )';
+
         if ($dataParam) {
-            $sql = 'SELECT f.id, f.paciente_id, f.estacao, f.status, f.prioridade, f.observacoes,
+            $sql = "SELECT f.id, f.paciente_id, f.estacao, f.status, f.prioridade, f.observacoes,
                         f.atendente_id, f.created_at, f.updated_at,
                         p.nome_completo, p.codigo, p.convenio,
                         u.nome AS atendente_nome
                  FROM fila f
                  JOIN pacientes p ON p.id = f.paciente_id
                  LEFT JOIN usuarios u ON u.id = f.atendente_id
-                 WHERE DATE(f.created_at) = :data
-                 ORDER BY f.prioridade DESC, f.created_at ASC';
+                 WHERE {$sqlMultiDia}
+                 ORDER BY f.prioridade DESC, f.created_at ASC";
             $stmt = $db->prepare($sql);
-            $stmt->execute([':data' => $dataParam]);
+            $stmt->execute([':data' => $dataParam, ':data2' => $dataParam]);
         } else {
-            $sql = 'SELECT f.id, f.paciente_id, f.estacao, f.status, f.prioridade, f.observacoes,
+            $sql = "SELECT f.id, f.paciente_id, f.estacao, f.status, f.prioridade, f.observacoes,
                         f.atendente_id, f.created_at, f.updated_at,
                         p.nome_completo, p.codigo, p.convenio,
                         u.nome AS atendente_nome
                  FROM fila f
                  JOIN pacientes p ON p.id = f.paciente_id
                  LEFT JOIN usuarios u ON u.id = f.atendente_id
-                 WHERE DATE(f.created_at) = CURDATE()
-                 ORDER BY f.prioridade DESC, f.created_at ASC';
+                 WHERE {$sqlMultiDiaCurdate}
+                 ORDER BY f.prioridade DESC, f.created_at ASC";
             $stmt = $db->prepare($sql);
             $stmt->execute();
         }
@@ -80,9 +112,26 @@ class FilaController {
             return;
         }
 
-        // Verificar se já está na fila ativa hoje
+        // Verificar se já está na fila ativa (hoje ou em dia anterior se a escola for multi-dia)
         $stmt = $db->prepare(
-            'SELECT id FROM fila WHERE paciente_id = :pid AND estacao NOT IN ("altas", "encaminhamentos") AND DATE(created_at) = CURDATE() LIMIT 1'
+            'SELECT f.id FROM fila f
+             JOIN pacientes p ON p.id = f.paciente_id
+             WHERE f.paciente_id = :pid
+               AND f.estacao NOT IN ("altas", "encaminhamentos")
+               AND f.status != "concluido"
+               AND (
+                   DATE(f.created_at) = CURDATE()
+                   OR (
+                       DATE(f.created_at) IN (
+                           SELECT ea.data_atendimento FROM escola_agenda ea WHERE ea.escola = p.escola
+                       )
+                       AND EXISTS (
+                           SELECT 1 FROM escola_agenda ea2
+                           WHERE ea2.escola = p.escola AND ea2.data_atendimento = CURDATE()
+                       )
+                   )
+               )
+             LIMIT 1'
         );
         $stmt->execute([':pid' => $input['paciente_id']]);
         if ($stmt->fetch()) {
