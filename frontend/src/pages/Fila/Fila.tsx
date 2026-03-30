@@ -88,9 +88,12 @@ export default function Fila() {
     return `${hrs}h${mins % 60}min`
   }
 
-  // Tempo na estação atual (live, conta a partir do updated_at)
+  // Tempo na estação atual (live, conta a partir do updated_at — reinicia à meia-noite)
   const getTempoEstacao = (updatedAt: string): string => {
-    return formatTempo(Date.now() - new Date(updatedAt).getTime())
+    const inicio = new Date(updatedAt).getTime()
+    const hoje = new Date(); hoje.setHours(0,0,0,0)
+    const base = Math.max(inicio, hoje.getTime())
+    return formatTempo(Date.now() - base)
   }
 
   // Tempo total de atendimento (created_at → updated_at, congelado)
@@ -98,9 +101,11 @@ export default function Fila() {
     return formatTempo(new Date(updatedAt).getTime() - new Date(createdAt).getTime())
   }
 
-  // Média de atendimento dos pacientes finalizados (altas + encaminhamentos)
+  // Média de atendimento dos pacientes finalizados (altas + encaminhamentos) — só do dia atual
   const getMediaAtendimento = (): string | null => {
+    const hoje = new Date().toISOString().slice(0, 10)
     const finalizados = [...(fila['altas'] || []), ...(fila['encaminhamentos'] || [])]
+      .filter(item => item.created_at.slice(0, 10) === hoje)
     if (finalizados.length === 0) return null
     const totalMs = finalizados.reduce((acc, item) => {
       return acc + (new Date(item.updated_at).getTime() - new Date(item.created_at).getTime())

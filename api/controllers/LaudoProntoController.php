@@ -10,7 +10,7 @@ class LaudoProntoController
         $db = Database::getInstance();
 
         $stmt = $db->query(
-            'SELECT lp.id, lp.titulo, lp.diagnostico, lp.conduta, lp.observacoes, lp.ativo,
+            'SELECT lp.id, lp.titulo, lp.diagnostico, lp.conduta, lp.observacoes, lp.especialidade, lp.ativo,
                     lp.usuario_id, u.nome AS autor_nome, lp.created_at, lp.updated_at
              FROM laudos_prontos lp
              JOIN usuarios u ON u.id = lp.usuario_id
@@ -25,7 +25,7 @@ class LaudoProntoController
         $db = Database::getInstance();
 
         $stmt = $db->query(
-            'SELECT id, titulo, diagnostico, conduta, observacoes
+            'SELECT id, titulo, diagnostico, conduta, observacoes, especialidade
              FROM laudos_prontos
              WHERE ativo = 1
              ORDER BY titulo ASC'
@@ -43,6 +43,7 @@ class LaudoProntoController
         $diagnostico = trim($input['diagnostico'] ?? '');
         $conduta = trim($input['conduta'] ?? '') ?: null;
         $observacoes = trim($input['observacoes'] ?? '') ?: null;
+        $especialidade = trim($input['especialidade'] ?? '') ?: null;
 
         if ($titulo === '') {
             http_response_code(422);
@@ -56,14 +57,15 @@ class LaudoProntoController
         }
 
         $stmt = $db->prepare(
-            'INSERT INTO laudos_prontos (titulo, diagnostico, conduta, observacoes, usuario_id)
-             VALUES (:titulo, :diagnostico, :conduta, :observacoes, :uid)'
+            'INSERT INTO laudos_prontos (titulo, diagnostico, conduta, observacoes, especialidade, usuario_id)
+             VALUES (:titulo, :diagnostico, :conduta, :observacoes, :especialidade, :uid)'
         );
         $stmt->execute([
             ':titulo' => $titulo,
             ':diagnostico' => $diagnostico,
             ':conduta' => $conduta,
             ':observacoes' => $observacoes,
+            ':especialidade' => $especialidade,
             ':uid' => $user['sub'],
         ]);
         $id = $db->lastInsertId();
@@ -98,6 +100,7 @@ class LaudoProntoController
         $diagnostico = trim($input['diagnostico'] ?? '');
         $conduta = trim($input['conduta'] ?? '') ?: null;
         $observacoes = trim($input['observacoes'] ?? '') ?: null;
+        $especialidade = trim($input['especialidade'] ?? '') ?: null;
         $ativo = isset($input['ativo']) ? (int) $input['ativo'] : 1;
 
         if ($titulo === '') {
@@ -113,7 +116,7 @@ class LaudoProntoController
 
         $stmt = $db->prepare(
             'UPDATE laudos_prontos SET titulo = :titulo, diagnostico = :diagnostico,
-                    conduta = :conduta, observacoes = :observacoes, ativo = :ativo
+                    conduta = :conduta, observacoes = :observacoes, especialidade = :especialidade, ativo = :ativo
              WHERE id = :id'
         );
         $stmt->execute([
@@ -121,6 +124,7 @@ class LaudoProntoController
             ':diagnostico' => $diagnostico,
             ':conduta' => $conduta,
             ':observacoes' => $observacoes,
+            ':especialidade' => $especialidade,
             ':ativo' => $ativo,
             ':id' => $id,
         ]);

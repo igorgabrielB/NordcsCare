@@ -9,6 +9,7 @@ interface Anamnese {
   alergias: string
   medicamentos_em_uso: string
   cirurgias_anteriores: string
+  historico_pessoal: string
   observacoes: string
   medico_nome: string
   medico_role?: string
@@ -37,6 +38,7 @@ export default function AnamneseTab({ pacienteId }: { pacienteId: number }) {
     alergias: '',
     medicamentos_em_uso: '',
     cirurgias_anteriores: '',
+    historico_pessoal: '',
     observacoes: '',
   })
 
@@ -58,7 +60,6 @@ export default function AnamneseTab({ pacienteId }: { pacienteId: number }) {
     if (!form.alergias.trim()) campos.push('alergias')
     if (!form.medicamentos_em_uso.trim()) campos.push('medicamentos_em_uso')
     if (!form.cirurgias_anteriores.trim()) campos.push('cirurgias_anteriores')
-    if (!form.observacoes.trim()) campos.push('observacoes')
     if (campos.length > 0) {
       setFieldErrors(new Set(campos))
       setError('Preencha todos os campos obrigatórios destacados.')
@@ -67,7 +68,7 @@ export default function AnamneseTab({ pacienteId }: { pacienteId: number }) {
     setSaving(true)
     try {
       await api.post(`/prontuario/${pacienteId}/anamneses`, form)
-      setForm({ queixa_principal: '', historico_ocular: '', historico_familiar: '', alergias: '', medicamentos_em_uso: '', cirurgias_anteriores: '', observacoes: '' })
+      setForm({ queixa_principal: '', historico_ocular: '', historico_familiar: '', alergias: '', medicamentos_em_uso: '', cirurgias_anteriores: '', historico_pessoal: '', observacoes: '' })
       setShowForm(false)
       load()
     } finally {
@@ -120,8 +121,12 @@ export default function AnamneseTab({ pacienteId }: { pacienteId: number }) {
             <label>Cirurgias Anteriores *</label>
             <input value={form.cirurgias_anteriores} onChange={e => setForm({ ...form, cirurgias_anteriores: e.target.value })} />
           </div>
-          <div className={`form-group${fieldErrors.has('observacoes') ? ' field-error' : ''}`}>
-            <label>Observações *</label>
+          <div className="form-group">
+            <label>Histórico Pessoal</label>
+            <input value={form.historico_pessoal} onChange={e => setForm({ ...form, historico_pessoal: e.target.value })} />
+          </div>
+          <div className="form-group">
+            <label>Observações</label>
             <textarea rows={2} value={form.observacoes} onChange={e => setForm({ ...form, observacoes: e.target.value })} />
           </div>
           <div className="form-actions">
@@ -149,6 +154,7 @@ export default function AnamneseTab({ pacienteId }: { pacienteId: number }) {
                 {a.alergias && <p><strong>Alergias:</strong> {a.alergias}</p>}
                 {a.medicamentos_em_uso && <p><strong>Medicamentos:</strong> {a.medicamentos_em_uso}</p>}
                 {a.cirurgias_anteriores && <p><strong>Cirurgias:</strong> {a.cirurgias_anteriores}</p>}
+                {a.historico_pessoal && <p><strong>Hist. Pessoal:</strong> {a.historico_pessoal}</p>}
                 {a.observacoes && <p><strong>Obs:</strong> {a.observacoes}</p>}
               </div>
             </div>

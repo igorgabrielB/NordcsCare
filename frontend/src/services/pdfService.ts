@@ -701,13 +701,17 @@ function pacienteHtml(p: PacientePdf): string {
 
 function fmtEsf(v: string | number | null | undefined): string {
   if (!v && v !== 0) return '—'
-  const n = parseFloat(String(v))
+  const s = String(v).trim().toLowerCase()
+  if (s === 'plano' || s === 'pl') return s
+  const n = parseFloat(s)
   if (isNaN(n)) return '—'
-  return (n >= 0 ? '+' : '') + n.toFixed(2)
+  return n.toFixed(2)
 }
 function fmtCil(v: string | number | null | undefined): string {
   if (!v && v !== 0) return '—'
-  const n = parseFloat(String(v))
+  const s = String(v).trim().toLowerCase()
+  if (s === 'plano' || s === 'pl') return s
+  const n = parseFloat(s)
   if (isNaN(n)) return '—'
   return (n > 0 ? '-' : '') + n.toFixed(2)
 }

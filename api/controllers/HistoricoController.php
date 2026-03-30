@@ -14,7 +14,7 @@ class HistoricoController {
         $db = Database::getInstance();
 
         $page = max(1, (int)($_GET['page'] ?? 1));
-        $limit = min(100, max(1, (int)($_GET['limit'] ?? 50)));
+        $limit = min(10000, max(1, (int)($_GET['limit'] ?? 50)));
         $offset = ($page - 1) * $limit;
 
         $where = '1=1';
@@ -178,7 +178,7 @@ class HistoricoController {
             $params[':resultado'] = $_GET['resultado'];
         }
 
-        $sql = "SELECT h.data_atendimento, h.hora_entrada, h.hora_saida, p.nome_completo, p.cpf, p.sexo, p.data_nascimento, h.escola, h.resultado, h.diagnostico, h.conduta_inicial, h.conduta_final, h.medico_nome
+        $sql = "SELECT h.data_atendimento, h.hora_entrada, h.hora_saida, p.nome_completo, p.cpf, p.sexo, p.data_nascimento, h.escola, h.resultado, h.diagnostico, h.especialidade, h.conduta_inicial, h.conduta_final, h.medico_nome
                 FROM atendimentos_historico h
                 JOIN pacientes p ON p.id = h.paciente_id
                 WHERE {$where}
@@ -193,7 +193,7 @@ class HistoricoController {
         $output = fopen('php://output', 'w');
         // BOM para Excel reconhecer UTF-8
         fprintf($output, chr(0xEF) . chr(0xBB) . chr(0xBF));
-        fputcsv($output, ['Data', 'Paciente', 'Sexo', 'Data Nasc.', 'CPF', 'Escola', 'Desfecho', 'Diagnóstico/Especialidade', 'Conduta Inicial', 'Conduta Final', 'Médico', 'Hora Entrada', 'Hora Saída'], ';');
+        fputcsv($output, ['Data', 'Paciente', 'Sexo', 'Data Nasc.', 'CPF', 'Desfecho', 'Especialidade'], ';');
 
         $sexoLabel = ['M' => 'Masculino', 'F' => 'Feminino', 'Outro' => 'Outro'];
         $resultadoLabel = ['alta' => 'Alta', 'encaminhamento' => 'Encaminhamento', 'oculos' => 'Óculos (Alta)', 'oculos_encaminhamento' => 'Óculos (Encaminhamento)'];
@@ -204,14 +204,8 @@ class HistoricoController {
                 $sexoLabel[$row['sexo']] ?? $row['sexo'] ?? '',
                 $row['data_nascimento'] ? date('d/m/Y', strtotime($row['data_nascimento'])) : '',
                 $row['cpf'],
-                $row['escola'],
                 $resultadoLabel[$row['resultado']] ?? $row['resultado'],
-                $row['diagnostico'],
-                $row['conduta_inicial'],
-                $row['conduta_final'],
-                $row['medico_nome'],
-                $row['hora_entrada'],
-                $row['hora_saida'],
+                $row['especialidade'],
             ], ';');
         }
 

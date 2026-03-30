@@ -29,6 +29,7 @@ interface HistoricoItem {
   hora_saida: string | null
   resultado: string
   diagnostico: string | null
+  especialidade: string | null
   conduta_inicial: string | null
   conduta_final: string | null
   medico_nome: string | null
@@ -212,7 +213,7 @@ export default function RelatorioAtendimentos() {
           <td>${dataNasc}</td>
           <td>${item.cpf || '—'}</td>
           <td><span style="background:${color}18;color:${color};padding:1px 6px;border-radius:8px;font-size:7pt;font-weight:600">${RESULTADO_LABELS[item.resultado] || item.resultado}</span></td>
-          <td>${item.resultado.includes('encaminhamento') ? (item.diagnostico || '—') : '—'}</td>
+          <td>${item.especialidade || '\u2014'}</td>
         </tr>`
       }).join('')
 
@@ -291,7 +292,7 @@ export default function RelatorioAtendimentos() {
   <div class="doc-title-line"></div>
   <div class="periodo-info">${dadosLista.length} registros &nbsp;•&nbsp; <strong>Período:</strong> ${periodoTexto}${escola ? ` &nbsp;•&nbsp; <strong>Escola:</strong> ${escola}` : ''}</div>
   <table class="lista-table">
-    <thead><tr><th>Data</th><th>Paciente</th><th>Sexo</th><th>Nasc.</th><th>CPF</th><th>Desfecho</th><th>Diagnóstico / Especialidade</th></tr></thead>
+    <thead><tr><th>Data</th><th>Paciente</th><th>Sexo</th><th>Nasc.</th><th>CPF</th><th>Desfecho</th><th>Especialidade</th></tr></thead>
     <tbody>${listaRows}</tbody>
   </table>
   <div class="footer">NordcsCare — Saúde Ocular • Relatório gerado em ${hoje}</div>
@@ -310,7 +311,7 @@ export default function RelatorioAtendimentos() {
         return c
       }
 
-      // Helper: add canvas pages to PDF
+      // Helper: add canvas pages to PDF (for summary)
       const addCanvasPages = (pdf: jsPDF, canvas: HTMLCanvasElement, startNewPage: boolean) => {
         const pageWidth = pdf.internal.pageSize.getWidth()
         const pageHeight = pdf.internal.pageSize.getHeight()
@@ -337,14 +338,64 @@ export default function RelatorioAtendimentos() {
         }
       }
 
-      const [canvasSummary, canvasLista] = await Promise.all([
-        renderToCanvas(htmlSummary),
-        renderToCanvas(htmlLista),
-      ])
+      // Render list in row-aware pages to avoid cutting rows at page breaks
+      const renderListPages = async (pdf: jsPDF) => {
+        const pageWidth = pdf.internal.pageSize.getWidth()
+        const marginTop = 2
+        const ROWS_FIRST_PAGE = 28 // fewer rows on first page (has header+title)
+        const ROWS_OTHER_PAGES = 42
+
+        const totalRows = dadosLista.length
+        let offset = 0
+        let pageNum = 0
+
+        while (offset < totalRows) {
+          const rowsThisPage = pageNum === 0 ? ROWS_FIRST_PAGE : ROWS_OTHER_PAGES
+          const chunk = dadosLista.slice(offset, offset + rowsThisPage)
+          const chunkRows = chunk.map(item => {
+            const colors: Record<string, string> = { alta: '#48bb78', encaminhamento: '#ed8936', oculos: '#4299e1', oculos_encaminhamento: '#ed64a6' }
+            const color = colors[item.resultado] || '#a0aec0'
+            const sexoLabel = item.sexo === 'M' ? 'Masc.' : item.sexo === 'F' ? 'Fem.' : item.sexo || '\u2014'
+            const dataNasc = item.data_nascimento ? new Date(item.data_nascimento + 'T12:00:00').toLocaleDateString('pt-BR') : '\u2014'
+            return `<tr>
+              <td>${new Date(item.data_atendimento + 'T12:00:00').toLocaleDateString('pt-BR')}</td>
+              <td>${item.nome_completo}</td>
+              <td>${sexoLabel}</td>
+              <td>${dataNasc}</td>
+              <td>${item.cpf || '\u2014'}</td>
+              <td><span style="background:${color}18;color:${color};padding:1px 6px;border-radius:8px;font-size:7pt;font-weight:600">${RESULTADO_LABELS[item.resultado] || item.resultado}</span></td>
+              <td>${item.especialidade || '\u2014'}</td>
+            </tr>`
+          }).join('')
+
+          const isFirst = pageNum === 0
+          const isLast = offset + rowsThisPage >= totalRows
+          const pageHtml = `
+<div class="page">
+  ${isFirst ? headerBlock : ''}
+  ${isFirst ? `<div class="doc-title">Lista de Atendimentos</div><div class="doc-title-line"></div><div class="periodo-info">${dadosLista.length} registros &nbsp;•&nbsp; <strong>Per\u00edodo:</strong> ${periodoTexto}${escola ? ` &nbsp;•&nbsp; <strong>Escola:</strong> ${escola}` : ''}</div>` : ''}
+  <table class="lista-table">
+    <thead><tr><th>Data</th><th>Paciente</th><th>Sexo</th><th>Nasc.</th><th>CPF</th><th>Desfecho</th><th>Especialidade</th></tr></thead>
+    <tbody>${chunkRows}</tbody>
+  </table>
+  ${isLast ? `<div class="footer">NordcsCare \u2014 Sa\u00fade Ocular \u2022 Relat\u00f3rio gerado em ${hoje}</div>` : ''}
+</div>`
+
+          const canvas = await renderToCanvas(pageHtml)
+          pdf.addPage()
+          const pxPerMm = canvas.width / pageWidth
+          const imgH = canvas.height / pxPerMm
+          pdf.addImage(canvas.toDataURL('image/png'), 'PNG', 0, marginTop, pageWidth, imgH)
+          offset += rowsThisPage
+          pageNum++
+        }
+      }
+
+      const canvasSummary = await renderToCanvas(htmlSummary)
 
       const pdf = new jsPDF('p', 'mm', 'a4')
       addCanvasPages(pdf, canvasSummary, false)
-      addCanvasPages(pdf, canvasLista, true)
+      await renderListPages(pdf)
 
       const pdfBlob = pdf.output('blob')
       const url = URL.createObjectURL(pdfBlob)
@@ -580,7 +631,7 @@ export default function RelatorioAtendimentos() {
                   <th>CPF</th>
                   <th>Escola</th>
                   <th>Desfecho</th>
-                  <th>Diagnóstico / Especialidade</th>
+                  <th>Especialidade</th>
                 </tr>
               </thead>
               <tbody>
@@ -600,7 +651,7 @@ export default function RelatorioAtendimentos() {
                           {RESULTADO_LABELS[item.resultado] || item.resultado}
                         </span>
                       </td>
-                      <td className="rela-td-diag">{item.resultado.includes('encaminhamento') ? (item.diagnostico || '—') : '—'}</td>
+                      <td>{item.especialidade || '—'}</td>
                     </tr>
                   ))
                 )}

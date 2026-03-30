@@ -74,7 +74,7 @@ class ProntuarioController {
             $escola = $stmt->fetchColumn();
 
             // Buscar laudo (diagnostico, conduta)
-            $stmt = $db->prepare('SELECT diagnostico, conduta_inicial, conduta_final, medico_id FROM laudos WHERE paciente_id = :pid ORDER BY created_at DESC LIMIT 1');
+            $stmt = $db->prepare('SELECT diagnostico, conduta_inicial, conduta_final, medico_id, especialidade FROM laudos WHERE paciente_id = :pid ORDER BY created_at DESC LIMIT 1');
             $stmt->execute([':pid' => $pacienteId]);
             $laudo = $stmt->fetch();
 
@@ -113,7 +113,7 @@ class ProntuarioController {
                 // Atualizar registro existente
                 $stmt = $db->prepare(
                     'UPDATE atendimentos_historico SET hora_saida = :hora_saida, resultado = :resultado,
-                     diagnostico = :diagnostico, conduta_inicial = :conduta_ini, conduta_final = :conduta_fin,
+                     diagnostico = :diagnostico, especialidade = :especialidade, conduta_inicial = :conduta_ini, conduta_final = :conduta_fin,
                      medico_id = :medico_id, medico_nome = :medico_nome
                      WHERE paciente_id = :pid AND data_atendimento = CURDATE()'
                 );
@@ -121,6 +121,7 @@ class ProntuarioController {
                     ':hora_saida' => $horaSaida,
                     ':resultado' => $resultadoFinal,
                     ':diagnostico' => $laudo['diagnostico'] ?? null,
+                    ':especialidade' => $laudo['especialidade'] ?? null,
                     ':conduta_ini' => $laudo['conduta_inicial'] ?? null,
                     ':conduta_fin' => $laudo['conduta_final'] ?? null,
                     ':medico_id' => $medicoId,
@@ -131,8 +132,8 @@ class ProntuarioController {
             } else {
                 // Inserir novo registro
                 $stmt = $db->prepare(
-                    'INSERT INTO atendimentos_historico (paciente_id, escola, data_atendimento, hora_entrada, hora_saida, resultado, diagnostico, conduta_inicial, conduta_final, medico_id, medico_nome)
-                     VALUES (:pid, :escola, :data, :hora_entrada, :hora_saida, :resultado, :diagnostico, :conduta_ini, :conduta_fin, :medico_id, :medico_nome)'
+                    'INSERT INTO atendimentos_historico (paciente_id, escola, data_atendimento, hora_entrada, hora_saida, resultado, diagnostico, especialidade, conduta_inicial, conduta_final, medico_id, medico_nome)
+                     VALUES (:pid, :escola, :data, :hora_entrada, :hora_saida, :resultado, :diagnostico, :especialidade, :conduta_ini, :conduta_fin, :medico_id, :medico_nome)'
                 );
                 $stmt->execute([
                     ':pid' => $pacienteId,
@@ -142,6 +143,7 @@ class ProntuarioController {
                     ':hora_saida' => $horaSaida,
                     ':resultado' => $resultadoFinal,
                     ':diagnostico' => $laudo['diagnostico'] ?? null,
+                    ':especialidade' => $laudo['especialidade'] ?? null,
                     ':conduta_ini' => $laudo['conduta_inicial'] ?? null,
                     ':conduta_fin' => $laudo['conduta_final'] ?? null,
                     ':medico_id' => $medicoId,
@@ -270,13 +272,13 @@ class ProntuarioController {
         $hasAnamnese = !empty($anamnese['queixa_principal']) || !empty($anamnese['historico_ocular'])
                     || !empty($anamnese['historico_familiar']) || !empty($anamnese['alergias'])
                     || !empty($anamnese['medicamentos_em_uso']) || !empty($anamnese['cirurgias_anteriores'])
-                    || !empty($anamnese['observacoes']);
+                    || !empty($anamnese['historico_pessoal']) || !empty($anamnese['observacoes']);
         if ($hasAnamnese) {
             if ($existingAnamnese) {
                 $stmt = $db->prepare(
                     'UPDATE anamneses SET medico_id = :mid, queixa_principal = :queixa, historico_ocular = :hist_ocular,
                      historico_familiar = :hist_familiar, alergias = :alergias, medicamentos_em_uso = :medicamentos,
-                     cirurgias_anteriores = :cirurgias, observacoes = :obs WHERE id = :id'
+                     cirurgias_anteriores = :cirurgias, historico_pessoal = :hist_pessoal, observacoes = :obs WHERE id = :id'
                 );
                 $stmt->execute([
                     ':mid' => $medicoId,
@@ -286,6 +288,7 @@ class ProntuarioController {
                     ':alergias' => $anamnese['alergias'] ?? null,
                     ':medicamentos' => $anamnese['medicamentos_em_uso'] ?? null,
                     ':cirurgias' => $anamnese['cirurgias_anteriores'] ?? null,
+                    ':hist_pessoal' => $anamnese['historico_pessoal'] ?? null,
                     ':obs' => $anamnese['observacoes'] ?? null,
                     ':id' => $existingAnamnese['id'],
                 ]);
@@ -293,8 +296,8 @@ class ProntuarioController {
             } else {
                 $stmt = $db->prepare(
                     'INSERT INTO anamneses (paciente_id, medico_id, queixa_principal, historico_ocular,
-                     historico_familiar, alergias, medicamentos_em_uso, cirurgias_anteriores, observacoes)
-                     VALUES (:pid, :mid, :queixa, :hist_ocular, :hist_familiar, :alergias, :medicamentos, :cirurgias, :obs)'
+                     historico_familiar, alergias, medicamentos_em_uso, cirurgias_anteriores, historico_pessoal, observacoes)
+                     VALUES (:pid, :mid, :queixa, :hist_ocular, :hist_familiar, :alergias, :medicamentos, :cirurgias, :hist_pessoal, :obs)'
                 );
                 $stmt->execute([
                     ':pid' => $pacienteId,
@@ -305,6 +308,7 @@ class ProntuarioController {
                     ':alergias' => $anamnese['alergias'] ?? null,
                     ':medicamentos' => $anamnese['medicamentos_em_uso'] ?? null,
                     ':cirurgias' => $anamnese['cirurgias_anteriores'] ?? null,
+                    ':hist_pessoal' => $anamnese['historico_pessoal'] ?? null,
                     ':obs' => $anamnese['observacoes'] ?? null,
                 ]);
                 $ids['anamnese_id'] = (int)$db->lastInsertId();
@@ -359,9 +363,15 @@ class ProntuarioController {
         // --- Prescrição (upsert — máx 1 por paciente) ---
         $prescricao = $input['prescricao'] ?? [];
         // Sanitizar valores: remover caracteres de formatação (°, +) mantendo apenas números, ponto e sinal negativo
+        // Preservar 'plano' e 'pl' como texto válido
         foreach (['od_esferico','od_cilindrico','od_eixo','od_adicao','oe_esferico','oe_cilindrico','oe_eixo','oe_adicao','dp'] as $rxField) {
             if (isset($prescricao[$rxField]) && $prescricao[$rxField] !== '') {
-                $prescricao[$rxField] = preg_replace('/[^0-9.\-]/', '', $prescricao[$rxField]);
+                $lower = strtolower(trim($prescricao[$rxField]));
+                if ($lower === 'plano' || $lower === 'pl') {
+                    $prescricao[$rxField] = $lower;
+                } else {
+                    $prescricao[$rxField] = preg_replace('/[^0-9.\-]/', '', $prescricao[$rxField]);
+                }
             }
         }
         $hasRx = !empty($prescricao['od_esferico']) || !empty($prescricao['oe_esferico'])
@@ -457,7 +467,7 @@ class ProntuarioController {
             if ($existingLaudo) {
                 $stmt = $db->prepare(
                     'UPDATE laudos SET medico_id = :mid, diagnostico = :diagnostico,
-                     conduta_inicial = :conduta_ini, conduta_final = :conduta_fin, observacoes = :obs
+                     conduta_inicial = :conduta_ini, conduta_final = :conduta_fin, observacoes = :obs, especialidade = :especialidade
                      WHERE id = :id'
                 );
                 $stmt->execute([
@@ -466,13 +476,14 @@ class ProntuarioController {
                     ':conduta_ini' => $laudo['conduta_inicial'] ?: null,
                     ':conduta_fin' => $laudo['conduta_final'] ?: null,
                     ':obs' => $laudo['observacoes'] ?? null,
+                    ':especialidade' => $laudo['especialidade'] ?? null,
                     ':id' => $existingLaudo['id'],
                 ]);
                 $ids['laudo_id'] = (int)$existingLaudo['id'];
             } else {
                 $stmt = $db->prepare(
-                    'INSERT INTO laudos (paciente_id, medico_id, diagnostico, conduta_inicial, conduta_final, observacoes)
-                     VALUES (:pid, :mid, :diagnostico, :conduta_ini, :conduta_fin, :obs)'
+                    'INSERT INTO laudos (paciente_id, medico_id, diagnostico, conduta_inicial, conduta_final, observacoes, especialidade)
+                     VALUES (:pid, :mid, :diagnostico, :conduta_ini, :conduta_fin, :obs, :especialidade)'
                 );
                 $stmt->execute([
                     ':pid' => $pacienteId,
@@ -481,6 +492,7 @@ class ProntuarioController {
                     ':conduta_ini' => $laudo['conduta_inicial'] ?: null,
                     ':conduta_fin' => $laudo['conduta_final'] ?: null,
                     ':obs' => $laudo['observacoes'] ?? null,
+                    ':especialidade' => $laudo['especialidade'] ?? null,
                 ]);
                 $ids['laudo_id'] = (int)$db->lastInsertId();
             }

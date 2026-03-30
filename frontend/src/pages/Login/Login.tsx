@@ -1,7 +1,7 @@
 import { useState, type FormEvent } from 'react'
 import { useNavigate, Navigate } from 'react-router-dom'
 import { useAuth } from '../../contexts/AuthContext.tsx'
-import { User, Lock, LogIn, Eye, EyeOff, AlertCircle, Mail } from 'lucide-react'
+import { Lock, LogIn, Eye, EyeOff, AlertCircle, Mail } from 'lucide-react'
 import './Login.css'
 
 function getHomeRoute(role?: string) {

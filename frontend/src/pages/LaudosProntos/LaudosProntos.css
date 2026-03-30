@@ -400,6 +400,22 @@
   -webkit-box-orient: vertical;
 }
 
+.lp-card-especialidade {
+  font-size: 0.8rem;
+  margin-bottom: 4px;
+}
+
+.especialidade-tag {
+  display: inline-flex;
+  align-items: center;
+  font-size: 0.72rem;
+  font-weight: 700;
+  padding: 3px 10px;
+  border-radius: 20px;
+  background: rgba(103, 67, 165, 0.15);
+  color: #9b6dff;
+}
+
 .lp-card-conduta {
   font-size: 0.8rem;
 }

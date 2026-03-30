@@ -44,7 +44,7 @@ interface Prescricao {
 
 interface Laudo {
   id: number; diagnostico: string; conduta_inicial: string; conduta_final: string
-  observacoes: string; medico_nome: string; medico_role?: string; created_at: string
+  observacoes: string; especialidade: string; medico_nome: string; medico_role?: string; created_at: string
 }
 
 interface AcuidadeVisual {
@@ -78,13 +78,13 @@ interface ModeloLaudo {
       alergias: string; medicamentos_em_uso: string; cirurgias_anteriores: string; observacoes: string
     }
     laudo: {
-      diagnostico: string; conduta_inicial: string; conduta_final: string; observacoes: string
+      diagnostico: string; conduta_inicial: string; conduta_final: string; observacoes: string; especialidade: string
     }
   } | null
 }
 
 interface LaudoPronto {
-  id: number; titulo: string; diagnostico: string; conduta: string | null; observacoes: string | null
+  id: number; titulo: string; diagnostico: string; conduta: string | null; observacoes: string | null; especialidade: string | null
 }
 
 const TIPOS_EXAME = [
@@ -117,7 +117,7 @@ const CONDUTAS_FINAIS = [
 const emptyForm = {
   anamnese: {
     queixa_principal: '', historico_ocular: '', historico_familiar: '',
-    alergias: '', medicamentos_em_uso: '', cirurgias_anteriores: '', observacoes: '',
+    alergias: '', medicamentos_em_uso: '', cirurgias_anteriores: '', historico_pessoal: '', observacoes: '',
   },
   exames_observacoes: '',
   tonometria_od: '',
@@ -128,7 +128,7 @@ const emptyForm = {
     oe_esferico: '', oe_cilindrico: '', oe_eixo: '', oe_adicao: '',
     dp: '', acuidade_od: '', acuidade_oe: '', observacoes: '',
   },
-  laudo: { diagnostico: '', conduta_inicial: '', conduta_final: '', observacoes: '' },
+  laudo: { diagnostico: '', conduta_inicial: '', conduta_final: '', observacoes: '', especialidade: '' },
   acuidade: {
     sem_oculos_od: '', sem_oculos_oe: '', usa_oculos: false,
     com_oculos_od: '', com_oculos_oe: '', dilata: false, observacoes: '',
@@ -188,6 +188,7 @@ export default function Prontuario() {
         alergias: a.alergias || '',
         medicamentos_em_uso: a.medicamentos_em_uso || '',
         cirurgias_anteriores: a.cirurgias_anteriores || '',
+        historico_pessoal: a.historico_pessoal || '',
         observacoes: a.observacoes || '',
       }
     }
@@ -197,11 +198,12 @@ export default function Prontuario() {
       f.laudo.conduta_inicial = l.conduta_inicial || ''
       f.laudo.conduta_final = l.conduta_final || ''
       f.laudo.observacoes = l.observacoes || ''
+      f.laudo.especialidade = l.especialidade || ''
     }
     if (d.prescricoes.length > 0) {
       const p = d.prescricoes[0]
-      const fmtEsf = (v: any) => { if (!v && v !== 0) return ''; const n = parseFloat(v); return isNaN(n) ? '' : (n >= 0 ? '+' : '') + n.toFixed(2) }
-      const fmtCil = (v: any) => { if (!v && v !== 0) return ''; const n = parseFloat(v); return isNaN(n) ? '' : (n > 0 ? '-' : '') + n.toFixed(2) }
+      const fmtEsf = (v: any) => { if (!v && v !== 0) return ''; const s = String(v).trim().toLowerCase(); if (s === 'plano' || s === 'pl') return s; const n = parseFloat(v); return isNaN(n) ? '' : n.toFixed(2) }
+      const fmtCil = (v: any) => { if (!v && v !== 0) return ''; const s = String(v).trim().toLowerCase(); if (s === 'plano' || s === 'pl') return s; const n = parseFloat(v); return isNaN(n) ? '' : (n > 0 ? '-' : '') + n.toFixed(2) }
       const fmtEixo = (v: any) => { if (!v && v !== 0) return ''; const n = parseInt(v, 10); return isNaN(n) ? '' : n + '°' }
       f.prescricao = {
         tipo: p.tipo || 'oculos',
@@ -296,18 +298,13 @@ export default function Prontuario() {
       if (!form.anamnese.alergias.trim()) campos.push('anamnese_alergias')
       if (!form.anamnese.medicamentos_em_uso.trim()) campos.push('anamnese_medicamentos')
       if (!form.anamnese.cirurgias_anteriores.trim()) campos.push('anamnese_cirurgias')
+      if (!form.anamnese.historico_pessoal.trim()) campos.push('anamnese_historico_pessoal')
       if (!form.laudo.diagnostico.trim()) campos.push('laudo_diagnostico')
     }
     if (showForm === 'onibus') {
-      if (!form.prescricao.od_esferico.trim()) campos.push('od_esferico')
-      if (!form.prescricao.od_cilindrico.trim()) campos.push('od_cilindrico')
-      if (!form.prescricao.od_eixo.trim()) campos.push('od_eixo')
-      if (!form.prescricao.oe_esferico.trim()) campos.push('oe_esferico')
-      if (!form.prescricao.oe_cilindrico.trim()) campos.push('oe_cilindrico')
-      if (!form.prescricao.oe_eixo.trim()) campos.push('oe_eixo')
       if (!form.prescricao.observacoes.trim()) campos.push('tipo_lente')
-      if (!form.prescricao.acuidade_od.trim() || form.prescricao.acuidade_od === '__outro__') campos.push('acuidade_od')
-      if (!form.prescricao.acuidade_oe.trim() || form.prescricao.acuidade_oe === '__outro__') campos.push('acuidade_oe')
+      if (!form.prescricao.acuidade_od.trim()) campos.push('acuidade_od')
+      if (!form.prescricao.acuidade_oe.trim()) campos.push('acuidade_oe')
     }
     if (campos.length > 0) {
       setFieldErrors(new Set(campos))
@@ -326,8 +323,6 @@ export default function Prontuario() {
         payload.tonometria_oe = form.tonometria_oe
       } else if (showForm === 'onibus') {
         const rx = { ...form.prescricao }
-        if (rx.acuidade_od === '__outro__') rx.acuidade_od = ''
-        if (rx.acuidade_oe === '__outro__') rx.acuidade_oe = ''
         payload.prescricao = rx
         payload.laudo = form.laudo
       } else if (showForm === 'acuidade') {
@@ -360,13 +355,29 @@ export default function Prontuario() {
   }
 
   function updatePrescricao(field: string, value: string) {
-    if (field.includes('esferico') || field.includes('adicao') || field.includes('cilindrico')) {
-      const sign = field.includes('cilindrico') ? '-' : '+'
-      let nums = value.replace(/[^0-9]/g, '').slice(0, 3)
-      if (nums.length >= 2) {
-        nums = nums.slice(0, -2) + '.' + nums.slice(-2)
+    if (field.includes('esferico') || field.includes('adicao')) {
+      const lower = value.toLowerCase().replace(/[^a-z]/g, '')
+      if (lower && 'plano'.startsWith(lower)) {
+        value = lower
+      } else {
+        const sign = value.startsWith('-') ? '-' : value.startsWith('+') ? '+' : ''
+        let nums = value.replace(/[^0-9]/g, '').slice(0, 3)
+        if (nums.length >= 2) {
+          nums = nums.slice(0, -2) + '.' + nums.slice(-2)
+        }
+        value = nums ? sign + nums : sign || ''
       }
-      value = nums ? sign + nums : ''
+    } else if (field.includes('cilindrico')) {
+      const lower = value.toLowerCase().replace(/[^a-z]/g, '')
+      if (lower && 'plano'.startsWith(lower)) {
+        value = lower
+      } else {
+        let nums = value.replace(/[^0-9]/g, '').slice(0, 3)
+        if (nums.length >= 2) {
+          nums = nums.slice(0, -2) + '.' + nums.slice(-2)
+        }
+        value = nums ? '-' + nums : ''
+      }
     } else if (field.includes('eixo')) {
       const nums = value.replace(/[^0-9]/g, '').slice(0, 3)
       value = nums ? nums + '°' : ''
@@ -686,7 +697,7 @@ export default function Prontuario() {
               <label>Queixa Principal *</label>
               <textarea rows={2} value={form.anamnese.queixa_principal} onChange={e => updateAnamnese('queixa_principal', e.target.value)} placeholder="Descreva a queixa do paciente..." />
             </div>
-            <div className="form-row">
+            <div className="form-row form-row-3">
               <div className={`form-group${fieldErrors.has('anamnese_historico_ocular') ? ' field-error' : ''}`}>
                 <label>Histórico Ocular *</label>
                 <textarea rows={2} value={form.anamnese.historico_ocular} onChange={e => updateAnamnese('historico_ocular', e.target.value)} />
@@ -694,6 +705,10 @@ export default function Prontuario() {
               <div className={`form-group${fieldErrors.has('anamnese_historico_familiar') ? ' field-error' : ''}`}>
                 <label>Histórico Familiar *</label>
                 <textarea rows={2} value={form.anamnese.historico_familiar} onChange={e => updateAnamnese('historico_familiar', e.target.value)} />
+              </div>
+              <div className={`form-group${fieldErrors.has('anamnese_historico_pessoal') ? ' field-error' : ''}`}>
+                <label>Histórico Pessoal *</label>
+                <textarea rows={2} value={form.anamnese.historico_pessoal} onChange={e => updateAnamnese('historico_pessoal', e.target.value)} />
               </div>
             </div>
             <div className="form-row form-row-3">
@@ -711,7 +726,7 @@ export default function Prontuario() {
               </div>
             </div>
             <div className={`form-group${fieldErrors.has('anamnese_observacoes') ? ' field-error' : ''}`}>
-              <label>Observações (Anamnese) *</label>
+              <label>Observações</label>
               <textarea rows={1} value={form.anamnese.observacoes} onChange={e => updateAnamnese('observacoes', e.target.value)} />
             </div>
           </fieldset>
@@ -780,6 +795,7 @@ export default function Prontuario() {
                         diagnostico: lp.diagnostico,
                         conduta_inicial: lp.conduta || f.laudo.conduta_inicial,
                         observacoes: lp.observacoes || f.laudo.observacoes,
+                        especialidade: lp.especialidade || f.laudo.especialidade,
                       },
                     }))
                   }
@@ -893,28 +909,14 @@ export default function Prontuario() {
                 <div className="acuidade-eye-indicator od">OD</div>
                 <div className={`form-group${fieldErrors.has('acuidade_od') ? ' field-error' : ''}`}>
                   <label>Olho Direito *</label>
-                  <select value={ACUIDADE_OPTIONS.includes(form.prescricao.acuidade_od) || form.prescricao.acuidade_od === '' ? form.prescricao.acuidade_od : 'outro'} onChange={e => updatePrescricao('acuidade_od', e.target.value === 'outro' ? '__outro__' : e.target.value)}>
-                    <option value="">— Selecione —</option>
-                    {ACUIDADE_OPTIONS.map(o => <option key={o} value={o}>{o}</option>)}
-                    <option value="outro">Outro</option>
-                  </select>
-                  {!ACUIDADE_OPTIONS.includes(form.prescricao.acuidade_od) && form.prescricao.acuidade_od !== '' && (
-                    <input type="text" value={form.prescricao.acuidade_od === '__outro__' ? '' : form.prescricao.acuidade_od} onChange={e => updatePrescricao('acuidade_od', e.target.value || '__outro__')} placeholder="Digite a acuidade..." style={{marginTop:6}} />
-                  )}
+                  <input type="text" value={form.prescricao.acuidade_od || '20/'} onChange={e => { let v = e.target.value; if (!v.startsWith('20/')) v = '20/'; updatePrescricao('acuidade_od', v) }} placeholder="20/" />
                 </div>
               </div>
               <div className="acuidade-eye-card">
                 <div className="acuidade-eye-indicator oe">OE</div>
                 <div className={`form-group${fieldErrors.has('acuidade_oe') ? ' field-error' : ''}`}>
                   <label>Olho Esquerdo *</label>
-                  <select value={ACUIDADE_OPTIONS.includes(form.prescricao.acuidade_oe) || form.prescricao.acuidade_oe === '' ? form.prescricao.acuidade_oe : 'outro'} onChange={e => updatePrescricao('acuidade_oe', e.target.value === 'outro' ? '__outro__' : e.target.value)}>
-                    <option value="">— Selecione —</option>
-                    {ACUIDADE_OPTIONS.map(o => <option key={o} value={o}>{o}</option>)}
-                    <option value="outro">Outro</option>
-                  </select>
-                  {!ACUIDADE_OPTIONS.includes(form.prescricao.acuidade_oe) && form.prescricao.acuidade_oe !== '' && (
-                    <input type="text" value={form.prescricao.acuidade_oe === '__outro__' ? '' : form.prescricao.acuidade_oe} onChange={e => updatePrescricao('acuidade_oe', e.target.value || '__outro__')} placeholder="Digite a acuidade..." style={{marginTop:6}} />
-                  )}
+                  <input type="text" value={form.prescricao.acuidade_oe || '20/'} onChange={e => { let v = e.target.value; if (!v.startsWith('20/')) v = '20/'; updatePrescricao('acuidade_oe', v) }} placeholder="20/" />
                 </div>
               </div>
             </div>

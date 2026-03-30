@@ -23,22 +23,24 @@ class PacienteController {
         }
 
         if ($search !== '') {
+            $searchClean = preg_replace('/[\.\-\/]/', '', $search);
             $stmt = $db->prepare(
-                'SELECT * FROM pacientes WHERE (nome_completo LIKE :search OR cpf LIKE :search2 OR codigo LIKE :search3)' . $escolaCondition .
+                'SELECT * FROM pacientes WHERE (nome_completo LIKE :search OR REPLACE(REPLACE(cpf, ".", ""), "-", "") LIKE :search2 OR codigo LIKE :search3)' . $escolaCondition .
                 ' ORDER BY nome_completo ASC LIMIT :limit OFFSET :offset'
             );
             $searchTerm = "%$search%";
+            $searchTermClean = "%$searchClean%";
             $stmt->bindValue(':search', $searchTerm, PDO::PARAM_STR);
-            $stmt->bindValue(':search2', $searchTerm, PDO::PARAM_STR);
+            $stmt->bindValue(':search2', $searchTermClean, PDO::PARAM_STR);
             $stmt->bindValue(':search3', $searchTerm, PDO::PARAM_STR);
             $stmt->bindValue(':limit', $limit, PDO::PARAM_INT);
             $stmt->bindValue(':offset', $offset, PDO::PARAM_INT);
             $stmt->execute();
 
             $countStmt = $db->prepare(
-                'SELECT COUNT(*) FROM pacientes WHERE (nome_completo LIKE :search OR cpf LIKE :search2 OR codigo LIKE :search3)' . $escolaCondition
+                'SELECT COUNT(*) FROM pacientes WHERE (nome_completo LIKE :search OR REPLACE(REPLACE(cpf, ".", ""), "-", "") LIKE :search2 OR codigo LIKE :search3)' . $escolaCondition
             );
-            $countStmt->execute([':search' => $searchTerm, ':search2' => $searchTerm, ':search3' => $searchTerm]);
+            $countStmt->execute([':search' => $searchTerm, ':search2' => $searchTermClean, ':search3' => $searchTerm]);
         } else {
             $stmt = $db->prepare(
                 'SELECT * FROM pacientes WHERE 1=1' . $escolaCondition . ' ORDER BY nome_completo ASC LIMIT :limit OFFSET :offset'
@@ -113,9 +115,9 @@ class PacienteController {
 
         $db = Database::getInstance();
 
-        // Gerar código sequencial de 6 dígitos
+        // Gerar código sequencial de 6 dígitos (mínimo 280000)
         $stmt = $db->query('SELECT MAX(CAST(codigo AS UNSIGNED)) FROM pacientes');
-        $maxCode = (int)$stmt->fetchColumn();
+        $maxCode = max((int)$stmt->fetchColumn(), 279999);
         $novoCodigo = str_pad($maxCode + 1, 6, '0', STR_PAD_LEFT);
 
         // Verificar CPF duplicado se fornecido
@@ -306,9 +308,9 @@ class PacienteController {
         $importados = 0;
         $erros = [];
 
-        // Obter próximo código
+        // Obter próximo código (mínimo 280000)
         $stmt = $db->query('SELECT MAX(CAST(codigo AS UNSIGNED)) FROM pacientes');
-        $nextCode = (int)$stmt->fetchColumn() + 1;
+        $nextCode = max((int)$stmt->fetchColumn(), 279999) + 1;
 
         $insertStmt = $db->prepare(
             'INSERT INTO pacientes (codigo, nome_completo, cpf, data_nascimento, sexo, telefone, email, cep, rua, numero, complemento, bairro, cidade, estado, convenio, escola, responsavel, numero_convenio, observacoes)

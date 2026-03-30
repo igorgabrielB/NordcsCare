@@ -10,6 +10,7 @@ interface LaudoPronto {
   diagnostico: string
   conduta: string | null
   observacoes: string | null
+  especialidade: string | null
   ativo: number
   autor_nome: string
   created_at: string
@@ -21,10 +22,11 @@ interface FormData {
   diagnostico: string
   conduta: string
   observacoes: string
+  especialidade: string
   ativo: number
 }
 
-const emptyForm: FormData = { titulo: '', diagnostico: '', conduta: '', observacoes: '', ativo: 1 }
+const emptyForm: FormData = { titulo: '', diagnostico: '', conduta: '', observacoes: '', especialidade: '', ativo: 1 }
 
 const VARIAVEIS_TEMPLATE = [
   { value: '{{nome}}', label: 'Nome do Paciente' },
@@ -141,6 +143,7 @@ export default function LaudosProntos() {
       diagnostico: lp.diagnostico,
       conduta: lp.conduta || '',
       observacoes: lp.observacoes || '',
+      especialidade: lp.especialidade || '',
       ativo: lp.ativo,
     })
     setShowModal(true)
@@ -301,6 +304,11 @@ export default function LaudosProntos() {
                 </div>
                 <h3 className="lp-card-titulo">{lp.titulo}</h3>
                 <p className="lp-card-diagnostico">{lp.diagnostico}</p>
+                {lp.especialidade && (
+                  <div className="lp-card-especialidade">
+                    <span className="especialidade-tag">{lp.especialidade}</span>
+                  </div>
+                )}
                 {lp.conduta && (
                   <div className="lp-card-conduta">
                     <span className="conduta-tag" style={{ backgroundColor: cc.bg, color: cc.color }}>
@@ -377,6 +385,14 @@ export default function LaudosProntos() {
                   <select value={form.conduta} onChange={e => setForm({ ...form, conduta: e.target.value })}>
                     {CONDUTAS.map(c => <option key={c.value} value={c.value}>{c.label}</option>)}
                   </select>
+                </div>
+                <div className="form-group">
+                  <label>Especialidade</label>
+                  <input
+                    value={form.especialidade}
+                    onChange={e => setForm({ ...form, especialidade: e.target.value })}
+                    placeholder="Ex: Oftalmologia, Retina, Glaucoma..."
+                  />
                 </div>
                 {editId && (
                   <div className="form-group">

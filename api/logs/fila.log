@@ -9369,3 +9369,25 @@
 [2026-03-27 23:12:20] Removido paciente de 1 filas anteriores
 [2026-03-27 23:12:20] INSERT resultado: SUCCESS (created_at preservado: 2026-03-27 23:08:59)
 [2026-03-27 23:12:20] Histórico SALVO para paciente 1286 (resultado: alta)
+[2026-03-29 13:59:45] Conduta Inicial recebida: 'alta'
+[2026-03-29 13:59:45] Detectada conduta ALTA para paciente 4495
+[2026-03-29 13:59:45] Tentando mover paciente 4495 para fila 'altas'
+[2026-03-29 13:59:45] Removido paciente de 0 filas anteriores
+[2026-03-29 13:59:45] INSERT resultado: SUCCESS (created_at preservado: N/A)
+[2026-03-29 13:59:45] Histórico SALVO para paciente 4495 (resultado: alta)
+[2026-03-29 14:29:09] Conduta Inicial recebida: 'onibus'
+[2026-03-29 14:29:09] Detectada conduta ONIBUS para paciente 4495
+[2026-03-29 14:29:09] Tentando mover paciente 4495 para fila 'oculos' (saindo de 'laudos')
+[2026-03-29 14:29:09] Removido paciente de 1 filas anteriores
+[2026-03-29 14:29:09] INSERT resultado: SUCCESS (created_at preservado: 2026-03-29 13:59:45)
+[2026-03-29 14:30:54] Prescricao salva com conduta_final alta - movendo paciente 4495 para altas
+[2026-03-29 14:30:54] Tentando mover paciente 4495 para fila 'altas'
+[2026-03-29 14:30:54] Removido paciente de 1 filas anteriores
+[2026-03-29 14:30:54] INSERT resultado: SUCCESS (created_at preservado: 2026-03-29 13:59:45)
+[2026-03-29 14:30:54] Histórico ATUALIZADO para paciente 4495 (resultado: oculos)
+[2026-03-30 10:04:41] Conduta Inicial recebida: 'encaminhamento'
+[2026-03-30 10:04:41] Detectada conduta ENCAMINHAMENTO para paciente 2926
+[2026-03-30 10:04:41] Tentando mover paciente 2926 para fila 'encaminhamentos'
+[2026-03-30 10:04:41] Removido paciente de 1 filas anteriores
+[2026-03-30 10:04:41] INSERT resultado: SUCCESS (created_at preservado: N/A)
+[2026-03-30 10:04:41] Histórico SALVO para paciente 2926 (resultado: encaminhamento)
