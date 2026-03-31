@@ -598,13 +598,25 @@ class ProntuarioController {
         $user = Auth::requireAuth();
         $db = Database::getInstance();
 
-        $stmt = $db->prepare(
-            'SELECT m.id, m.nome, m.dados, u.nome AS autor_nome, u.role AS autor_role, m.created_at
-             FROM modelo_laudos m
-             JOIN usuarios u ON u.id = m.usuario_id
-             ORDER BY m.nome ASC'
-        );
-        $stmt->execute();
+        // Admin vê todos, demais veem só os seus
+        if ($user['role'] === 'admin') {
+            $stmt = $db->prepare(
+                'SELECT m.id, m.nome, m.dados, u.nome AS autor_nome, u.role AS autor_role, m.created_at
+                 FROM modelo_laudos m
+                 JOIN usuarios u ON u.id = m.usuario_id
+                 ORDER BY m.nome ASC'
+            );
+            $stmt->execute();
+        } else {
+            $stmt = $db->prepare(
+                'SELECT m.id, m.nome, m.dados, u.nome AS autor_nome, u.role AS autor_role, m.created_at
+                 FROM modelo_laudos m
+                 JOIN usuarios u ON u.id = m.usuario_id
+                 WHERE m.usuario_id = :uid
+                 ORDER BY m.nome ASC'
+            );
+            $stmt->execute([':uid' => $user['sub']]);
+        }
         $modelos = $stmt->fetchAll();
         foreach ($modelos as &$m) {
             $m['dados'] = $m['dados'] ? json_decode($m['dados'], true) : null;

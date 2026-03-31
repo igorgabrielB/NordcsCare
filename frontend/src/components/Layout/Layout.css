@@ -49,6 +49,8 @@
   position: relative;
   min-height: 56px;
   overflow: hidden;
+  text-decoration: none;
+  cursor: pointer;
 }
 
 .sidebar-logo-icon {

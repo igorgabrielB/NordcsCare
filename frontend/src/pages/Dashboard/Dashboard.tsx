@@ -57,28 +57,35 @@ export default function Dashboard() {
   const hoje = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`
   const [dataInicio, setDataInicio] = useState(hoje)
   const [dataFim, setDataFim] = useState(hoje)
+  const [horaInicio, setHoraInicio] = useState('')
+  const [horaFim, setHoraFim] = useState('')
 
-  const loadMetricas = useCallback(async (di: string, df: string) => {
+  const loadMetricas = useCallback(async (di: string, df: string, hi?: string, hf?: string) => {
     try {
-      const { data } = await api.get('/dashboard/metricas', { params: { data_inicio: di, data_fim: df } })
+      const params: Record<string, string> = { data_inicio: di, data_fim: df }
+      if (hi) params.hora_inicio = hi
+      if (hf) params.hora_fim = hf
+      const { data } = await api.get('/dashboard/metricas', { params })
       setMetricas(data)
     } catch { /* interceptor */ } finally { setLoading(false) }
   }, [])
 
   useEffect(() => {
-    loadMetricas(hoje, hoje)
-    const interval = setInterval(() => loadMetricas(hoje, hoje), 30000)
+    loadMetricas(dataInicio, dataFim, horaInicio, horaFim)
+    const interval = setInterval(() => loadMetricas(dataInicio, dataFim, horaInicio, horaFim), 30000)
     return () => clearInterval(interval)
-  }, [loadMetricas, hoje])
+  }, [loadMetricas, dataInicio, dataFim, horaInicio, horaFim])
 
   const handleFilterApply = () => {
     setLoading(true)
-    loadMetricas(dataInicio, dataFim)
+    loadMetricas(dataInicio, dataFim, horaInicio, horaFim)
   }
 
   const handleFilterToday = () => {
     setDataInicio(hoje)
     setDataFim(hoje)
+    setHoraInicio('')
+    setHoraFim('')
     setLoading(true)
     loadMetricas(hoje, hoje)
   }
@@ -123,17 +130,15 @@ export default function Dashboard() {
 
       <div className="dashboard-filter-bar">
         <Filter size={16} />
-        <label>
-          De
-          <input type="date" value={dataInicio} onChange={e => setDataInicio(e.target.value)} />
-        </label>
-        <label>
-          Até
-          <input type="date" value={dataFim} onChange={e => setDataFim(e.target.value)} />
-        </label>
+        <span className="filter-label">De</span>
+        <input type="date" className="filter-input" value={dataInicio} onChange={e => setDataInicio(e.target.value)} />
+        <input type="time" className="filter-input filter-time" value={horaInicio} onChange={e => setHoraInicio(e.target.value)} />
+        <span className="filter-label">Até</span>
+        <input type="date" className="filter-input" value={dataFim} onChange={e => setDataFim(e.target.value)} />
+        <input type="time" className="filter-input filter-time" value={horaFim} onChange={e => setHoraFim(e.target.value)} />
         <button className="btn-filter-apply" onClick={handleFilterApply}>Filtrar</button>
-        {(dataInicio !== hoje || dataFim !== hoje) && (
-          <button className="btn-filter-today" onClick={handleFilterToday}>Voltar para Hoje</button>
+        {(dataInicio !== hoje || dataFim !== hoje || horaInicio || horaFim) && (
+          <button className="btn-filter-today" onClick={handleFilterToday}>Hoje</button>
         )}
       </div>
 
@@ -180,6 +185,14 @@ export default function Dashboard() {
               <div className="dash-card-info">
                 <span className="dash-card-number">{metricas.total_altas}</span>
                 <span className="dash-card-label">Altas</span>
+              </div>
+            </div>
+
+            <div className="dash-card">
+              <div className="dash-card-icon" style={{ background: 'rgba(229,62,62,0.15)', color: '#fc8181' }}><Glasses size={24} /></div>
+              <div className="dash-card-info">
+                <span className="dash-card-number">{metricas.total_prescricoes}</span>
+                <span className="dash-card-label">Óculos</span>
               </div>
             </div>
 
