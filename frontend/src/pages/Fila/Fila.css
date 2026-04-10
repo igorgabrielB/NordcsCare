@@ -5,6 +5,19 @@
   gap: 16px;
 }
 
+.escola-badge-fila {
+  display: inline-flex;
+  align-items: center;
+  background: rgba(191, 171, 147, 0.15);
+  border: 1px solid var(--accent, #bfab93);
+  border-radius: var(--radius);
+  padding: 5px 12px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--accent, #bfab93);
+  white-space: nowrap;
+}
+
 .media-atendimento {
   display: inline-flex;
   align-items: center;

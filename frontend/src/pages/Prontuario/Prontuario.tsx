@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { useParams, Link } from 'react-router-dom'
 import api from '../../services/api'
 import { useAuth } from '../../contexts/AuthContext'
-import { User, X, Pencil, ClipboardList, Bus, Save, FileText, Microscope, Glasses, CheckCircle2, BookOpen, Eye, Trash2, Printer } from 'lucide-react'
+import { User, X, Pencil, ClipboardList, Bus, Save, FileText, Microscope, Glasses, CheckCircle2, BookOpen, Eye, Trash2, Printer, FileDown, Loader2, ChevronLeft, ChevronRight } from 'lucide-react'
 import { gerarReceitaOcular, gerarAtestado, gerarReceitaMedica, gerarRelatorio, formatTexto } from '../../services/pdfService'
 // import RedCheckExames from './RedCheckUpload'
 import './Prontuario.css'
@@ -26,7 +26,7 @@ interface Paciente {
 
 interface Anamnese {
   id: number; queixa_principal: string; historico_ocular: string; historico_familiar: string
-  alergias: string; medicamentos_em_uso: string; cirurgias_anteriores: string
+  alergias: string; medicamentos_em_uso: string; cirurgias_anteriores: string; historico_pessoal: string
   observacoes: string; medico_nome: string; medico_role?: string; created_at: string
 }
 
@@ -43,7 +43,7 @@ interface Prescricao {
 }
 
 interface Laudo {
-  id: number; diagnostico: string; conduta_inicial: string; conduta_final: string
+  id: number; diagnostico: string; diagnostico_od: string; diagnostico_oe: string; conduta_inicial: string; conduta_final: string
   observacoes: string; especialidade: string; medico_nome: string; medico_role?: string; created_at: string
 }
 
@@ -78,7 +78,7 @@ interface ModeloLaudo {
       alergias: string; medicamentos_em_uso: string; cirurgias_anteriores: string; observacoes: string
     }
     laudo: {
-      diagnostico: string; conduta_inicial: string; conduta_final: string; observacoes: string; especialidade: string
+      diagnostico: string; diagnostico_od?: string; diagnostico_oe?: string; conduta_inicial: string; conduta_final: string; observacoes: string; especialidade: string
     }
   } | null
 }
@@ -104,9 +104,9 @@ const ACUIDADE_OPTIONS = [
 
 const CONDUTAS_INICIAIS = [
   { value: 'alta', label: 'Alta' },
-  { value: 'onibus', label: 'Ônibus' },
+  { value: 'onibus', label: 'Refração' },
   { value: 'encaminhamento', label: 'Encaminhamento ao CEROF' },
-  { value: 'onibus_encaminhamento', label: 'Ônibus + Encaminhamento' },
+  { value: 'onibus_encaminhamento', label: 'Refração + Encaminhamento' },
 ]
 
 const CONDUTAS_FINAIS = [
@@ -122,13 +122,15 @@ const emptyForm = {
   exames_observacoes: '',
   tonometria_od: '',
   tonometria_oe: '',
+  biomicroscopia_od: '',
+  biomicroscopia_oe: '',
   prescricao: {
     tipo: 'oculos',
     od_esferico: '', od_cilindrico: '', od_eixo: '', od_adicao: '',
     oe_esferico: '', oe_cilindrico: '', oe_eixo: '', oe_adicao: '',
     dp: '', acuidade_od: '', acuidade_oe: '', observacoes: '',
   },
-  laudo: { diagnostico: '', conduta_inicial: '', conduta_final: '', observacoes: '', especialidade: '' },
+  laudo: { diagnostico: '', diagnostico_od: '', diagnostico_oe: '', conduta_inicial: '', conduta_final: '', observacoes: '', especialidade: '' },
   acuidade: {
     sem_oculos_od: '', sem_oculos_oe: '', usa_oculos: false,
     com_oculos_od: '', com_oculos_oe: '', dilata: false, observacoes: '',
@@ -142,6 +144,7 @@ export default function Prontuario() {
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [showForm, setShowForm] = useState<'laudos' | 'onibus' | 'acuidade' | null>(null)
+  const [laudoMode, setLaudoMode] = useState<'geral' | 'por_olho'>('geral')
   const [successMsg, setSuccessMsg] = useState('')
   const [errorMsg, setErrorMsg] = useState('')
   const [fieldErrors, setFieldErrors] = useState<Set<string>>(new Set())
@@ -154,6 +157,11 @@ export default function Prontuario() {
   const [pdfTexto, setPdfTexto] = useState('')
   const [modelosDoc, setModelosDoc] = useState<{ id: number; tipo: string; nome: string; conteudo: string }[]>([])
   const [laudosProntos, setLaudosProntos] = useState<LaudoPronto[]>([])
+  const [altaSemOculos, setAltaSemOculos] = useState(false)
+  const [spotExames, setSpotExames] = useState<{ key: string; filename: string; size: number; modified: string }[]>([])
+  const [spotLoading, setSpotLoading] = useState(false)
+  const [spotImages, setSpotImages] = useState<{ data: string; filename: string; modified: string }[]>([])
+  const [spotIdx, setSpotIdx] = useState(0)
 
   useEffect(() => {
     if (successMsg) {
@@ -195,6 +203,8 @@ export default function Prontuario() {
     if (d.laudos.length > 0) {
       const l = d.laudos[0]
       f.laudo.diagnostico = l.diagnostico || ''
+      f.laudo.diagnostico_od = l.diagnostico_od || ''
+      f.laudo.diagnostico_oe = l.diagnostico_oe || ''
       f.laudo.conduta_inicial = l.conduta_inicial || ''
       f.laudo.conduta_final = l.conduta_final || ''
       f.laudo.observacoes = l.observacoes || ''
@@ -202,8 +212,8 @@ export default function Prontuario() {
     }
     if (d.prescricoes.length > 0) {
       const p = d.prescricoes[0]
-      const fmtEsf = (v: any) => { if (!v && v !== 0) return ''; const s = String(v).trim().toLowerCase(); if (s === 'plano' || s === 'pl') return s; const n = parseFloat(v); return isNaN(n) ? '' : n.toFixed(2) }
-      const fmtCil = (v: any) => { if (!v && v !== 0) return ''; const s = String(v).trim().toLowerCase(); if (s === 'plano' || s === 'pl') return s; const n = parseFloat(v); return isNaN(n) ? '' : (n > 0 ? '-' : '') + n.toFixed(2) }
+      const fmtEsf = (v: any) => { if (!v && v !== 0) return ''; const s = String(v).trim().toLowerCase(); if (s === 'plano' || s === 'pl' || s === 'contra peso') return s; const n = parseFloat(v); if (isNaN(n)) return String(v).trim(); return (n > 0 ? '+' : '') + n.toFixed(2) }
+      const fmtCil = (v: any) => { if (!v && v !== 0) return ''; const s = String(v).trim().toLowerCase(); if (s === 'plano' || s === 'pl' || s === 'contra peso') return s; const n = parseFloat(v); return isNaN(n) ? String(v).trim() : (n > 0 ? '-' : '') + n.toFixed(2) }
       const fmtEixo = (v: any) => { if (!v && v !== 0) return ''; const n = parseInt(v, 10); return isNaN(n) ? '' : n + '°' }
       f.prescricao = {
         tipo: p.tipo || 'oculos',
@@ -237,6 +247,10 @@ export default function Prontuario() {
     const tonoOE = d.exames?.find((ex: any) => ex.tipo_exame === 'tonometria' && ex.olho === 'OE')
     if (tonoOD) f.tonometria_od = tonoOD.resultado || ''
     if (tonoOE) f.tonometria_oe = tonoOE.resultado || ''
+    const bioOD = d.exames?.find((ex: any) => ex.tipo_exame === 'biomicroscopia' && ex.olho === 'OD')
+    const bioOE = d.exames?.find((ex: any) => ex.tipo_exame === 'biomicroscopia' && ex.olho === 'OE')
+    if (bioOD) f.biomicroscopia_od = bioOD.resultado || ''
+    if (bioOE) f.biomicroscopia_oe = bioOE.resultado || ''
     return f
   }
 
@@ -250,8 +264,15 @@ export default function Prontuario() {
     if (data) {
       const f = buildFormFromExisting(data)
       setForm(f)
+      // Auto-detect mode from existing data
+      if (f.laudo.diagnostico_od || f.laudo.diagnostico_oe) {
+        setLaudoMode('por_olho')
+      } else {
+        setLaudoMode('geral')
+      }
     } else {
       setForm(structuredClone(emptyForm))
+      setLaudoMode('geral')
     }
     setShowForm(estacao)
   }
@@ -264,7 +285,40 @@ export default function Prontuario() {
     try { const r = await api.get('/laudos-prontos/ativos'); setLaudosProntos(r.data) } catch { /* ignore */ }
   }
 
-  useEffect(() => { loadProntuario(); loadModelos(); loadMedicoPerfil(); loadModelosDoc(); loadLaudosProntos() }, [pacienteId])
+  async function loadSpotVision() {
+    try {
+      setSpotLoading(true)
+      const { data: d } = await api.get(`/spotvision/${pacienteId}`)
+      if (!Array.isArray(d)) { setSpotExames([]); setSpotImages([]); setSpotIdx(0); return }
+      setSpotExames(d)
+      if (d.length > 0) {
+        const token = localStorage.getItem('token') || ''
+        const imgs: { data: string; filename: string; modified: string }[] = []
+        for (const exame of d) {
+          if (!exame.key) continue
+          const resImg = await fetch(`/api/spotvision/image?key=${encodeURIComponent(exame.key)}`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+          })
+          if (resImg.ok) {
+            const imgBlob = await resImg.blob()
+            const dataUrl = await new Promise<string>(resolve => {
+              const reader = new FileReader()
+              reader.onloadend = () => resolve(reader.result as string)
+              reader.readAsDataURL(imgBlob)
+            })
+            imgs.push({ data: dataUrl, filename: exame.filename, modified: exame.modified })
+          }
+        }
+        setSpotImages(imgs)
+        setSpotIdx(0)
+      } else {
+        setSpotImages([])
+        setSpotIdx(0)
+      }
+    } catch { setSpotExames([]); setSpotImages([]); setSpotIdx(0) } finally { setSpotLoading(false) }
+  }
+
+  useEffect(() => { loadProntuario(); loadModelos(); loadMedicoPerfil(); loadModelosDoc(); loadLaudosProntos(); loadSpotVision() }, [pacienteId])
 
   async function loadMedicoPerfil() {
     try {
@@ -299,12 +353,20 @@ export default function Prontuario() {
       if (!form.anamnese.medicamentos_em_uso.trim()) campos.push('anamnese_medicamentos')
       if (!form.anamnese.cirurgias_anteriores.trim()) campos.push('anamnese_cirurgias')
       if (!form.anamnese.historico_pessoal.trim()) campos.push('anamnese_historico_pessoal')
-      if (!form.laudo.diagnostico.trim()) campos.push('laudo_diagnostico')
+      if (laudoMode === 'por_olho') {
+        if (!form.laudo.diagnostico_od.trim()) campos.push('laudo_diagnostico_od')
+        if (!form.laudo.diagnostico_oe.trim()) campos.push('laudo_diagnostico_oe')
+      } else {
+        if (!form.laudo.diagnostico.trim()) campos.push('laudo_diagnostico')
+      }
     }
-    if (showForm === 'onibus') {
+    if (showForm === 'onibus' && !altaSemOculos) {
       if (!form.prescricao.observacoes.trim()) campos.push('tipo_lente')
       if (!form.prescricao.acuidade_od.trim()) campos.push('acuidade_od')
       if (!form.prescricao.acuidade_oe.trim()) campos.push('acuidade_oe')
+    }
+    if (showForm === 'onibus' && form.laudo.conduta_final === 'encaminhamento' && !form.laudo.especialidade.trim()) {
+      campos.push('laudo_especialidade')
     }
     if (campos.length > 0) {
       setFieldErrors(new Set(campos))
@@ -318,13 +380,22 @@ export default function Prontuario() {
       let payload: Record<string, any> = {}
       if (showForm === 'laudos') {
         payload.anamnese = form.anamnese
-        payload.laudo = form.laudo
+        payload.laudo = { ...form.laudo }
+        if (payload.laudo.conduta_inicial !== 'encaminhamento' && payload.laudo.conduta_inicial !== 'onibus_encaminhamento') payload.laudo.especialidade = ''
         payload.tonometria_od = form.tonometria_od
         payload.tonometria_oe = form.tonometria_oe
+        payload.biomicroscopia_od = form.biomicroscopia_od
+        payload.biomicroscopia_oe = form.biomicroscopia_oe
       } else if (showForm === 'onibus') {
         const rx = { ...form.prescricao }
         payload.prescricao = rx
-        payload.laudo = form.laudo
+        payload.laudo = { ...form.laudo }
+        if (payload.laudo.conduta_final !== 'encaminhamento') payload.laudo.especialidade = ''
+        if (altaSemOculos) {
+          payload.laudo.conduta_final = 'alta_sem_oculos'
+          payload.alta_sem_oculos = true
+          payload.laudo.especialidade = ''
+        }
       } else if (showForm === 'acuidade') {
         const ac = { ...form.acuidade }
         if (ac.sem_oculos_od === '__outro__') ac.sem_oculos_od = ''
@@ -336,6 +407,7 @@ export default function Prontuario() {
       await api.post(`/prontuario/${pacienteId}/atendimento`, payload)
       setForm(structuredClone(emptyForm))
       setShowForm(null)
+      setAltaSemOculos(false)
       setSuccessMsg('Atendimento salvo com sucesso!')
       setTimeout(() => setSuccessMsg(''), 4000)
       loadProntuario()
@@ -356,12 +428,15 @@ export default function Prontuario() {
 
   function updatePrescricao(field: string, value: string) {
     if (field.includes('esferico') || field.includes('adicao')) {
-      const lower = value.toLowerCase().replace(/[^a-z]/g, '')
-      if (lower && 'plano'.startsWith(lower)) {
-        value = lower
+      const lower = value.toLowerCase().replace(/[^a-z ]/g, '')
+      const trimmed = lower.trim()
+      if (trimmed && 'plano'.startsWith(trimmed) && !trimmed.startsWith('c')) {
+        value = trimmed
+      } else if (trimmed && 'contra peso'.startsWith(lower.replace(/ +/g, ' '))) {
+        value = lower.replace(/ +/g, ' ')
       } else {
         const sign = value.startsWith('-') ? '-' : value.startsWith('+') ? '+' : ''
-        let nums = value.replace(/[^0-9]/g, '').slice(0, 3)
+        let nums = value.replace(/[^0-9]/g, '').slice(0, 4)
         if (nums.length >= 2) {
           nums = nums.slice(0, -2) + '.' + nums.slice(-2)
         }
@@ -372,7 +447,7 @@ export default function Prontuario() {
       if (lower && 'plano'.startsWith(lower)) {
         value = lower
       } else {
-        let nums = value.replace(/[^0-9]/g, '').slice(0, 3)
+        let nums = value.replace(/[^0-9]/g, '').slice(0, 4)
         if (nums.length >= 2) {
           nums = nums.slice(0, -2) + '.' + nums.slice(-2)
         }
@@ -412,7 +487,7 @@ export default function Prontuario() {
         nome,
         dados: {
           anamnese: form.anamnese,
-          laudo: { diagnostico: form.laudo.diagnostico, conduta_inicial: form.laudo.conduta_inicial, observacoes: form.laudo.observacoes },
+          laudo: { diagnostico: form.laudo.diagnostico, diagnostico_od: form.laudo.diagnostico_od, diagnostico_oe: form.laudo.diagnostico_oe, conduta_inicial: form.laudo.conduta_inicial, observacoes: form.laudo.observacoes },
         },
       })
       setNomeModelo('')
@@ -456,12 +531,14 @@ export default function Prontuario() {
   }
 
   function condutaFinalLabel(val: string) {
+    if (val === 'alta_sem_oculos') return 'Alta sem Óculos'
     return CONDUTAS_FINAIS.find(c => c.value === val)?.label ?? val
   }
 
   function condutaColor(val: string) {
     switch (val) {
       case 'alta': return '#38a169'
+      case 'alta_sem_oculos': return '#e74c3c'
       case 'onibus': return '#3182ce'
       case 'encaminhamento': return '#d69e2e'
       case 'onibus_encaminhamento': return '#805ad5'
@@ -561,6 +638,7 @@ export default function Prontuario() {
               prescricao: prescricoes[0],
               laudo: laudos[0],
               acuidade: data.acuidade_visual,
+              spotVisionImage: spotImages[spotIdx]?.data || undefined,
             }
           )}>Relatório Completo</button>
         )}
@@ -760,8 +838,46 @@ export default function Prontuario() {
                 </div>
               </div>
             )}
-            <div className="redcheck-em-breve">
-              <span>📡 Integração com equipamentos — <strong>Em breve</strong></span>
+            {/* SpotVision Exams from S3 */}
+            <div className="exames-equipamentos-grid">
+              <div className="exame-equip-card">
+                <div className="exame-equip-header">
+                  <span><Eye size={14} /> SpotVision {spotImages.length > 1 && `(${spotIdx + 1}/${spotImages.length})`}</span>
+                  <button type="button" className="btn btn-sm" onClick={loadSpotVision} disabled={spotLoading}>
+                    {spotLoading ? <Loader2 size={14} className="spin" /> : '↻'}
+                  </button>
+                </div>
+                {spotLoading ? (
+                  <div className="exame-equip-loading"><Loader2 size={18} className="spin" /> Carregando...</div>
+                ) : spotImages.length > 0 ? (
+                  <>
+                    <div className="exame-equip-viewer">
+                      <img src={spotImages[spotIdx].data} alt="SpotVision" className="exame-equip-img" />
+                    </div>
+                    {spotImages.length > 1 && (
+                      <div className="spot-carousel-nav">
+                        <button className="spot-carousel-btn" disabled={spotIdx === 0} onClick={() => setSpotIdx(i => i - 1)}>
+                          <ChevronLeft size={16} />
+                        </button>
+                        <span className="spot-carousel-info">
+                          {spotImages[spotIdx].filename.replace(/\.pdf$/i, '')} — {new Date(spotImages[spotIdx].modified).toLocaleDateString('pt-BR')}
+                        </span>
+                        <button className="spot-carousel-btn" disabled={spotIdx === spotImages.length - 1} onClick={() => setSpotIdx(i => i + 1)}>
+                          <ChevronRight size={16} />
+                        </button>
+                      </div>
+                    )}
+                  </>
+                ) : (
+                  <div className="exame-equip-empty">Nenhum exame encontrado</div>
+                )}
+              </div>
+              <div className="exame-equip-card">
+                <div className="exame-equip-header">
+                  <span><Microscope size={14} /> Retinografia</span>
+                </div>
+                <div className="exame-equip-empty">Em breve</div>
+              </div>
             </div>
             <div className="form-row">
               <div className="form-group">
@@ -773,6 +889,16 @@ export default function Prontuario() {
                 <input type="text" inputMode="decimal" placeholder="ex: 14" value={form.tonometria_oe} onChange={e => setForm(f => ({ ...f, tonometria_oe: e.target.value }))} />
               </div>
             </div>
+            <div className="form-row">
+              <div className="form-group">
+                <label>Biomicroscopia OD</label>
+                <input type="text" placeholder="ex: Sem alterações" value={form.biomicroscopia_od} onChange={e => setForm(f => ({ ...f, biomicroscopia_od: e.target.value }))} />
+              </div>
+              <div className="form-group">
+                <label>Biomicroscopia OE</label>
+                <input type="text" placeholder="ex: Sem alterações" value={form.biomicroscopia_oe} onChange={e => setForm(f => ({ ...f, biomicroscopia_oe: e.target.value }))} />
+              </div>
+            </div>
             <div className="form-group">
               <label>Observações sobre Exames</label>
               <textarea rows={2} value={form.exames_observacoes} onChange={e => updateExamesObservacoes(e.target.value)} placeholder="Adicione qualquer observação pertinente aos exames realizados..." />
@@ -782,34 +908,77 @@ export default function Prontuario() {
           {/* --- Laudo (Conduta Inicial) --- */}
           <fieldset className="form-section">
             <legend><ClipboardList size={16} style={{verticalAlign:'middle',marginRight:6}} />Laudo</legend>
-            {laudosProntos.length > 0 && (
-              <div className="form-group" style={{maxWidth:400,marginBottom:16}}>
-                <label>Laudo</label>
-                <select onChange={e => {
-                  const lp = laudosProntos.find(x => x.id === Number(e.target.value))
-                  if (lp) {
-                    setForm(f => ({
-                      ...f,
-                      laudo: {
-                        ...f.laudo,
-                        diagnostico: lp.diagnostico,
-                        conduta_inicial: lp.conduta || f.laudo.conduta_inicial,
-                        observacoes: lp.observacoes || f.laudo.observacoes,
-                        especialidade: lp.especialidade || f.laudo.especialidade,
-                      },
-                    }))
-                  }
-                  e.target.value = ''
-                }}>
-                  <option value="">— Selecionar laudo —</option>
-                  {laudosProntos.map(lp => <option key={lp.id} value={lp.id}>{lp.titulo}</option>)}
-                </select>
+            <div className="laudo-mode-toggle">
+              <button type="button" className={`laudo-mode-btn${laudoMode === 'geral' ? ' active' : ''}`} onClick={() => setLaudoMode('geral')}>
+                <Eye size={14} /> Geral
+              </button>
+              <button type="button" className={`laudo-mode-btn${laudoMode === 'por_olho' ? ' active' : ''}`} onClick={() => setLaudoMode('por_olho')}>
+                <Eye size={14} /> Por Olho (OD / OE)
+              </button>
+            </div>
+            {laudoMode === 'geral' ? (
+              <>
+                {laudosProntos.length > 0 && (
+                  <div className="form-group" style={{maxWidth:400,marginBottom:16}}>
+                    <label>Laudo</label>
+                    <select onChange={e => {
+                      const lp = laudosProntos.find(x => x.id === Number(e.target.value))
+                      if (lp) {
+                        setForm(f => ({
+                          ...f,
+                          laudo: {
+                            ...f.laudo,
+                            diagnostico: lp.diagnostico,
+                            conduta_inicial: lp.conduta || f.laudo.conduta_inicial,
+                            observacoes: lp.observacoes || f.laudo.observacoes,
+                            especialidade: lp.especialidade || f.laudo.especialidade,
+                          },
+                        }))
+                      }
+                      e.target.value = ''
+                    }}>
+                      <option value="">— Selecionar laudo —</option>
+                      {laudosProntos.map(lp => <option key={lp.id} value={lp.id}>{lp.titulo}</option>)}
+                    </select>
+                  </div>
+                )}
+                <div className={`form-group${fieldErrors.has('laudo_diagnostico') ? ' field-error' : ''}`}>
+                  <label>Diagnóstico *</label>
+                  <textarea rows={2} value={form.laudo.diagnostico} onChange={e => updateLaudo('diagnostico', e.target.value)} placeholder="Descreva o diagnóstico..." />
+                </div>
+              </>
+            ) : (
+              <div className="laudo-olho-columns">
+                <div className={`laudo-olho-col${fieldErrors.has('laudo_diagnostico_od') ? ' field-error' : ''}`}>
+                  <label className="laudo-olho-label od">OD <span>Olho Direito</span></label>
+                  {laudosProntos.length > 0 && (
+                    <select className="laudo-olho-select" onChange={e => {
+                      const lp = laudosProntos.find(x => x.id === Number(e.target.value))
+                      if (lp) updateLaudo('diagnostico_od', lp.diagnostico)
+                      e.target.value = ''
+                    }}>
+                      <option value="">— Selecionar laudo OD —</option>
+                      {laudosProntos.map(lp => <option key={lp.id} value={lp.id}>{lp.titulo}</option>)}
+                    </select>
+                  )}
+                  <textarea rows={3} value={form.laudo.diagnostico_od} onChange={e => updateLaudo('diagnostico_od', e.target.value)} placeholder="Diagnóstico OD..." />
+                </div>
+                <div className={`laudo-olho-col${fieldErrors.has('laudo_diagnostico_oe') ? ' field-error' : ''}`}>
+                  <label className="laudo-olho-label oe">OE <span>Olho Esquerdo</span></label>
+                  {laudosProntos.length > 0 && (
+                    <select className="laudo-olho-select" onChange={e => {
+                      const lp = laudosProntos.find(x => x.id === Number(e.target.value))
+                      if (lp) updateLaudo('diagnostico_oe', lp.diagnostico)
+                      e.target.value = ''
+                    }}>
+                      <option value="">— Selecionar laudo OE —</option>
+                      {laudosProntos.map(lp => <option key={lp.id} value={lp.id}>{lp.titulo}</option>)}
+                    </select>
+                  )}
+                  <textarea rows={3} value={form.laudo.diagnostico_oe} onChange={e => updateLaudo('diagnostico_oe', e.target.value)} placeholder="Diagnóstico OE..." />
+                </div>
               </div>
             )}
-            <div className={`form-group${fieldErrors.has('laudo_diagnostico') ? ' field-error' : ''}`}>
-              <label>Diagnóstico *</label>
-              <textarea rows={2} value={form.laudo.diagnostico} onChange={e => updateLaudo('diagnostico', e.target.value)} placeholder="Descreva o diagnóstico..." />
-            </div>
             <div className="form-group">
               <label>Conduta Inicial</label>
               <div className="conduta-btn-group">
@@ -839,7 +1008,7 @@ export default function Prontuario() {
           <div className="station-header station-header-onibus">
             <div className="station-header-icon"><Bus size={22} /></div>
             <div className="station-header-text">
-              <h2>Estação Ônibus</h2>
+              <h2>Estação Refração</h2>
               <p>Refração e conduta final</p>
             </div>
           </div>
@@ -929,10 +1098,24 @@ export default function Prontuario() {
               <label>Conduta Final</label>
               <div className="conduta-btn-group">
                 {CONDUTAS_FINAIS.map(c => (
-                  <button key={c.value} type="button" className={`conduta-btn conduta-btn-${c.value}${form.laudo.conduta_final === c.value ? ' active' : ''}`} onClick={() => updateLaudo('conduta_final', form.laudo.conduta_final === c.value ? '' : c.value)}>{c.label}</button>
+                  <button key={c.value} type="button" className={`conduta-btn conduta-btn-${c.value}${form.laudo.conduta_final === c.value && !altaSemOculos ? ' active' : ''}`} onClick={() => { setAltaSemOculos(false); updateLaudo('conduta_final', form.laudo.conduta_final === c.value ? '' : c.value); if (c.value !== 'encaminhamento') updateLaudo('especialidade', '') }}>{c.label}</button>
                 ))}
+                <button type="button" className={`conduta-btn conduta-btn-alta_sem_oculos${altaSemOculos ? ' active' : ''}`} onClick={() => { setAltaSemOculos(!altaSemOculos); if (!altaSemOculos) { updateLaudo('conduta_final', 'alta'); updateLaudo('especialidade', '') } }}>Alta sem Óculos</button>
               </div>
             </div>
+            {form.laudo.conduta_final === 'encaminhamento' && !altaSemOculos && (
+              <div className={`form-group${fieldErrors.has('laudo_especialidade') ? ' field-error' : ''}`} style={{maxWidth:300}}>
+                <label>Especialidade (Encaminhamento) *</label>
+                <select value={form.laudo.especialidade} onChange={e => updateLaudo('especialidade', e.target.value)}>
+                  <option value="">— Selecione —</option>
+                  <option value="Glaucoma">Glaucoma</option>
+                  <option value="Retina">Retina</option>
+                  <option value="Estrabismo">Estrabismo</option>
+                  <option value="Catarata">Catarata</option>
+                  <option value="Cornea">Córnea</option>
+                </select>
+              </div>
+            )}
           </fieldset>
 
           <div className="form-actions-main">
@@ -1140,6 +1323,7 @@ export default function Prontuario() {
                         {a.queixa_principal && <p><strong>Queixa Principal:</strong> {a.queixa_principal}</p>}
                         {a.historico_ocular && <p><strong>Histórico Ocular:</strong> {a.historico_ocular}</p>}
                         {a.historico_familiar && <p><strong>Histórico Familiar:</strong> {a.historico_familiar}</p>}
+                        {a.historico_pessoal && <p><strong>Histórico Pessoal:</strong> {a.historico_pessoal}</p>}
                         {a.alergias && <p><strong>Alergias:</strong> {a.alergias}</p>}
                         {a.medicamentos_em_uso && <p><strong>Medicamentos:</strong> {a.medicamentos_em_uso}</p>}
                         {a.cirurgias_anteriores && <p><strong>Cirurgias Anteriores:</strong> {a.cirurgias_anteriores}</p>}
@@ -1154,7 +1338,7 @@ export default function Prontuario() {
                       <div className="laudo-section-header">
                         <h4><Microscope size={14} style={{verticalAlign:'middle',marginRight:4}} />Exames</h4>
                       </div>
-                      {exames.filter(ex => ex.tipo_exame !== 'tonometria').map(ex => (
+                      {exames.filter(ex => ex.tipo_exame !== 'tonometria' && ex.tipo_exame !== 'biomicroscopia').map(ex => (
                         <div key={ex.id} style={{marginBottom:6}}>
                           <p><strong>{tipoExameLabel(ex.tipo_exame)}</strong> — {ex.olho} {ex.resultado ? `— ${ex.resultado}` : ''}</p>
                           {ex.observacoes && <p style={{marginLeft:12, fontSize:'0.85rem'}}><em>Obs: {ex.observacoes}</em></p>}
@@ -1166,6 +1350,15 @@ export default function Prontuario() {
                         return (
                           <div style={{marginBottom:6}}>
                             <p><strong>Tonometria</strong>{tonoOD?.resultado ? ` — OD: ${tonoOD.resultado} mmHg` : ''}{tonoOE?.resultado ? ` / OE: ${tonoOE.resultado} mmHg` : ''}</p>
+                          </div>
+                        )
+                      })()}
+                      {exames.some(ex => ex.tipo_exame === 'biomicroscopia') && (() => {
+                        const bioOD = exames.find(ex => ex.tipo_exame === 'biomicroscopia' && ex.olho === 'OD')
+                        const bioOE = exames.find(ex => ex.tipo_exame === 'biomicroscopia' && ex.olho === 'OE')
+                        return (
+                          <div style={{marginBottom:6}}>
+                            <p><strong>Biomicroscopia</strong>{bioOD?.resultado ? ` — OD: ${bioOD.resultado}` : ''}{bioOE?.resultado ? ` / OE: ${bioOE.resultado}` : ''}</p>
                           </div>
                         )
                       })()}
@@ -1182,15 +1375,31 @@ export default function Prontuario() {
                           <span className="section-author">{rolePrefix(l.medico_role)} {l.medico_nome} — {new Date(l.created_at).toLocaleDateString('pt-BR')} {new Date(l.created_at).toLocaleTimeString('pt-BR', {hour:'2-digit',minute:'2-digit'})}</span>
                         </div>
                         {l.diagnostico && <p><strong>Diagnóstico:</strong> <span dangerouslySetInnerHTML={{ __html: formatTexto(l.diagnostico) }} /></p>}
+                        {(l.diagnostico_od || l.diagnostico_oe) && (
+                          <div className="laudo-olho-display">
+                            {l.diagnostico_od && <p><strong>Diagnóstico OD:</strong> <span dangerouslySetInnerHTML={{ __html: formatTexto(l.diagnostico_od) }} /></p>}
+                            {l.diagnostico_oe && <p><strong>Diagnóstico OE:</strong> <span dangerouslySetInnerHTML={{ __html: formatTexto(l.diagnostico_oe) }} /></p>}
+                          </div>
+                        )}
                         {l.conduta_inicial && <p><strong>Conduta Inicial:</strong> <span className="conduta-badge" style={{backgroundColor: condutaColor(l.conduta_inicial)}}>{condutaInicialLabel(l.conduta_inicial)}</span></p>}
+                        {l.especialidade && <p><strong>Especialidade:</strong> {l.especialidade}</p>}
                         {l.observacoes && <p><strong>Obs:</strong> <span dangerouslySetInnerHTML={{ __html: formatTexto(l.observacoes) }} /></p>}
                       </div>
                     )
                   })()}
 
                   {/* --- Prescrição --- */}
-                  {prescricoes.length > 0 && (() => {
+                  {prescricoes.length > 0 ? (() => {
                     const p = prescricoes[0]
+                    const fmtVal = (v: string | number | null | undefined, addPlus = false, addDeg = false) => {
+                      if (v == null || v === '') return '—'
+                      const str = String(v).trim()
+                      const sl = str.toLowerCase()
+                      if (sl === 'plano' || sl === 'pl' || sl === 'contra peso') return str
+                      if (addPlus) { const n = parseFloat(str); if (!isNaN(n) && n > 0 && !str.startsWith('+')) return '+' + str }
+                      if (addDeg && !str.includes('°')) return str + '°'
+                      return str
+                    }
                     return (
                       <div className="laudo-section">
                         <div className="laudo-section-header">
@@ -1202,18 +1411,26 @@ export default function Prontuario() {
                           <table>
                             <thead><tr><th></th><th>Esf</th><th>Cil</th><th>Eixo</th></tr></thead>
                             <tbody>
-                              <tr><td className="eye-label">OD</td><td>{p.od_esferico||'—'}</td><td>{p.od_cilindrico||'—'}</td><td>{p.od_eixo||'—'}</td></tr>
-                              <tr><td className="eye-label">OE</td><td>{p.oe_esferico||'—'}</td><td>{p.oe_cilindrico||'—'}</td><td>{p.oe_eixo||'—'}</td></tr>
+                              <tr><td className="eye-label">OD</td><td>{fmtVal(p.od_esferico, true)}</td><td>{fmtVal(p.od_cilindrico)}</td><td>{fmtVal(p.od_eixo, false, true)}</td></tr>
+                              <tr><td className="eye-label">OE</td><td>{fmtVal(p.oe_esferico, true)}</td><td>{fmtVal(p.oe_cilindrico)}</td><td>{fmtVal(p.oe_eixo, false, true)}</td></tr>
                             </tbody>
                           </table>
                         </div>
-                        {p.od_adicao && <p><strong>Adição:</strong> {p.od_adicao}</p>}
+                        {p.od_adicao && <p><strong>Adição:</strong> {fmtVal(p.od_adicao, true)}</p>}
                         {p.dp && <p><strong>DP:</strong> {p.dp} mm</p>}
                         {p.observacoes && <p><strong>Obs:</strong> {p.observacoes}</p>}
                         {laudos[0]?.conduta_final && <p><strong>Conduta Final:</strong> <span className="conduta-badge" style={{backgroundColor: condutaColor(laudos[0].conduta_final)}}>{condutaFinalLabel(laudos[0].conduta_final)}</span></p>}
                       </div>
                     )
-                  })()}
+                  })() : laudos[0]?.conduta_final === 'alta_sem_oculos' && (
+                    <div className="laudo-section">
+                      <div className="laudo-section-header">
+                        <h4><Glasses size={14} style={{verticalAlign:'middle',marginRight:4}} />Prescrição</h4>
+                      </div>
+                      <p><strong>Obs:</strong> Não houve necessidade de óculos.</p>
+                      <p><strong>Conduta Final:</strong> <span className="conduta-badge" style={{backgroundColor: condutaColor('alta_sem_oculos')}}>{condutaFinalLabel('alta_sem_oculos')}</span></p>
+                    </div>
+                  )}
                 </div>
               </div>
             </div>

@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, type FormEvent } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import api from '../../services/api.ts'
+import { useSchool } from '../../contexts/SchoolContext.tsx'
 import { User, Heart, Phone, MapPin, FileText } from 'lucide-react'
 import './Pacientes.css'
 
@@ -93,6 +94,7 @@ const emptyForm: PacienteForm = {
 export default function PacienteForm() {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
+  const { selectedSchool } = useSchool()
   const isEditing = !!id
 
   const formTopRef = useRef<HTMLDivElement>(null)
@@ -123,6 +125,13 @@ export default function PacienteForm() {
   useEffect(() => {
     api.get('/pacientes/escolas').then(res => setEscolas(res.data)).catch(() => {})
   }, [])
+
+  useEffect(() => {
+    if (!isEditing && selectedSchool) {
+      setForm(prev => ({ ...prev, escola: selectedSchool }))
+      setEscolaSearch(selectedSchool)
+    }
+  }, [isEditing, selectedSchool])
 
   useEffect(() => {
     if (isEditing) {

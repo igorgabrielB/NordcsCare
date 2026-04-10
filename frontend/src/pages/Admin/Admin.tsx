@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom'
-import { Users, Stethoscope, GraduationCap, FileText, School, Trash2, CalendarDays, ClipboardList, BookOpen, ShieldCheck, Settings, ChevronRight } from 'lucide-react'
+import { Users, Stethoscope, GraduationCap, FileText, School, Trash2, CalendarDays, ClipboardList, BookOpen, ShieldCheck, Settings, ChevronRight, Eye } from 'lucide-react'
 import './Admin.css'
 
 const adminSections = [
@@ -78,6 +78,18 @@ const adminSections = [
         desc: 'Gerenciar diagnósticos pré-definidos para laudos',
         icon: <BookOpen size={22} />,
         color: '#805ad5',
+      },
+    ],
+  },
+  {
+    title: 'Equipamentos',
+    items: [
+      {
+        to: '/admin/spotvision',
+        label: 'SpotVision',
+        desc: 'Gerenciar exames do S3 e corrigir vinculação de pacientes',
+        icon: <Eye size={22} />,
+        color: '#38a169',
       },
     ],
   },

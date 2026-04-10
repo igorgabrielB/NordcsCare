@@ -74,7 +74,7 @@ class ProntuarioController {
             $escola = $stmt->fetchColumn();
 
             // Buscar laudo (diagnostico, conduta)
-            $stmt = $db->prepare('SELECT diagnostico, conduta_inicial, conduta_final, medico_id, especialidade FROM laudos WHERE paciente_id = :pid ORDER BY created_at DESC LIMIT 1');
+            $stmt = $db->prepare('SELECT diagnostico, diagnostico_od, diagnostico_oe, conduta_inicial, conduta_final, medico_id, especialidade FROM laudos WHERE paciente_id = :pid ORDER BY created_at DESC LIMIT 1');
             $stmt->execute([':pid' => $pacienteId]);
             $laudo = $stmt->fetch();
 
@@ -360,17 +360,33 @@ class ProntuarioController {
             }
         }
 
+        // --- Biomicroscopia manual (OD / OE) — salva como exame ---
+        $bioOD = trim($input['biomicroscopia_od'] ?? '');
+        $bioOE = trim($input['biomicroscopia_oe'] ?? '');
+        if ($bioOD !== '' || $bioOE !== '') {
+            $db->prepare("DELETE FROM exames WHERE paciente_id = :pid AND tipo_exame = 'biomicroscopia'")->execute([':pid' => $pacienteId]);
+            $stmtBio = $db->prepare(
+                'INSERT INTO exames (paciente_id, medico_id, tipo_exame, olho, resultado) VALUES (:pid, :mid, :tipo, :olho, :resultado)'
+            );
+            if ($bioOD !== '') {
+                $stmtBio->execute([':pid' => $pacienteId, ':mid' => $medicoId, ':tipo' => 'biomicroscopia', ':olho' => 'OD', ':resultado' => $bioOD]);
+            }
+            if ($bioOE !== '') {
+                $stmtBio->execute([':pid' => $pacienteId, ':mid' => $medicoId, ':tipo' => 'biomicroscopia', ':olho' => 'OE', ':resultado' => $bioOE]);
+            }
+        }
+
         // --- Prescrição (upsert — máx 1 por paciente) ---
         $prescricao = $input['prescricao'] ?? [];
-        // Sanitizar valores: remover caracteres de formatação (°, +) mantendo apenas números, ponto e sinal negativo
+        // Sanitizar valores: remover caracteres de formatação (°) mantendo números, ponto e sinais
         // Preservar 'plano' e 'pl' como texto válido
         foreach (['od_esferico','od_cilindrico','od_eixo','od_adicao','oe_esferico','oe_cilindrico','oe_eixo','oe_adicao','dp'] as $rxField) {
             if (isset($prescricao[$rxField]) && $prescricao[$rxField] !== '') {
                 $lower = strtolower(trim($prescricao[$rxField]));
-                if ($lower === 'plano' || $lower === 'pl') {
+                if ($lower === 'plano' || $lower === 'pl' || $lower === 'contra peso') {
                     $prescricao[$rxField] = $lower;
                 } else {
-                    $prescricao[$rxField] = preg_replace('/[^0-9.\-]/', '', $prescricao[$rxField]);
+                    $prescricao[$rxField] = preg_replace('/[^0-9.\-+]/', '', $prescricao[$rxField]);
                 }
             }
         }
@@ -459,36 +475,66 @@ class ProntuarioController {
                 self::adicionarNaFilaAutomatico($db, $pacienteId, 'altas');
             }
             $prescricaoMoveuFila = true;
+
+            // Gravar médico da refração no histórico de atendimentos
+            $stmtRefMedico = $db->prepare('SELECT nome FROM usuarios WHERE id = :id');
+            $stmtRefMedico->execute([':id' => $medicoId]);
+            $refMedicoNome = $stmtRefMedico->fetchColumn();
+            $stmtRefHist = $db->prepare(
+                'UPDATE atendimentos_historico SET medico_refracao_id = :ref_id, medico_refracao_nome = :ref_nome
+                 WHERE paciente_id = :pid AND data_atendimento = CURDATE()'
+            );
+            $stmtRefHist->execute([
+                ':ref_id' => $medicoId,
+                ':ref_nome' => $refMedicoNome ?: null,
+                ':pid' => $pacienteId,
+            ]);
         }
 
         // --- Laudo (upsert — máx 1 por paciente) ---
         $laudo = $input['laudo'] ?? [];
+        $isOnibus = isset($input['prescricao']) && !isset($input['anamnese']);
         if (!empty($laudo['conduta_inicial']) || !empty($laudo['conduta_final']) || !empty($laudo['diagnostico'])) {
             if ($existingLaudo) {
-                $stmt = $db->prepare(
-                    'UPDATE laudos SET medico_id = :mid, diagnostico = :diagnostico,
-                     conduta_inicial = :conduta_ini, conduta_final = :conduta_fin, observacoes = :obs, especialidade = :especialidade
-                     WHERE id = :id'
-                );
-                $stmt->execute([
-                    ':mid' => $medicoId,
-                    ':diagnostico' => $laudo['diagnostico'] ?? null,
-                    ':conduta_ini' => $laudo['conduta_inicial'] ?: null,
-                    ':conduta_fin' => $laudo['conduta_final'] ?: null,
-                    ':obs' => $laudo['observacoes'] ?? null,
-                    ':especialidade' => $laudo['especialidade'] ?? null,
-                    ':id' => $existingLaudo['id'],
-                ]);
+                // Se vem da estação ônibus, atualizar apenas conduta_final (não sobrescrever o médico/diagnóstico original)
+                if ($isOnibus) {
+                    $stmt = $db->prepare(
+                        'UPDATE laudos SET conduta_final = :conduta_fin WHERE id = :id'
+                    );
+                    $stmt->execute([
+                        ':conduta_fin' => $laudo['conduta_final'] ?: null,
+                        ':id' => $existingLaudo['id'],
+                    ]);
+                } else {
+                    $stmt = $db->prepare(
+                        'UPDATE laudos SET medico_id = :mid, diagnostico = :diagnostico, diagnostico_od = :diagnostico_od, diagnostico_oe = :diagnostico_oe,
+                         conduta_inicial = :conduta_ini, conduta_final = :conduta_fin, observacoes = :obs, especialidade = :especialidade
+                         WHERE id = :id'
+                    );
+                    $stmt->execute([
+                        ':mid' => $medicoId,
+                        ':diagnostico' => $laudo['diagnostico'] ?? null,
+                        ':diagnostico_od' => $laudo['diagnostico_od'] ?? null,
+                        ':diagnostico_oe' => $laudo['diagnostico_oe'] ?? null,
+                        ':conduta_ini' => $laudo['conduta_inicial'] ?: null,
+                        ':conduta_fin' => $laudo['conduta_final'] ?: null,
+                        ':obs' => $laudo['observacoes'] ?? null,
+                        ':especialidade' => $laudo['especialidade'] ?? null,
+                        ':id' => $existingLaudo['id'],
+                    ]);
+                }
                 $ids['laudo_id'] = (int)$existingLaudo['id'];
             } else {
                 $stmt = $db->prepare(
-                    'INSERT INTO laudos (paciente_id, medico_id, diagnostico, conduta_inicial, conduta_final, observacoes, especialidade)
-                     VALUES (:pid, :mid, :diagnostico, :conduta_ini, :conduta_fin, :obs, :especialidade)'
+                    'INSERT INTO laudos (paciente_id, medico_id, diagnostico, diagnostico_od, diagnostico_oe, conduta_inicial, conduta_final, observacoes, especialidade)
+                     VALUES (:pid, :mid, :diagnostico, :diagnostico_od, :diagnostico_oe, :conduta_ini, :conduta_fin, :obs, :especialidade)'
                 );
                 $stmt->execute([
                     ':pid' => $pacienteId,
                     ':mid' => $medicoId,
                     ':diagnostico' => $laudo['diagnostico'] ?? null,
+                    ':diagnostico_od' => $laudo['diagnostico_od'] ?? null,
+                    ':diagnostico_oe' => $laudo['diagnostico_oe'] ?? null,
                     ':conduta_ini' => $laudo['conduta_inicial'] ?: null,
                     ':conduta_fin' => $laudo['conduta_final'] ?: null,
                     ':obs' => $laudo['observacoes'] ?? null,
@@ -500,10 +546,21 @@ class ProntuarioController {
             // --- Adicionar à fila de Altas ou Encaminhamentos (somente se a prescrição não já moveu) ---
             if (!$prescricaoMoveuFila) {
                 $condutaInicial = trim($laudo['conduta_inicial'] ?? '');
+                $condutaFinalLaudo = strtolower(trim($laudo['conduta_final'] ?? ''));
+                $altaSemOculos = !empty($input['alta_sem_oculos']);
                 $logFile = __DIR__ . '/../logs/fila.log';
-                file_put_contents($logFile, "[" . date('Y-m-d H:i:s') . "] Conduta Inicial recebida: '{$condutaInicial}'\n", FILE_APPEND);
+                file_put_contents($logFile, "[" . date('Y-m-d H:i:s') . "] Conduta Inicial recebida: '{$condutaInicial}', Conduta Final: '{$condutaFinalLaudo}', Alta sem óculos: " . ($altaSemOculos ? 'SIM' : 'NÃO') . "\n", FILE_APPEND);
                 
-                if (strtolower($condutaInicial) === 'alta') {
+                // Alta sem óculos: mover direto para altas (respeitando encaminhamento da conduta_inicial)
+                if ($altaSemOculos) {
+                    if (in_array(strtolower($condutaInicial), ['onibus_encaminhamento', 'encaminhamento'])) {
+                        file_put_contents($logFile, "[" . date('Y-m-d H:i:s') . "] Alta sem óculos mas conduta_inicial {$condutaInicial} - encaminhamento prevalece - movendo paciente {$pacienteId} para encaminhamentos\n", FILE_APPEND);
+                        self::adicionarNaFilaAutomatico($db, $pacienteId, 'encaminhamentos');
+                    } else {
+                        file_put_contents($logFile, "[" . date('Y-m-d H:i:s') . "] Alta sem óculos - movendo paciente {$pacienteId} para altas\n", FILE_APPEND);
+                        self::adicionarNaFilaAutomatico($db, $pacienteId, 'altas');
+                    }
+                } elseif (strtolower($condutaInicial) === 'alta') {
                     file_put_contents($logFile, "[" . date('Y-m-d H:i:s') . "] Detectada conduta ALTA para paciente {$pacienteId}\n", FILE_APPEND);
                     self::adicionarNaFilaAutomatico($db, $pacienteId, 'altas');
                 } elseif (strtolower($condutaInicial) === 'onibus') {

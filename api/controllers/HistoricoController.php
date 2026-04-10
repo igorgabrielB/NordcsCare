@@ -41,8 +41,9 @@ class HistoricoController {
             $params[':pid'] = (int)$_GET['paciente_id'];
         }
         if (!empty($_GET['medico_id'])) {
-            $where .= ' AND h.medico_id = :mid';
+            $where .= ' AND (h.medico_id = :mid OR h.medico_refracao_id = :mid2)';
             $params[':mid'] = (int)$_GET['medico_id'];
+            $params[':mid2'] = (int)$_GET['medico_id'];
         }
 
         // Contagem total
@@ -120,10 +121,34 @@ class HistoricoController {
         $stmt->execute($params);
         $mediaMinutos = $stmt->fetchColumn();
 
-        // Atendimentos por médico
+        // Atendimentos por médico (inclui médicos da refração)
+        // Query 1: médicos do laudo
         $stmt = $db->prepare("SELECT medico_nome, COUNT(*) as total FROM atendimentos_historico WHERE {$where} AND medico_nome IS NOT NULL GROUP BY medico_nome ORDER BY total DESC");
         $stmt->execute($params);
-        $porMedico = $stmt->fetchAll();
+        $laudoRows = $stmt->fetchAll();
+
+        // Query 2: médicos da refração (apenas quando diferente do médico do laudo)
+        $stmt = $db->prepare("SELECT medico_refracao_nome as medico_nome, COUNT(*) as total FROM atendimentos_historico WHERE {$where} AND medico_refracao_nome IS NOT NULL AND medico_refracao_nome != COALESCE(medico_nome, '') GROUP BY medico_refracao_nome ORDER BY total DESC");
+        $stmt->execute($params);
+        $refracaoRows = $stmt->fetchAll();
+
+        // Merge counts per medico
+        $medicoTotals = [];
+        foreach ($laudoRows as $row) {
+            $nome = $row['medico_nome'];
+            if (!isset($medicoTotals[$nome])) $medicoTotals[$nome] = 0;
+            $medicoTotals[$nome] += (int)$row['total'];
+        }
+        foreach ($refracaoRows as $row) {
+            $nome = $row['medico_nome'];
+            if (!isset($medicoTotals[$nome])) $medicoTotals[$nome] = 0;
+            $medicoTotals[$nome] += (int)$row['total'];
+        }
+        arsort($medicoTotals);
+        $porMedico = [];
+        foreach ($medicoTotals as $nome => $total) {
+            $porMedico[] = ['medico_nome' => $nome, 'total' => $total];
+        }
 
         echo json_encode([
             'total_atendimentos' => $totalAtendimentos,
@@ -178,7 +203,7 @@ class HistoricoController {
             $params[':resultado'] = $_GET['resultado'];
         }
 
-        $sql = "SELECT h.data_atendimento, h.hora_entrada, h.hora_saida, p.nome_completo, p.cpf, p.sexo, p.data_nascimento, h.escola, h.resultado, h.diagnostico, h.especialidade, h.conduta_inicial, h.conduta_final, h.medico_nome
+        $sql = "SELECT h.data_atendimento, h.hora_entrada, h.hora_saida, p.nome_completo, p.cpf, p.sexo, p.data_nascimento, h.escola, h.resultado, h.diagnostico, h.especialidade, h.conduta_inicial, h.conduta_final
                 FROM atendimentos_historico h
                 JOIN pacientes p ON p.id = h.paciente_id
                 WHERE {$where}

@@ -12,6 +12,7 @@ require_once __DIR__ . '/../controllers/ModeloDocumentoController.php';
 // require_once __DIR__ . '/../controllers/RedCheckController.php'; // RedCheck desativado temporariamente
 require_once __DIR__ . '/../controllers/LaudoProntoController.php';
 require_once __DIR__ . '/../controllers/HistoricoController.php';
+require_once __DIR__ . '/../controllers/SpotVisionController.php';
 
 class Router {
     private array $routes = [];
@@ -101,6 +102,18 @@ $router->add('GET', '/api/pacientes/{pacienteId}/uploads', [UploadController::cl
 $router->add('POST', '/api/pacientes/{pacienteId}/uploads', [UploadController::class, 'store']);
 $router->add('GET', '/api/uploads/{id}/download', [UploadController::class, 'download']);
 $router->add('DELETE', '/api/uploads/{id}', [UploadController::class, 'destroy']);
+
+// SpotVision (S3)
+$router->add('GET', '/api/spotvision/view', [SpotVisionController::class, 'visualizar']);
+$router->add('GET', '/api/spotvision/image', [SpotVisionController::class, 'imagem']);
+$router->add('GET', '/api/spotvision/{pacienteId}', [SpotVisionController::class, 'listar']);
+
+// SpotVision Admin
+$router->add('GET', '/api/spotvision-admin/all', [SpotVisionController::class, 'listarTodos']);
+$router->add('GET', '/api/spotvision-admin/ocr', [SpotVisionController::class, 'ocrExtrair']);
+$router->add('POST', '/api/spotvision-admin/ocr-batch', [SpotVisionController::class, 'ocrBatch']);
+$router->add('PUT', '/api/spotvision-admin/mapear', [SpotVisionController::class, 'mapear']);
+$router->add('DELETE', '/api/spotvision-admin/mapear', [SpotVisionController::class, 'removerMapeamento']);
 
 // Usuários
 $router->add('GET', '/api/usuarios', [UsuarioController::class, 'index']);

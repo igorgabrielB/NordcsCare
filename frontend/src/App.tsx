@@ -1,5 +1,6 @@
 import { MemoryRouter, Routes, Route, Navigate, useNavigate } from 'react-router-dom'
 import { AuthProvider } from './contexts/AuthContext.tsx'
+import { SchoolProvider } from './contexts/SchoolContext.tsx'
 import { useEffect } from 'react'
 import Layout from './components/Layout/Layout.tsx'
 import Login from './pages/Login/Login.tsx'
@@ -21,6 +22,7 @@ import RelatorioAtendimentos from './pages/RelatorioAtendimentos/RelatorioAtendi
 import ModelosDocumentos from './pages/ModelosDocumentos/ModelosDocumentos.tsx'
 import LaudosProntos from './pages/LaudosProntos/LaudosProntos.tsx'
 import GerenciamentoRoles from './pages/GerenciamentoRoles/GerenciamentoRoles.tsx'
+import SpotVisionAdmin from './pages/SpotVisionAdmin/SpotVisionAdmin.tsx'
 import Home from './pages/Home/Home.tsx'
 
 function AuthLogoutListener() {
@@ -38,6 +40,7 @@ export default function App() {
     <MemoryRouter initialEntries={['/login']}>
       <AuthLogoutListener />
       <AuthProvider>
+        <SchoolProvider>
         <Routes>
           {/* Public */}
           <Route path="/login" element={<Login />} />
@@ -72,11 +75,13 @@ export default function App() {
             <Route path="/admin/modelos-documentos" element={<ModelosDocumentos />} />
             <Route path="/admin/laudos-prontos" element={<LaudosProntos />} />
             <Route path="/admin/perfis" element={<GerenciamentoRoles />} />
+            <Route path="/admin/spotvision" element={<SpotVisionAdmin />} />
           </Route>
 
           {/* Default redirect */}
           <Route path="*" element={<Navigate to="/fila" replace />} />
         </Routes>
+        </SchoolProvider>
       </AuthProvider>
     </MemoryRouter>
   )

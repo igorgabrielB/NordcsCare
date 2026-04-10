@@ -2,7 +2,8 @@ import { useState, useEffect, useCallback } from 'react'
 import { Link } from 'react-router-dom'
 import api from '../../services/api.ts'
 import { useAuth } from '../../contexts/AuthContext.tsx'
-import { Eye, FileText, Glasses, Zap, Timer, Building2, User, ClipboardList, X, ArrowRight, CheckCircle2, Send, Lock, Search } from 'lucide-react'
+import { useSchool } from '../../contexts/SchoolContext.tsx'
+import { Eye, FileText, Glasses, Zap, Timer, Building2, User, ClipboardList, X, ArrowRight, CheckCircle2, Send, Lock, Search, School } from 'lucide-react'
 import './Fila.css'
 
 interface FilaItem {
@@ -19,6 +20,7 @@ interface FilaItem {
   nome_completo: string
   codigo: string | null
   convenio: string | null
+  escola: string | null
 }
 
 type FilaAgrupada = Record<string, FilaItem[]>
@@ -33,19 +35,22 @@ const ESTACOES = [
 
 export default function Fila() {
   const { user } = useAuth()
+  const { selectedSchool } = useSchool()
   const [fila, setFila] = useState<FilaAgrupada>({})
   const [loading, setLoading] = useState(true)
 
   const fetchFila = useCallback(async () => {
     try {
-      const res = await api.get('/fila')
+      const params: Record<string, string> = {}
+      if (selectedSchool) params.escola = selectedSchool
+      const res = await api.get('/fila', { params })
       setFila(res.data)
     } catch {
       console.error('Erro ao carregar fila')
     } finally {
       setLoading(false)
     }
-  }, [])
+  }, [selectedSchool])
 
   useEffect(() => {
     fetchFila()
@@ -133,6 +138,12 @@ export default function Fila() {
       <div className="page-header">
         <h1>Fila de Atendimento</h1>
         <div className="page-header-right">
+          {selectedSchool && (
+            <span className="escola-badge-fila">
+              <School size={14} style={{verticalAlign:'middle',marginRight:4}} />
+              {selectedSchool}
+            </span>
+          )}
           {getMediaAtendimento() && (
             <span className="media-atendimento">
               <Timer size={16} style={{verticalAlign:'middle',marginRight:4}} />
@@ -212,6 +223,7 @@ export default function Fila() {
 
                           {isExpanded && (
                             <div className="card-drawer">
+                              {item.escola && <div className="card-info"><School size={14} style={{verticalAlign:'middle',marginRight:4}} />{item.escola}</div>}
                               {item.codigo && <div className="card-info">Código: #{item.codigo}</div>}
                               {item.convenio && <div className="card-info"><Building2 size={14} style={{verticalAlign:'middle',marginRight:4}} />{item.convenio}</div>}
 
@@ -238,13 +250,15 @@ export default function Fila() {
                                         <Zap size={14} />{item.prioridade > 0 ? 'Prioridade' : 'Priorizar'}
                                       </button>
                                     )}
-                                    <button
-                                      className="btn-card btn-avancar"
-                                      onClick={() => avancarEstacao(item.id)}
-                                      title="Avançar para próxima estação"
-                                    >
-                                      <ArrowRight size={14} style={{verticalAlign:'middle',marginRight:3}} />Avançar
-                                    </button>
+                                    {user?.role === 'admin' && (
+                                      <button
+                                        className="btn-card btn-avancar"
+                                        onClick={() => avancarEstacao(item.id)}
+                                        title="Avançar para próxima estação"
+                                      >
+                                        <ArrowRight size={14} style={{verticalAlign:'middle',marginRight:3}} />Avançar
+                                      </button>
+                                    )}
                                   </>
                                 )}
 

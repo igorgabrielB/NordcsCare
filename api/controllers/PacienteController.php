@@ -12,13 +12,18 @@ class PacienteController {
 
         $search = $_GET['search'] ?? '';
         $escolaDia = isset($_GET['escola_dia']) && $_GET['escola_dia'] === '1';
+        $escolaParam = $_GET['escola'] ?? '';
         $page = max(1, (int)($_GET['page'] ?? 1));
         $limit = min(100, max(1, (int)($_GET['limit'] ?? 20)));
         $offset = ($page - 1) * $limit;
 
-        // Build escola_dia sub-condition
+        // Build escola filter conditions
         $escolaCondition = '';
-        if ($escolaDia) {
+        $escolaBinds = [];
+        if ($escolaParam) {
+            $escolaCondition = ' AND escola = :escola_filter';
+            $escolaBinds[':escola_filter'] = $escolaParam;
+        } elseif ($escolaDia) {
             $escolaCondition = ' AND escola IN (SELECT escola FROM escola_agenda WHERE data_atendimento = CURDATE())';
         }
 
@@ -33,6 +38,7 @@ class PacienteController {
             $stmt->bindValue(':search', $searchTerm, PDO::PARAM_STR);
             $stmt->bindValue(':search2', $searchTermClean, PDO::PARAM_STR);
             $stmt->bindValue(':search3', $searchTerm, PDO::PARAM_STR);
+            foreach ($escolaBinds as $k => $v) $stmt->bindValue($k, $v, PDO::PARAM_STR);
             $stmt->bindValue(':limit', $limit, PDO::PARAM_INT);
             $stmt->bindValue(':offset', $offset, PDO::PARAM_INT);
             $stmt->execute();
@@ -40,16 +46,18 @@ class PacienteController {
             $countStmt = $db->prepare(
                 'SELECT COUNT(*) FROM pacientes WHERE (nome_completo LIKE :search OR REPLACE(REPLACE(cpf, ".", ""), "-", "") LIKE :search2 OR codigo LIKE :search3)' . $escolaCondition
             );
-            $countStmt->execute([':search' => $searchTerm, ':search2' => $searchTermClean, ':search3' => $searchTerm]);
+            $countStmt->execute(array_merge([':search' => $searchTerm, ':search2' => $searchTermClean, ':search3' => $searchTerm], $escolaBinds));
         } else {
             $stmt = $db->prepare(
                 'SELECT * FROM pacientes WHERE 1=1' . $escolaCondition . ' ORDER BY nome_completo ASC LIMIT :limit OFFSET :offset'
             );
+            foreach ($escolaBinds as $k => $v) $stmt->bindValue($k, $v, PDO::PARAM_STR);
             $stmt->bindValue(':limit', $limit, PDO::PARAM_INT);
             $stmt->bindValue(':offset', $offset, PDO::PARAM_INT);
             $stmt->execute();
 
-            $countStmt = $db->query('SELECT COUNT(*) FROM pacientes WHERE 1=1' . $escolaCondition);
+            $countStmt = $db->prepare('SELECT COUNT(*) FROM pacientes WHERE 1=1' . $escolaCondition);
+            $countStmt->execute($escolaBinds ?: []);
         }
 
         $pacientes = $stmt->fetchAll();

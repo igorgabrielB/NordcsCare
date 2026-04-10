@@ -702,10 +702,11 @@ function pacienteHtml(p: PacientePdf): string {
 function fmtEsf(v: string | number | null | undefined): string {
   if (!v && v !== 0) return '—'
   const s = String(v).trim().toLowerCase()
-  if (s === 'plano' || s === 'pl') return s
+  if (s === 'plano' || s === 'pl' || s === 'contra peso') return s
   const n = parseFloat(s)
-  if (isNaN(n)) return '—'
-  return n.toFixed(2)
+  if (isNaN(n)) return String(v).trim()
+  const formatted = n.toFixed(2)
+  return (n > 0 && !formatted.startsWith('+')) ? '+' + formatted : formatted
 }
 function fmtCil(v: string | number | null | undefined): string {
   if (!v && v !== 0) return '—'
@@ -834,9 +835,10 @@ export async function gerarRelatorio(
     prescricao?: PrescricaoPdf
     laudo?: LaudoPdf
     acuidade?: AcuidadePdf | null
+    spotVisionImage?: string
   }
 ) {
-  const { anamnese, exames, prescricao, laudo, acuidade } = opts
+  const { anamnese, exames, prescricao, laudo, acuidade, spotVisionImage } = opts
 
   let sections = ''
 
@@ -886,6 +888,14 @@ export async function gerarRelatorio(
     if (laudo.diagnostico) sections += `<p><strong>Diagnóstico:</strong> ${formatTexto(laudo.diagnostico)}</p>`
     if (laudo.conduta_inicial) sections += `<p><strong>Conduta Inicial:</strong> ${condutaLabel(laudo.conduta_inicial)}</p>`
     if (laudo.observacoes) sections += `<p><strong>Obs:</strong> ${formatTexto(laudo.observacoes)}</p>`
+    sections += `</div>`
+  }
+
+  // Exames por Equipamento (SpotVision, Retinografia)
+  if (spotVisionImage) {
+    sections += `<div class="section"><h3>Exames por Equipamento</h3>`
+    sections += `<p><strong>SpotVision</strong></p>`
+    sections += `<div style="text-align:center;margin:8px 0"><img src="${spotVisionImage}" style="max-width:100%;border:1px solid #ddd;border-radius:4px" /></div>`
     sections += `</div>`
   }
 

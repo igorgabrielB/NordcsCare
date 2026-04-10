@@ -15,6 +15,7 @@ class FilaController {
 
         $db = Database::getInstance();
         $dataParam = $_GET['data'] ?? null;
+        $escolaParam = isset($_GET['escola']) ? trim($_GET['escola']) : null;
 
         // Subquery multi-dia: também exibe entradas não concluídas de dias anteriores
         // quando a escola do paciente está agendada para a data consultada.
@@ -48,30 +49,36 @@ class FilaController {
                 )
             )';
 
+        $escolaFilter = $escolaParam ? ' AND p.escola = :escola' : '';
+
         if ($dataParam) {
             $sql = "SELECT f.id, f.paciente_id, f.estacao, f.status, f.prioridade, f.observacoes,
                         f.atendente_id, f.created_at, f.updated_at,
-                        p.nome_completo, p.codigo, p.convenio,
+                        p.nome_completo, p.codigo, p.convenio, p.escola,
                         u.nome AS atendente_nome
                  FROM fila f
                  JOIN pacientes p ON p.id = f.paciente_id
                  LEFT JOIN usuarios u ON u.id = f.atendente_id
-                 WHERE {$sqlMultiDia}
+                 WHERE {$sqlMultiDia}{$escolaFilter}
                  ORDER BY f.prioridade DESC, f.created_at ASC";
+            $params = [':data' => $dataParam, ':data2' => $dataParam];
+            if ($escolaParam) $params[':escola'] = $escolaParam;
             $stmt = $db->prepare($sql);
-            $stmt->execute([':data' => $dataParam, ':data2' => $dataParam]);
+            $stmt->execute($params);
         } else {
             $sql = "SELECT f.id, f.paciente_id, f.estacao, f.status, f.prioridade, f.observacoes,
                         f.atendente_id, f.created_at, f.updated_at,
-                        p.nome_completo, p.codigo, p.convenio,
+                        p.nome_completo, p.codigo, p.convenio, p.escola,
                         u.nome AS atendente_nome
                  FROM fila f
                  JOIN pacientes p ON p.id = f.paciente_id
                  LEFT JOIN usuarios u ON u.id = f.atendente_id
-                 WHERE {$sqlMultiDiaCurdate}
+                 WHERE {$sqlMultiDiaCurdate}{$escolaFilter}
                  ORDER BY f.prioridade DESC, f.created_at ASC";
+            $params = [];
+            if ($escolaParam) $params[':escola'] = $escolaParam;
             $stmt = $db->prepare($sql);
-            $stmt->execute();
+            $stmt->execute($params ?: []);
         }
         $items = $stmt->fetchAll();
 

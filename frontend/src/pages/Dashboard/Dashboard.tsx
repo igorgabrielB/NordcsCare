@@ -1,12 +1,13 @@
 import { useState, useEffect, useCallback } from 'react'
 import { Link } from 'react-router-dom'
 import { useAuth } from '../../contexts/AuthContext.tsx'
+import { useSchool } from '../../contexts/SchoolContext.tsx'
 import api from '../../services/api.ts'
 import { Users, ClipboardList, Stethoscope, TrendingUp, Tag, Hash, School, CalendarDays, Calendar, Filter, ArrowRightLeft, CheckCircle, Eye, Glasses } from 'lucide-react'
 import './Dashboard.css'
 
 interface Metricas {
-  total_pacientes: number
+  total_matriculados: number
   pacientes_do_dia: number
   escolas_hoje: { escola: string; total: number }[]
   atendimentos_hoje: number
@@ -50,6 +51,7 @@ const CONDUTA_COLORS: Record<string, string> = {
 
 export default function Dashboard() {
   const { user } = useAuth()
+  const { selectedSchool } = useSchool()
   const [metricas, setMetricas] = useState<Metricas | null>(null)
   const [loading, setLoading] = useState(true)
 
@@ -65,10 +67,11 @@ export default function Dashboard() {
       const params: Record<string, string> = { data_inicio: di, data_fim: df }
       if (hi) params.hora_inicio = hi
       if (hf) params.hora_fim = hf
+      if (selectedSchool) params.escola = selectedSchool
       const { data } = await api.get('/dashboard/metricas', { params })
       setMetricas(data)
     } catch { /* interceptor */ } finally { setLoading(false) }
-  }, [])
+  }, [selectedSchool])
 
   useEffect(() => {
     loadMetricas(dataInicio, dataFim, horaInicio, horaFim)
@@ -113,6 +116,18 @@ export default function Dashboard() {
             </div>
           </div>
           <div className="dashboard-hero-right">
+            {selectedSchool ? (
+              <div className="dashboard-escola-ativa">
+                <span className="escola-ativa-dot" />
+                <School size={14} />
+                <span>{selectedSchool}</span>
+              </div>
+            ) : (
+              <div className="dashboard-escola-todas">
+                <School size={14} />
+                <span>Todas as escolas</span>
+              </div>
+            )}
             <div className="dashboard-hero-date">
               <Calendar size={15} />
               <span>
@@ -151,8 +166,8 @@ export default function Dashboard() {
             <Link to="/pacientes" className="dash-card dash-card-link">
               <div className="dash-card-icon" style={{ background: 'rgba(49,130,206,0.15)', color: '#63b3ed' }}><Users size={24} /></div>
               <div className="dash-card-info">
-                <span className="dash-card-number">{metricas.total_pacientes}</span>
-                <span className="dash-card-label">Pacientes Total</span>
+                <span className="dash-card-number">{metricas.total_matriculados}</span>
+                <span className="dash-card-label">Total Matriculados</span>
               </div>
             </Link>
 

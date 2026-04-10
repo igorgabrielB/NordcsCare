@@ -323,6 +323,179 @@
   color: var(--danger);
 }
 
+/* ===== School Dropdown ===== */
+.school-dropdown {
+  position: relative;
+}
+
+.school-dropdown-trigger {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--bg-elevated, #2e2e2e);
+  border: 1px solid var(--border, #444);
+  border-radius: 10px;
+  padding: 7px 12px 7px 10px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  color: var(--text-secondary, #aaa);
+  font-size: 0.82rem;
+  font-weight: 500;
+}
+
+.school-dropdown-trigger:hover {
+  border-color: var(--accent, #bfab93);
+  background: rgba(191, 171, 147, 0.06);
+}
+
+.school-dropdown-trigger.has-school {
+  border-color: var(--accent, #bfab93);
+  background: rgba(191, 171, 147, 0.1);
+  color: var(--accent, #bfab93);
+}
+
+.school-dropdown-icon {
+  flex-shrink: 0;
+  color: var(--accent, #bfab93);
+}
+
+.school-dropdown-label {
+  max-width: 160px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.school-dropdown-chevron {
+  flex-shrink: 0;
+  transition: transform 0.2s ease;
+  opacity: 0.6;
+}
+
+.school-dropdown-chevron.open {
+  transform: rotate(180deg);
+}
+
+.school-dropdown-menu {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  min-width: 240px;
+  max-height: 360px;
+  overflow-y: auto;
+  background: var(--bg-card, #1e1e1e);
+  border: 1px solid var(--border, #3a3a3a);
+  border-radius: 12px;
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.4), 0 0 0 1px rgba(255,255,255,0.03);
+  z-index: 1000;
+  padding: 6px;
+  animation: schoolDropdownIn 0.15s ease;
+}
+
+@keyframes schoolDropdownIn {
+  from { opacity: 0; transform: translateY(-6px) scale(0.97); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+.school-dropdown-header {
+  font-size: 0.7rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+  color: var(--text-secondary, #888);
+  padding: 8px 10px 4px;
+}
+
+.school-dropdown-section {
+  font-size: 0.68rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--accent, #bfab93);
+  padding: 6px 10px 2px;
+  opacity: 0.7;
+}
+
+.school-dropdown-divider {
+  height: 1px;
+  background: var(--border, #333);
+  margin: 4px 8px;
+}
+
+.school-dropdown-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 9px 10px;
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--text, #e0e0e0);
+  font-size: 0.84rem;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  text-align: left;
+}
+
+.school-dropdown-item:hover {
+  background: rgba(191, 171, 147, 0.1);
+}
+
+.school-dropdown-item.active {
+  background: rgba(191, 171, 147, 0.15);
+  color: var(--accent, #bfab93);
+  font-weight: 600;
+}
+
+.school-dropdown-item svg {
+  flex-shrink: 0;
+  opacity: 0.6;
+}
+
+.school-dropdown-item.active svg {
+  opacity: 1;
+  color: var(--accent, #bfab93);
+}
+
+.school-dropdown-badge {
+  margin-left: auto;
+  font-size: 0.72rem;
+  font-weight: 600;
+  background: rgba(191, 171, 147, 0.15);
+  color: var(--accent, #bfab93);
+  padding: 2px 7px;
+  border-radius: 6px;
+  min-width: 22px;
+  text-align: center;
+}
+
+.school-dropdown-footer {
+  padding: 4px 4px 2px;
+  border-top: 1px solid var(--border, #333);
+  margin-top: 4px;
+}
+
+.school-dropdown-clear {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+  padding: 7px 10px;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--text-secondary, #999);
+  font-size: 0.78rem;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.school-dropdown-clear:hover {
+  background: rgba(229, 62, 62, 0.1);
+  color: #fc8181;
+}
+
 /* ===== Footer ===== */
 .layout-footer {
   padding: 14px 24px;

@@ -9391,3 +9391,58 @@
 [2026-03-30 10:04:41] Removido paciente de 1 filas anteriores
 [2026-03-30 10:04:41] INSERT resultado: SUCCESS (created_at preservado: N/A)
 [2026-03-30 10:04:41] Histórico SALVO para paciente 2926 (resultado: encaminhamento)
+[2026-04-10 11:53:10] Conduta Inicial recebida: 'onibus', Conduta Final: '', Alta sem óculos: NÃO
+[2026-04-10 11:53:10] Detectada conduta ONIBUS para paciente 4551
+[2026-04-10 11:53:10] Tentando mover paciente 4551 para fila 'oculos' (saindo de 'laudos')
+[2026-04-10 11:53:10] Removido paciente de 1 filas anteriores
+[2026-04-10 11:53:10] INSERT resultado: SUCCESS (created_at preservado: 2026-04-10 11:32:42)
+[2026-04-10 11:53:45] Prescricao salva com conduta_final alta - movendo paciente 4551 para altas
+[2026-04-10 11:53:45] Tentando mover paciente 4551 para fila 'altas'
+[2026-04-10 11:53:45] Removido paciente de 1 filas anteriores
+[2026-04-10 11:53:45] INSERT resultado: SUCCESS (created_at preservado: 2026-04-10 11:32:42)
+[2026-04-10 11:53:45] Histórico SALVO para paciente 4551 (resultado: oculos)
+[2026-04-10 11:55:33] Prescricao salva com conduta_final alta - movendo paciente 4551 para altas
+[2026-04-10 11:55:33] Tentando mover paciente 4551 para fila 'altas'
+[2026-04-10 11:55:33] Removido paciente de 1 filas anteriores
+[2026-04-10 11:55:33] INSERT resultado: SUCCESS (created_at preservado: 2026-04-10 11:32:42)
+[2026-04-10 11:55:33] Histórico ATUALIZADO para paciente 4551 (resultado: oculos)
+[2026-04-10 11:55:43] Prescricao salva com conduta_final alta - movendo paciente 4551 para altas
+[2026-04-10 11:55:43] Tentando mover paciente 4551 para fila 'altas'
+[2026-04-10 11:55:43] Removido paciente de 1 filas anteriores
+[2026-04-10 11:55:43] INSERT resultado: SUCCESS (created_at preservado: 2026-04-10 11:32:42)
+[2026-04-10 11:55:43] Histórico ATUALIZADO para paciente 4551 (resultado: oculos)
+[2026-04-10 11:55:57] Prescricao salva com conduta_final alta - movendo paciente 4551 para altas
+[2026-04-10 11:55:57] Tentando mover paciente 4551 para fila 'altas'
+[2026-04-10 11:55:57] Removido paciente de 1 filas anteriores
+[2026-04-10 11:55:57] INSERT resultado: SUCCESS (created_at preservado: 2026-04-10 11:32:42)
+[2026-04-10 11:55:57] Histórico ATUALIZADO para paciente 4551 (resultado: oculos)
+[2026-04-10 12:02:40] Conduta Inicial recebida: 'onibus', Conduta Final: 'alta', Alta sem óculos: NÃO
+[2026-04-10 12:02:40] Detectada conduta ONIBUS para paciente 4551
+[2026-04-10 12:02:40] Tentando mover paciente 4551 para fila 'oculos' (saindo de 'laudos')
+[2026-04-10 12:02:40] Removido paciente de 1 filas anteriores
+[2026-04-10 12:02:40] INSERT resultado: SUCCESS (created_at preservado: 2026-04-10 11:32:42)
+[2026-04-10 12:17:03] Conduta Inicial recebida: 'onibus', Conduta Final: '', Alta sem óculos: NÃO
+[2026-04-10 12:17:03] Detectada conduta ONIBUS para paciente 4536
+[2026-04-10 12:17:03] Tentando mover paciente 4536 para fila 'oculos' (saindo de 'laudos')
+[2026-04-10 12:17:03] Removido paciente de 1 filas anteriores
+[2026-04-10 12:17:03] INSERT resultado: SUCCESS (created_at preservado: 2026-04-10 11:32:43)
+[2026-04-10 14:31:40] Prescricao salva com conduta_final alta - movendo paciente 4551 para altas
+[2026-04-10 14:31:40] Tentando mover paciente 4551 para fila 'altas'
+[2026-04-10 14:31:40] Removido paciente de 1 filas anteriores
+[2026-04-10 14:31:40] INSERT resultado: SUCCESS (created_at preservado: 2026-04-10 11:32:42)
+[2026-04-10 14:31:40] Histórico ATUALIZADO para paciente 4551 (resultado: oculos)
+[2026-04-10 14:32:22] Prescricao salva com conduta_final alta - movendo paciente 4551 para altas
+[2026-04-10 14:32:22] Tentando mover paciente 4551 para fila 'altas'
+[2026-04-10 14:32:22] Removido paciente de 1 filas anteriores
+[2026-04-10 14:32:22] INSERT resultado: SUCCESS (created_at preservado: 2026-04-10 11:32:42)
+[2026-04-10 14:32:23] Histórico ATUALIZADO para paciente 4551 (resultado: oculos)
+[2026-04-10 14:32:55] Prescricao salva com conduta_final alta - movendo paciente 4551 para altas
+[2026-04-10 14:32:55] Tentando mover paciente 4551 para fila 'altas'
+[2026-04-10 14:32:55] Removido paciente de 1 filas anteriores
+[2026-04-10 14:32:55] INSERT resultado: SUCCESS (created_at preservado: 2026-04-10 11:32:42)
+[2026-04-10 14:32:55] Histórico ATUALIZADO para paciente 4551 (resultado: oculos)
+[2026-04-10 14:39:29] Prescricao salva com conduta_final alta - movendo paciente 4536 para altas
+[2026-04-10 14:39:29] Tentando mover paciente 4536 para fila 'altas'
+[2026-04-10 14:39:29] Removido paciente de 1 filas anteriores
+[2026-04-10 14:39:29] INSERT resultado: SUCCESS (created_at preservado: 2026-04-10 11:32:43)
+[2026-04-10 14:39:29] Histórico SALVO para paciente 4536 (resultado: oculos)

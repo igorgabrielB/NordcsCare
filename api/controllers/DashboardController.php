@@ -13,33 +13,47 @@ class DashboardController {
         $dataFim = $_GET['data_fim'] ?? date('Y-m-d');
         $horaInicio = $_GET['hora_inicio'] ?? null;
         $horaFim = $_GET['hora_fim'] ?? null;
+        $escolaParam = isset($_GET['escola']) ? trim($_GET['escola']) : null;
 
         // Build datetime range for created_at queries
         $dtInicio = $dataInicio . ' ' . ($horaInicio ? $horaInicio . ':00' : '00:00:00');
         $dtFim    = $dataFim    . ' ' . ($horaFim    ? $horaFim    . ':59' : '23:59:59');
 
-        // Total pacientes
-        $totalPacientes = (int) $db->query('SELECT COUNT(*) FROM pacientes')->fetchColumn();
+        // Escola filter snippets
+        $escolaPacFilter = $escolaParam ? ' AND p.escola = :escola_p' : '';
+        $escolaAhFilter  = $escolaParam ? ' AND escola = :escola_ah' : '';
+        $escolaEncFilter = $escolaParam ? ' AND ah.escola = :escola_enc' : '';
+
+        // Total matriculados (sempre global, independente de escola)
+        $totalMatriculados = (int) $db->query('SELECT COUNT(*) FROM pacientes')->fetchColumn();
 
         // Pacientes do período (escolas agendadas no intervalo)
+        $diaParams = [':di' => $dataInicio, ':df' => $dataFim];
+        if ($escolaParam) $diaParams[':escola_p'] = $escolaParam;
         $stmtDia = $db->prepare(
             "SELECT COUNT(DISTINCT p.id) FROM pacientes p
              INNER JOIN escola_agenda ea ON ea.escola = p.escola
-             WHERE ea.data_atendimento BETWEEN :di AND :df"
+             WHERE ea.data_atendimento BETWEEN :di AND :df{$escolaPacFilter}"
         );
-        $stmtDia->execute([':di' => $dataInicio, ':df' => $dataFim]);
+        $stmtDia->execute($diaParams);
         $pacientesDoDia = (int) $stmtDia->fetchColumn();
 
         // Escolas agendadas no período
+        $escHojeParams = [':di' => $dataInicio, ':df' => $dataFim];
+        $escHojeFilter = '';
+        if ($escolaParam) {
+            $escHojeFilter = ' AND ea.escola = :escola_esc';
+            $escHojeParams[':escola_esc'] = $escolaParam;
+        }
         $stmtEscHoje = $db->prepare(
             "SELECT ea.escola, COUNT(DISTINCT p.id) as total
              FROM escola_agenda ea
              LEFT JOIN pacientes p ON p.escola = ea.escola
-             WHERE ea.data_atendimento BETWEEN :di AND :df
+             WHERE ea.data_atendimento BETWEEN :di AND :df{$escHojeFilter}
              GROUP BY ea.escola
              ORDER BY ea.escola"
         );
-        $stmtEscHoje->execute([':di' => $dataInicio, ':df' => $dataFim]);
+        $stmtEscHoje->execute($escHojeParams);
         $escolasHoje = $stmtEscHoje->fetchAll();
 
         // Atendimentos no período (usando atendimentos_historico)
@@ -48,14 +62,17 @@ class DashboardController {
         $ahParams = [':di' => $dataInicio, ':df' => $dataFim];
         if ($horaInicio) { $ahWhere .= " AND hora_entrada >= :hi"; $ahParams[':hi'] = $horaInicio; }
         if ($horaFim)    { $ahWhere .= " AND hora_entrada <= :hf"; $ahParams[':hf'] = $horaFim; }
-        if ($medicoId)   { $ahWhere .= " AND medico_id = :mid"; $ahParams[':mid'] = $medicoId; }
+        if ($medicoId)   { $ahWhere .= " AND (medico_id = :mid OR medico_refracao_id = :mid2)"; $ahParams[':mid'] = $medicoId; $ahParams[':mid2'] = $medicoId; }
+        if ($escolaParam){ $ahWhere .= $escolaAhFilter; $ahParams[':escola_ah'] = $escolaParam; }
 
         $stmt = $db->prepare("SELECT COUNT(*) FROM atendimentos_historico WHERE {$ahWhere}");
         $stmt->execute($ahParams);
         $atendimentosHoje = (int) $stmt->fetchColumn();
 
         // Pacientes na fila agora (inclui multi-dia: entradas de dia anterior se escola agendada hoje)
-        $stmtNaFila = $db->query(
+        $naFilaFilter = $escolaParam ? " AND p.escola = :escola_fila" : '';
+        $naFilaParams = $escolaParam ? [':escola_fila' => $escolaParam] : [];
+        $stmtNaFila = $db->prepare(
             "SELECT COUNT(*) FROM fila f
              JOIN pacientes p ON p.id = f.paciente_id
              WHERE f.status != 'concluido' AND f.estacao NOT IN ('altas', 'encaminhamentos')
@@ -70,13 +87,20 @@ class DashboardController {
                            WHERE ea2.escola = p.escola AND ea2.data_atendimento = CURDATE()
                        )
                    )
-               )"
+               ){$naFilaFilter}"
         );
+        $stmtNaFila->execute($naFilaParams ?: []);
         $naFila = (int) $stmtNaFila->fetchColumn();
 
         // Total exames no período
-        $stmtEx = $db->prepare('SELECT COUNT(*) FROM exames WHERE created_at BETWEEN :dti AND :dtf');
-        $stmtEx->execute([':dti' => $dtInicio, ':dtf' => $dtFim]);
+        $exParams = [':dti' => $dtInicio, ':dtf' => $dtFim];
+        $exFilter = '';
+        if ($escolaParam) {
+            $exFilter = " AND paciente_id IN (SELECT id FROM pacientes WHERE escola = :escola_ex)";
+            $exParams[':escola_ex'] = $escolaParam;
+        }
+        $stmtEx = $db->prepare("SELECT COUNT(*) FROM exames WHERE created_at BETWEEN :dti AND :dtf{$exFilter}");
+        $stmtEx->execute($exParams);
         $totalExames = (int) $stmtEx->fetchColumn();
 
         // Total prescrições (óculos) no período — da atendimentos_historico
@@ -85,13 +109,15 @@ class DashboardController {
         $totalPrescricoes = (int) $stmt->fetchColumn();
 
         // Total laudos no período
-        if ($medicoId) {
-            $stmtLa = $db->prepare('SELECT COUNT(*) FROM laudos WHERE created_at BETWEEN :dti AND :dtf AND medico_id = :mid');
-            $stmtLa->execute([':dti' => $dtInicio, ':dtf' => $dtFim, ':mid' => $medicoId]);
-        } else {
-            $stmtLa = $db->prepare('SELECT COUNT(*) FROM laudos WHERE created_at BETWEEN :dti AND :dtf');
-            $stmtLa->execute([':dti' => $dtInicio, ':dtf' => $dtFim]);
+        $laParams = [':dti' => $dtInicio, ':dtf' => $dtFim];
+        $laFilter = '';
+        if ($medicoId) { $laFilter .= ' AND medico_id = :mid'; $laParams[':mid'] = $medicoId; }
+        if ($escolaParam) {
+            $laFilter .= " AND paciente_id IN (SELECT id FROM pacientes WHERE escola = :escola_la)";
+            $laParams[':escola_la'] = $escolaParam;
         }
+        $stmtLa = $db->prepare("SELECT COUNT(*) FROM laudos WHERE created_at BETWEEN :dti AND :dtf{$laFilter}");
+        $stmtLa->execute($laParams);
         $totalLaudos = (int) $stmtLa->fetchColumn();
 
         // Total altas no período (só alta pura, sem óculos)
@@ -100,12 +126,18 @@ class DashboardController {
         $totalAltas = (int) $stmt->fetchColumn();
 
         // Condutas iniciais no período
+        $condParams = [':dti' => $dtInicio, ':dtf' => $dtFim];
+        $condFilter = '';
+        if ($escolaParam) {
+            $condFilter = " AND paciente_id IN (SELECT id FROM pacientes WHERE escola = :escola_cond)";
+            $condParams[':escola_cond'] = $escolaParam;
+        }
         $stmt = $db->prepare(
             "SELECT conduta_inicial, COUNT(*) as total FROM laudos
-             WHERE conduta_inicial IS NOT NULL AND created_at BETWEEN :dti AND :dtf
+             WHERE conduta_inicial IS NOT NULL AND created_at BETWEEN :dti AND :dtf{$condFilter}
              GROUP BY conduta_inicial"
         );
-        $stmt->execute([':dti' => $dtInicio, ':dtf' => $dtFim]);
+        $stmt->execute($condParams);
         $condutasIniciais = [];
         foreach ($stmt->fetchAll() as $row) {
             $condutasIniciais[$row['conduta_inicial']] = (int) $row['total'];
@@ -114,10 +146,10 @@ class DashboardController {
         // Condutas finais no período
         $stmt = $db->prepare(
             "SELECT conduta_final, COUNT(*) as total FROM laudos
-             WHERE conduta_final IS NOT NULL AND created_at BETWEEN :dti AND :dtf
+             WHERE conduta_final IS NOT NULL AND created_at BETWEEN :dti AND :dtf{$condFilter}
              GROUP BY conduta_final"
         );
-        $stmt->execute([':dti' => $dtInicio, ':dtf' => $dtFim]);
+        $stmt->execute($condParams);
         $condutasFinais = [];
         foreach ($stmt->fetchAll() as $row) {
             $condutasFinais[$row['conduta_final']] = (int) $row['total'];
@@ -128,6 +160,7 @@ class DashboardController {
         $porDiaExtra = '';
         if ($horaInicio) { $porDiaExtra .= " AND hora_entrada >= :hi"; $porDiaParams[':hi'] = $horaInicio; }
         if ($horaFim)    { $porDiaExtra .= " AND hora_entrada <= :hf"; $porDiaParams[':hf'] = $horaFim; }
+        if ($escolaParam){ $porDiaExtra .= $escolaAhFilter; $porDiaParams[':escola_ah'] = $escolaParam; }
         $stmt = $db->prepare(
             "SELECT data_atendimento as dia, COUNT(*) as total
              FROM atendimentos_historico
@@ -142,14 +175,23 @@ class DashboardController {
         }
 
         // Fila por estação (sempre atual, sem filtro de data)
-        $stmt = $db->query(
-            "SELECT estacao, status, COUNT(*) as total
-             FROM fila
-             WHERE status != 'concluido' AND estacao NOT IN ('altas', 'encaminhamentos')
-             GROUP BY estacao, status"
+        $filaEstParams = [];
+        $filaEstJoin = '';
+        $filaEstFilter = '';
+        if ($escolaParam) {
+            $filaEstJoin = ' JOIN pacientes p ON p.id = f.paciente_id';
+            $filaEstFilter = " AND p.escola = :escola_fest";
+            $filaEstParams[':escola_fest'] = $escolaParam;
+        }
+        $stmtFest = $db->prepare(
+            "SELECT f.estacao, f.status, COUNT(*) as total
+             FROM fila f{$filaEstJoin}
+             WHERE f.status != 'concluido' AND f.estacao NOT IN ('altas', 'encaminhamentos'){$filaEstFilter}
+             GROUP BY f.estacao, f.status"
         );
+        $stmtFest->execute($filaEstParams ?: []);
         $filaPorEstacao = [];
-        foreach ($stmt->fetchAll() as $row) {
+        foreach ($stmtFest->fetchAll() as $row) {
             $filaPorEstacao[] = [
                 'estacao' => $row['estacao'],
                 'status' => $row['status'],
@@ -167,6 +209,7 @@ class DashboardController {
         $encWhereExtra = '';
         if ($horaInicio) { $encWhereExtra .= " AND ah.hora_entrada >= :hi"; $encWhereParams[':hi'] = $horaInicio; }
         if ($horaFim)    { $encWhereExtra .= " AND ah.hora_entrada <= :hf"; $encWhereParams[':hf'] = $horaFim; }
+        if ($escolaParam){ $encWhereExtra .= $escolaEncFilter; $encWhereParams[':escola_enc'] = $escolaParam; }
         $stmtEnc = $db->prepare(
             "SELECT ah.paciente_id, p.nome_completo, ah.escola, ah.diagnostico, ah.conduta_inicial, ah.conduta_final, ah.observacoes, ah.created_at
              FROM atendimentos_historico ah
@@ -180,20 +223,26 @@ class DashboardController {
 
         // Próximas escolas agendadas (a partir de hoje, máx 15)
         $hoje = date('Y-m-d');
+        $agendaParams = [':hoje' => $hoje];
+        $agendaFilter = '';
+        if ($escolaParam) {
+            $agendaFilter = ' AND ea.escola = :escola_agenda';
+            $agendaParams[':escola_agenda'] = $escolaParam;
+        }
         $stmtAgenda = $db->prepare(
             "SELECT ea.escola, ea.data_atendimento, COUNT(p.id) as total_alunos
              FROM escola_agenda ea
              LEFT JOIN pacientes p ON p.escola = ea.escola
-             WHERE ea.data_atendimento >= :hoje
+             WHERE ea.data_atendimento >= :hoje{$agendaFilter}
              GROUP BY ea.escola, ea.data_atendimento
              ORDER BY ea.data_atendimento ASC, ea.escola ASC
              LIMIT 15"
         );
-        $stmtAgenda->execute([':hoje' => $hoje]);
+        $stmtAgenda->execute($agendaParams);
         $escolasAgendadas = $stmtAgenda->fetchAll();
 
         echo json_encode([
-            'total_pacientes' => $totalPacientes,
+            'total_matriculados' => $totalMatriculados,
             'pacientes_do_dia' => $pacientesDoDia,
             'escolas_hoje' => $escolasHoje,
             'atendimentos_hoje' => $atendimentosHoje,

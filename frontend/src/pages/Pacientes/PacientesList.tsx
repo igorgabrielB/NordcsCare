@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import api from '../../services/api.ts'
+import { useSchool } from '../../contexts/SchoolContext.tsx'
 import { Search, ClipboardList, Pencil, Trash2, MapPin, Users, School, Zap } from 'lucide-react'
 import './Pacientes.css'
 
@@ -42,6 +43,7 @@ interface FilaInfo {
 
 export default function PacientesList() {
   const [searchParams] = useSearchParams()
+  const { selectedSchool } = useSchool()
   const [pacientes, setPacientes] = useState<Paciente[]>([])
   const [pagination, setPagination] = useState<PaginationData>({ page: 1, limit: 20, total: 0, totalPages: 0 })
   const [search, setSearch] = useState('')
@@ -59,7 +61,8 @@ export default function PacientesList() {
     try {
       const params: Record<string, string | number> = { page, limit: 20 }
       if (searchTerm) params.search = searchTerm
-      if (filterEscolaDia) params.escola_dia = 1
+      if (selectedSchool) params.escola = selectedSchool
+      else if (filterEscolaDia) params.escola_dia = 1
       const res = await api.get('/pacientes', { params })
       setPacientes(res.data.data)
       setPagination(res.data.pagination)
@@ -68,7 +71,7 @@ export default function PacientesList() {
     } finally {
       setLoading(false)
     }
-  }, [escolaDia])
+  }, [escolaDia, selectedSchool])
 
   const checkFilaStatus = useCallback(async () => {
     try {
