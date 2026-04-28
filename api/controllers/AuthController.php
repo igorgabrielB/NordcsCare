@@ -15,7 +15,7 @@ class AuthController {
         }
 
         $db = Database::getInstance();
-        $stmt = $db->prepare('SELECT id, nome, email, login, senha, role, ativo FROM usuarios WHERE email = :email');
+        $stmt = $db->prepare('SELECT id, tenant_id, nome, email, login, senha, role, ativo FROM usuarios WHERE email = :email');
         $stmt->execute([':email' => $input['email']]);
         $user = $stmt->fetch();
 
@@ -33,6 +33,9 @@ class AuthController {
 
         $token = Auth::generateToken($user);
 
+        // Definir tenant para o audit log
+        Tenant::set((int)$user['tenant_id']);
+
         AuditLog::registrar('login', 'usuario', (int)$user['id'], 'Login realizado', [
             'sub' => (int)$user['id'], 'nome' => $user['nome'], 'role' => $user['role']
         ]);
@@ -46,16 +49,18 @@ class AuthController {
             'token' => $token,
             'user' => [
                 'id' => (int)$user['id'],
+                'tenant_id' => (int)$user['tenant_id'],
                 'nome' => $user['nome'],
                 'email' => $user['email'],
                 'login' => $user['login'],
                 'role' => $user['role'],
-            ]
+            ],
+            'tenants' => self::getUserTenants((int)$user['id']),
         ]);
     }
 
     public static function register(): void {
-        Auth::requireRole(['admin']);
+        Auth::requireTela('usuarios');
 
         $input = json_decode(file_get_contents('php://input'), true);
 
@@ -77,18 +82,20 @@ class AuthController {
 
         $db = Database::getInstance();
 
-        // Verificar email duplicado
-        $stmt = $db->prepare('SELECT COUNT(*) FROM usuarios WHERE email = :email');
-        $stmt->execute([':email' => $input['email']]);
+        $tenantId = Tenant::id();
+
+        // Verificar email duplicado dentro do tenant
+        $stmt = $db->prepare('SELECT COUNT(*) FROM usuarios WHERE email = :email AND tenant_id = :tid');
+        $stmt->execute([':email' => $input['email'], ':tid' => $tenantId]);
         if ($stmt->fetchColumn() > 0) {
             http_response_code(409);
             echo json_encode(['error' => 'Email já cadastrado']);
             return;
         }
 
-        // Verificar login duplicado
-        $stmt = $db->prepare('SELECT COUNT(*) FROM usuarios WHERE login = :login');
-        $stmt->execute([':login' => $input['login']]);
+        // Verificar login duplicado dentro do tenant
+        $stmt = $db->prepare('SELECT COUNT(*) FROM usuarios WHERE login = :login AND tenant_id = :tid');
+        $stmt->execute([':login' => $input['login'], ':tid' => $tenantId]);
         if ($stmt->fetchColumn() > 0) {
             http_response_code(409);
             echo json_encode(['error' => 'Login já existe']);
@@ -99,9 +106,10 @@ class AuthController {
         $login = trim($input['login'] ?? '') ?: $input['email'];
 
         $stmt = $db->prepare(
-            'INSERT INTO usuarios (nome, email, login, senha, role) VALUES (:nome, :email, :login, :senha, :role)'
+            'INSERT INTO usuarios (tenant_id, nome, email, login, senha, role) VALUES (:tid, :nome, :email, :login, :senha, :role)'
         );
         $stmt->execute([
+            ':tid' => $tenantId,
             ':nome' => $input['nome'],
             ':email' => $input['email'],
             ':login' => $login,
@@ -120,7 +128,7 @@ class AuthController {
     public static function me(): void {
         $user = Auth::requireAuth();
         $db = Database::getInstance();
-        $stmt = $db->prepare('SELECT id, nome, email, login, role, created_at FROM usuarios WHERE id = :id');
+        $stmt = $db->prepare('SELECT id, tenant_id, nome, email, login, role, created_at FROM usuarios WHERE id = :id');
         $stmt->execute([':id' => $user['sub']]);
         $userData = $stmt->fetch();
 
@@ -130,6 +138,136 @@ class AuthController {
             return;
         }
 
+        // Retornar o tenant_id ativo (do JWT), não o "home" do banco
+        $userData['tenant_id'] = (int)$user['tenant_id'];
+        $userData['tenants'] = self::getUserTenants((int)$userData['id']);
+
         echo json_encode($userData);
+    }
+
+    /**
+     * Permite que um usuário troque para outro tenant ao qual tem acesso.
+     * Role 'master' pode acessar TODOS os tenants.
+     * Outros usuários só podem trocar entre tenants vinculados em usuario_tenants.
+     */
+    public static function switchTenant(): void
+    {
+        $user = Auth::requireAuth();
+
+        $input = json_decode(file_get_contents('php://input'), true);
+        $targetTenantId = (int)($input['tenant_id'] ?? 0);
+
+        if ($targetTenantId < 1) {
+            http_response_code(400);
+            echo json_encode(['error' => 'tenant_id inválido']);
+            return;
+        }
+
+        $db = Database::getInstance();
+
+        // Buscar dados reais do usuário (do banco, não do JWT)
+        $stmt = $db->prepare('SELECT id, tenant_id, nome, email, login, role FROM usuarios WHERE id = :id');
+        $stmt->execute([':id' => $user['sub']]);
+        $realUser = $stmt->fetch();
+
+        if (!$realUser) {
+            http_response_code(404);
+            echo json_encode(['error' => 'Usuário não encontrado']);
+            return;
+        }
+
+        $isMasterAdmin = $realUser['role'] === 'master';
+
+        // Verificar se o usuário tem acesso ao tenant alvo
+        if (!$isMasterAdmin) {
+            $stmt = $db->prepare(
+                'SELECT COUNT(*) FROM usuario_tenants WHERE usuario_id = :uid AND tenant_id = :tid'
+            );
+            $stmt->execute([':uid' => $realUser['id'], ':tid' => $targetTenantId]);
+            if ((int)$stmt->fetchColumn() === 0) {
+                http_response_code(403);
+                echo json_encode(['error' => 'Você não tem acesso a esta clínica']);
+                return;
+            }
+        }
+
+        // Verificar se o tenant existe e está ativo
+        $stmt = $db->prepare('SELECT id, nome, slug FROM tenants WHERE id = :id AND ativo = 1');
+        $stmt->execute([':id' => $targetTenantId]);
+        $tenant = $stmt->fetch();
+
+        if (!$tenant) {
+            http_response_code(404);
+            echo json_encode(['error' => 'Clínica não encontrada ou inativa']);
+            return;
+        }
+
+        // Gerar novo token com o tenant_id alvo
+        $tokenData = $realUser;
+        $tokenData['tenant_id'] = $targetTenantId;
+        $newToken = Auth::generateToken($tokenData);
+
+        Tenant::set($targetTenantId);
+        AuditLog::registrar('switch_tenant', 'tenant', $targetTenantId, 
+            "Trocou para clínica: {$tenant['nome']}");
+
+        echo json_encode([
+            'token' => $newToken,
+            'tenant' => [
+                'id' => (int)$tenant['id'],
+                'nome' => $tenant['nome'],
+                'slug' => $tenant['slug'],
+            ],
+            'user' => [
+                'id' => (int)$realUser['id'],
+                'tenant_id' => $targetTenantId,
+                'nome' => $realUser['nome'],
+                'email' => $realUser['email'],
+                'login' => $realUser['login'],
+                'role' => $realUser['role'],
+            ]
+        ]);
+    }
+
+    /**
+     * Retorna a lista de tenants aos quais o usuário tem acesso.
+     * Admin master (tenant 1) retorna TODOS os tenants.
+     */
+    public static function myTenants(): void
+    {
+        $user = Auth::requireAuth();
+        echo json_encode(self::getUserTenants((int)$user['sub']));
+    }
+
+    /**
+     * Helper: busca os tenants de um usuário.
+     */
+    private static function getUserTenants(int $userId): array
+    {
+        $db = Database::getInstance();
+
+        // Verificar se é admin master (role = 'master')
+        $stmt = $db->prepare('SELECT role FROM usuarios WHERE id = :id');
+        $stmt->execute([':id' => $userId]);
+        $u = $stmt->fetch();
+
+        if (!$u) return [];
+
+        if ($u['role'] === 'master') {
+            // Master vê TODOS os tenants ativos
+            $stmt = $db->query('SELECT id, nome, slug FROM tenants WHERE ativo = 1 ORDER BY nome');
+            return $stmt->fetchAll();
+        }
+
+        // Usuário normal: busca na tabela de vínculos
+        $stmt = $db->prepare(
+            'SELECT t.id, t.nome, t.slug
+             FROM usuario_tenants ut
+             JOIN tenants t ON t.id = ut.tenant_id
+             WHERE ut.usuario_id = :uid AND t.ativo = 1
+             ORDER BY t.nome'
+        );
+        $stmt->execute([':uid' => $userId]);
+        return $stmt->fetchAll();
     }
 }

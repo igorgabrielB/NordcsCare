@@ -1,5 +1,6 @@
 <?php
 require_once __DIR__ . '/../config/database.php';
+require_once __DIR__ . '/../middleware/tenant.php';
 
 class AuditLog {
     /**
@@ -21,10 +22,11 @@ class AuditLog {
         try {
             $db = Database::getInstance();
             $stmt = $db->prepare(
-                'INSERT INTO audit_log (usuario_id, usuario_nome, usuario_role, acao, entidade, entidade_id, detalhes, ip)
-                 VALUES (:uid, :nome, :role, :acao, :entidade, :eid, :detalhes, :ip)'
+                'INSERT INTO audit_log (tenant_id, usuario_id, usuario_nome, usuario_role, acao, entidade, entidade_id, detalhes, ip)
+                 VALUES (:tenant_id, :uid, :nome, :role, :acao, :entidade, :eid, :detalhes, :ip)'
             );
             $stmt->execute([
+                ':tenant_id' => Tenant::idOrNull(),
                 ':uid'      => $user['sub'] ?? null,
                 ':nome'     => $user['nome'] ?? 'Sistema',
                 ':role'     => $user['role'] ?? null,

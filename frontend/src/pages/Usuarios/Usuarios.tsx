@@ -1,7 +1,8 @@
 import { useState, useEffect, useCallback, useMemo } from 'react'
 import { Link } from 'react-router-dom'
 import api from '../../services/api.ts'
-import { ArrowLeft, Pencil, Trash2, Plus, Search, Users, UserCheck, UserX, Shield, Mail } from 'lucide-react'
+import { useAuth } from '../../contexts/AuthContext.tsx'
+import { ArrowLeft, Pencil, Trash2, Plus, Search, Users, UserCheck, UserX, Shield, Mail, Crown } from 'lucide-react'
 import './Usuarios.css'
 
 interface Usuario {
@@ -25,6 +26,8 @@ interface FormData {
 const emptyForm: FormData = { nome: '', email: '', senha: '', role: 'administrativo', ativo: 1 }
 
 export default function Usuarios() {
+  const { hasTela } = useAuth()
+
   const [usuarios, setUsuarios] = useState<Usuario[]>([])
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
@@ -111,8 +114,8 @@ export default function Usuarios() {
   }
 
   const roleBadge = (role: string) => {
-    const icon = role === 'admin' ? <Shield size={12} /> : role === 'medico' ? <UserCheck size={12} /> : <Users size={12} />
-    const cls = role === 'admin' ? 'usr-badge-admin' : role === 'medico' ? 'usr-badge-medico' : 'usr-badge-administrativo'
+    const icon = role === 'master' ? <Crown size={12} /> : role === 'admin' ? <Shield size={12} /> : role === 'medico' ? <UserCheck size={12} /> : <Users size={12} />
+    const cls = role === 'master' ? 'usr-badge-master' : role === 'admin' ? 'usr-badge-admin' : role === 'medico' ? 'usr-badge-medico' : 'usr-badge-administrativo'
     return <span className={`usr-role-badge ${cls}`}>{icon} {role}</span>
   }
 
@@ -267,6 +270,7 @@ export default function Usuarios() {
                 <div className="form-group">
                   <label>Perfil</label>
                   <select value={form.role} onChange={e => setForm({ ...form, role: e.target.value })}>
+                    {hasTela('clinicas') && <option value="master">Master</option>}
                     <option value="admin">Admin</option>
                     <option value="medico">Médico</option>
                     <option value="administrativo">Administrativo</option>

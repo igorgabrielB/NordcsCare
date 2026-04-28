@@ -1,8 +1,8 @@
 import { useAuth } from '../../contexts/AuthContext.tsx'
-import { useSchool } from '../../contexts/SchoolContext.tsx'
 import { useNavigate, Link } from 'react-router-dom'
-import { Settings, Menu, School, ChevronDown, X, Building2 } from 'lucide-react'
+import { Settings, ChevronDown, X, Building2 } from 'lucide-react'
 import { useState, useRef, useEffect } from 'react'
+import api from '../../services/api.ts'
 
 const roleLabels: Record<string, string> = {
   admin: 'Administrador',
@@ -14,15 +14,16 @@ import type { ReactNode } from 'react';
 interface HeaderProps {
   onToggleSidebar: () => void
   sidebarOpen: boolean
+  hideSidebarToggle?: boolean
   children?: ReactNode
 }
 
-export default function Header({ onToggleSidebar, sidebarOpen, children }: HeaderProps) {
-  const { user, logout } = useAuth()
-  const { selectedSchool, setSelectedSchool, escolasHoje } = useSchool()
+export default function Header({ onToggleSidebar, sidebarOpen, hideSidebarToggle, children }: HeaderProps) {
+  const { user, logout, activeTenant, switchTenant, isImpersonating, hasTela } = useAuth()
   const navigate = useNavigate()
-  const [dropdownOpen, setDropdownOpen] = useState(false)
-  const dropdownRef = useRef<HTMLDivElement>(null)
+  const [clinicDropdownOpen, setClinicDropdownOpen] = useState(false)
+  const [userTenants, setUserTenants] = useState<{ id: number; nome: string; slug: string }[]>([])
+  const clinicDropdownRef = useRef<HTMLDivElement>(null)
 
   const handleLogout = () => {
     logout()
@@ -31,76 +32,82 @@ export default function Header({ onToggleSidebar, sidebarOpen, children }: Heade
 
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
-        setDropdownOpen(false)
+      if (clinicDropdownRef.current && !clinicDropdownRef.current.contains(e.target as Node)) {
+        setClinicDropdownOpen(false)
       }
     }
     document.addEventListener('mousedown', handleClickOutside)
     return () => document.removeEventListener('mousedown', handleClickOutside)
   }, [])
 
-  const schools = Array.isArray(escolasHoje) ? escolasHoje : []
+  // Carregar clínicas do usuário (via /auth/my-tenants)
+  useEffect(() => {
+    if (user) {
+      api.get('/auth/my-tenants').then(res => setUserTenants(Array.isArray(res.data) ? res.data : [])).catch(() => {})
+    }
+  }, [user])
+
+  const canSwitchTenant = userTenants.length > 1
+  const originalTenantId = parseInt(localStorage.getItem('originalTenantId') || '0')
+
+  const handleSwitchTenant = async (tenantId: number) => {
+    try {
+      await switchTenant(tenantId)
+      setClinicDropdownOpen(false)
+      window.location.reload()
+    } catch {
+      alert('Erro ao trocar de clínica')
+    }
+  }
 
   return (
     <header className="header">
       <div className="header-left">
-        <button className={`btn-toggle-sidebar ${sidebarOpen ? 'open' : ''}`} onClick={onToggleSidebar} title={sidebarOpen ? 'Fechar menu' : 'Abrir menu'}>
-          <Menu size={20} />
-        </button>
+        {hideSidebarToggle && (
+          <img src="/imagens/logo-escrita.png" alt="NordcsCare" className="header-logo" />
+        )}
       </div>
       <div className="header-right" style={{display:'flex',alignItems:'center',gap:12}}>
-        {user?.role === 'admin' ? (
-        <div className="school-dropdown" ref={dropdownRef}>
-          <button
-            className={`school-dropdown-trigger ${selectedSchool ? 'has-school' : ''}`}
-            onClick={() => setDropdownOpen(!dropdownOpen)}
-          >
-            <School size={15} className="school-dropdown-icon" />
-            <span className="school-dropdown-label">
-              {selectedSchool || 'Todas as escolas'}
-            </span>
-            <ChevronDown size={14} className={`school-dropdown-chevron ${dropdownOpen ? 'open' : ''}`} />
-          </button>
+        {canSwitchTenant && (
+          <div className="school-dropdown" ref={clinicDropdownRef}>
+            <button
+              className={`school-dropdown-trigger ${isImpersonating ? 'has-school' : ''}`}
+              onClick={() => setClinicDropdownOpen(!clinicDropdownOpen)}
+              style={isImpersonating ? { borderColor: '#ed8936', background: 'rgba(237,137,54,0.08)' } : {}}
+            >
+              <Building2 size={15} className="school-dropdown-icon" />
+              <span className="school-dropdown-label">
+                {activeTenant ? activeTenant.nome : (userTenants.find(t => t.id === user?.tenant_id)?.nome || 'Minha Clínica')}
+              </span>
+              <ChevronDown size={14} className={`school-dropdown-chevron ${clinicDropdownOpen ? 'open' : ''}`} />
+            </button>
 
-          {dropdownOpen && (
-            <div className="school-dropdown-menu">
-              <div className="school-dropdown-header">Selecionar local</div>
-              <button
-                className={`school-dropdown-item ${!selectedSchool ? 'active' : ''}`}
-                onClick={() => { setSelectedSchool(null); setDropdownOpen(false) }}
-              >
-                <Building2 size={16} />
-                <span>Todas as escolas</span>
-              </button>
-              {schools.length > 0 && (
-                <>
-                  <div className="school-dropdown-divider" />
-                  <div className="school-dropdown-section">Agendadas hoje</div>
-                  {schools.map(e => (
-                    <button
-                      key={e.escola}
-                      className={`school-dropdown-item ${selectedSchool === e.escola ? 'active' : ''}`}
-                      onClick={() => { setSelectedSchool(e.escola); setDropdownOpen(false) }}
-                    >
-                      <School size={16} />
-                      <span>{e.escola}</span>
-                      <span className="school-dropdown-badge">{e.total_alunos}</span>
-                    </button>
-                  ))}
-                </>
-              )}
-              {selectedSchool && (
-                <div className="school-dropdown-footer">
-                  <button className="school-dropdown-clear" onClick={() => { setSelectedSchool(null); setDropdownOpen(false) }}>
-                    <X size={13} /> Limpar seleção
+            {clinicDropdownOpen && (
+              <div className="school-dropdown-menu">
+                <div className="school-dropdown-header">Alternar clínica</div>
+                {userTenants.map(c => (
+                  <button
+                    key={c.id}
+                    className={`school-dropdown-item ${(user?.tenant_id === c.id) ? 'active' : ''}`}
+                    onClick={() => handleSwitchTenant(c.id)}
+                  >
+                    <Building2 size={16} />
+                    <span>{c.nome}</span>
                   </button>
-                </div>
-              )}
-            </div>
-          )}
-        </div>
-        ) : null}
-        {user?.role === 'admin' && (
+                ))}
+                {isImpersonating && (
+                  <div className="school-dropdown-footer">
+                    <button className="school-dropdown-clear" onClick={() => handleSwitchTenant(originalTenantId)}>
+                      <X size={13} /> Voltar à clínica original
+                    </button>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        )}
+
+        {hasTela('admin') && (
           <Link to="/admin" className="header-icon-link" title="Administração">
             <Settings size={16} />
           </Link>

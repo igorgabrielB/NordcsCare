@@ -4,6 +4,7 @@ require_once __DIR__ . '/../controllers/PacienteController.php';
 require_once __DIR__ . '/../controllers/FilaController.php';
 require_once __DIR__ . '/../controllers/ProntuarioController.php';
 require_once __DIR__ . '/../controllers/DashboardController.php';
+require_once __DIR__ . '/../controllers/DashboardConfigController.php';
 require_once __DIR__ . '/../controllers/UploadController.php';
 require_once __DIR__ . '/../controllers/UsuarioController.php';
 require_once __DIR__ . '/../controllers/MedicoController.php';
@@ -13,6 +14,9 @@ require_once __DIR__ . '/../controllers/ModeloDocumentoController.php';
 require_once __DIR__ . '/../controllers/LaudoProntoController.php';
 require_once __DIR__ . '/../controllers/HistoricoController.php';
 require_once __DIR__ . '/../controllers/SpotVisionController.php';
+require_once __DIR__ . '/../controllers/TenantController.php';
+require_once __DIR__ . '/../controllers/PermissaoController.php';
+require_once __DIR__ . '/../controllers/PainelController.php';
 
 class Router {
     private array $routes = [];
@@ -36,8 +40,8 @@ class Router {
             $pattern = '#^' . preg_replace('#\{(\w+)\}#', '(?P<$1>\d+)', $route['pattern']) . '$#';
 
             if (preg_match($pattern, $uri, $matches)) {
-                // Extract named parameters
-                $params = array_filter($matches, 'is_string', ARRAY_FILTER_USE_KEY);
+                // Extract named parameters as positional to avoid PHP 8 named-arg mismatch
+                $params = array_values(array_filter($matches, 'is_string', ARRAY_FILTER_USE_KEY));
                 $params = array_map('intval', $params);
                 call_user_func_array($route['handler'], $params);
                 return;
@@ -55,6 +59,8 @@ $router = new Router();
 // Auth
 $router->add('POST', '/api/auth/login', [AuthController::class, 'login']);
 $router->add('POST', '/api/auth/register', [AuthController::class, 'register']);
+$router->add('POST', '/api/auth/switch-tenant', [AuthController::class, 'switchTenant']);
+$router->add('GET', '/api/auth/my-tenants', [AuthController::class, 'myTenants']);
 $router->add('GET', '/api/auth/me', [AuthController::class, 'me']);
 
 // Pacientes
@@ -76,7 +82,11 @@ $router->add('PUT', '/api/fila/{id}/avancar', [FilaController::class, 'avancar']
 $router->add('PUT', '/api/fila/{id}/status', [FilaController::class, 'updateStatus']);
 $router->add('PUT', '/api/fila/{id}/mover', [FilaController::class, 'mover']);
 $router->add('PUT', '/api/fila/{id}/prioridade', [FilaController::class, 'togglePrioridade']);
+$router->add('POST', '/api/fila/{id}/chamar', [FilaController::class, 'chamar']);
 $router->add('DELETE', '/api/fila/{id}', [FilaController::class, 'destroy']);
+
+// Painel de Senha
+$router->add('GET', '/api/painel', [PainelController::class, 'index']);
 
 // Prontuário
 $router->add('GET', '/api/prontuario/{pacienteId}', [ProntuarioController::class, 'completo']);
@@ -96,6 +106,12 @@ $router->add('DELETE', '/api/modelos-documentos/{id}', [ModeloDocumentoControlle
 
 // Dashboard
 $router->add('GET', '/api/dashboard/metricas', [DashboardController::class, 'metricas']);
+
+// Dashboard Config (Builder)
+$router->add('GET', '/api/dashboard-config', [DashboardConfigController::class, 'get']);
+$router->add('POST', '/api/dashboard-config', [DashboardConfigController::class, 'save']);
+$router->add('DELETE', '/api/dashboard-config', [DashboardConfigController::class, 'reset']);
+$router->add('GET', '/api/dashboard-config/widgets', [DashboardConfigController::class, 'getWidgets']);
 
 // Uploads
 $router->add('GET', '/api/pacientes/{pacienteId}/uploads', [UploadController::class, 'index']);
@@ -149,6 +165,21 @@ $router->add('POST', '/api/escola-agenda', [EscolaAgendaController::class, 'stor
 $router->add('DELETE', '/api/escola-agenda/remover', [EscolaAgendaController::class, 'destroyByEscolaData']);
 $router->add('DELETE', '/api/escola-agenda/{id}', [EscolaAgendaController::class, 'destroy']);
 
+// Permissões de telas
+$router->add('GET',  '/api/permissoes/telas',              [PermissaoController::class, 'telas']);
+$router->add('GET',  '/api/permissoes/me',                 [PermissaoController::class, 'getMe']);
+$router->add('GET',  '/api/permissoes/usuario/{id}',       [PermissaoController::class, 'getUsuario']);
+$router->add('PUT',  '/api/permissoes/usuario/{id}',       [PermissaoController::class, 'setUsuario']);
+
+// Clínicas (Tenants)$router->add('GET', '/api/clinicas', [TenantController::class, 'index']);
+$router->add('GET', '/api/clinicas/{id}', [TenantController::class, 'show']);
+$router->add('POST', '/api/clinicas', [TenantController::class, 'store']);
+$router->add('PUT', '/api/clinicas/{id}', [TenantController::class, 'update']);
+$router->add('DELETE', '/api/clinicas/{id}', [TenantController::class, 'destroy']);
+$router->add('GET', '/api/clinicas/{id}/usuarios', [TenantController::class, 'usuarios']);
+$router->add('POST', '/api/clinicas/{id}/usuarios', [TenantController::class, 'vincularUsuario']);
+$router->add('DELETE', '/api/clinicas/{id}/usuarios', [TenantController::class, 'desvincularUsuario']);
+
 // Laudos Prontos
 $router->add('GET', '/api/laudos-prontos', [LaudoProntoController::class, 'index']);
 $router->add('GET', '/api/laudos-prontos/ativos', [LaudoProntoController::class, 'ativos']);
@@ -165,7 +196,7 @@ $router->add('GET', '/api/historico/exportar', [HistoricoController::class, 'exp
 // Logs (apenas admin)
 $router->add('GET', '/api/logs/fila', function() {
     require_once __DIR__ . '/../middleware/auth.php';
-    Auth::requireRole(['admin']);
+    Auth::requireTela('logs');
     
     $logFile = __DIR__ . '/../logs/fila.log';
     if (!file_exists($logFile)) {
@@ -187,7 +218,8 @@ $router->add('GET', '/api/logs/fila', function() {
 $router->add('GET', '/api/audit', function() {
     require_once __DIR__ . '/../middleware/auth.php';
     require_once __DIR__ . '/../config/database.php';
-    Auth::requireRole(['admin']);
+    require_once __DIR__ . '/../middleware/tenant.php';
+    Auth::requireTela('logs');
 
     $db = Database::getInstance();
 
@@ -195,8 +227,8 @@ $router->add('GET', '/api/audit', function() {
     $limit = min(100, max(1, (int)($_GET['limit'] ?? 50)));
     $offset = ($page - 1) * $limit;
 
-    $where = '1=1';
-    $params = [];
+    $where = 'tenant_id = :tid';
+    $params = [':tid' => Tenant::id()];
 
     if (!empty($_GET['usuario'])) {
         $where .= ' AND usuario_nome LIKE :usuario';

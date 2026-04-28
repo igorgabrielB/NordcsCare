@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { useParams, Link } from 'react-router-dom'
 import api from '../../services/api'
 import { useAuth } from '../../contexts/AuthContext'
-import { User, X, Pencil, ClipboardList, Bus, Save, FileText, Microscope, Glasses, CheckCircle2, BookOpen, Eye, Trash2, Printer, FileDown, Loader2, ChevronLeft, ChevronRight } from 'lucide-react'
+import { User, X, Pencil, ClipboardList, Bus, Save, FileText, Microscope, Glasses, CheckCircle2, BookOpen, Eye, Trash2, Printer, Loader2, ChevronLeft, ChevronRight } from 'lucide-react'
 import { gerarReceitaOcular, gerarAtestado, gerarReceitaMedica, gerarRelatorio, formatTexto } from '../../services/pdfService'
 // import RedCheckExames from './RedCheckUpload'
 import './Prontuario.css'
@@ -139,7 +139,7 @@ const emptyForm = {
 
 export default function Prontuario() {
   const { pacienteId } = useParams<{ pacienteId: string }>()
-  const { user } = useAuth()
+  const { user, hasTela } = useAuth()
   const [data, setData] = useState<ProntuarioData | null>(null)
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
@@ -158,7 +158,7 @@ export default function Prontuario() {
   const [modelosDoc, setModelosDoc] = useState<{ id: number; tipo: string; nome: string; conteudo: string }[]>([])
   const [laudosProntos, setLaudosProntos] = useState<LaudoPronto[]>([])
   const [altaSemOculos, setAltaSemOculos] = useState(false)
-  const [spotExames, setSpotExames] = useState<{ key: string; filename: string; size: number; modified: string }[]>([])
+  const [, setSpotExames] = useState<{ key: string; filename: string; size: number; modified: string }[]>([])
   const [spotLoading, setSpotLoading] = useState(false)
   const [spotImages, setSpotImages] = useState<{ data: string; filename: string; modified: string }[]>([])
   const [spotIdx, setSpotIdx] = useState(0)
@@ -602,17 +602,17 @@ export default function Prontuario() {
       {/* ===== BOTÕES DAS ESTAÇÕES ===== */}
 
       <div className="station-buttons">
-        {(user?.role === 'admin' || user?.role === 'medico') && (
+        {hasTela('prontuario_laudo') && (
         <button className={`btn btn-station btn-station-laudos${showForm === 'laudos' ? ' active' : ''}`} onClick={() => openEstacao('laudos')}>
           {showForm === 'laudos' ? <><X size={14} style={{verticalAlign:'middle',marginRight:4}} />Fechar</> : hasLaudo ? <><Pencil size={14} style={{verticalAlign:'middle',marginRight:4}} />Editar Laudo</> : <><ClipboardList size={14} style={{verticalAlign:'middle',marginRight:4}} />Novo Laudo</>}
         </button>
         )}
-        {(user?.role === 'admin' || user?.role === 'administrativo') && (
+        {hasTela('prontuario_acuidade') && (
         <button className={`btn btn-station btn-station-acuidade${showForm === 'acuidade' ? ' active' : ''}`} onClick={() => openEstacao('acuidade')}>
           {showForm === 'acuidade' ? <><X size={14} style={{verticalAlign:'middle',marginRight:4}} />Fechar</> : <><Eye size={14} style={{verticalAlign:'middle',marginRight:4}} />Acuidade Visual</>}
         </button>
         )}
-        {(user?.role === 'admin' || user?.role === 'medico') && laudos.length > 0 && (laudos[0].conduta_inicial === 'onibus' || laudos[0].conduta_inicial === 'onibus_encaminhamento') && (
+        {hasTela('prontuario_laudo') && laudos.length > 0 && (laudos[0].conduta_inicial === 'onibus' || laudos[0].conduta_inicial === 'onibus_encaminhamento') && (
           <button className={`btn btn-station btn-station-onibus${showForm === 'onibus' ? ' active' : ''}`} onClick={() => openEstacao('onibus')}>
             {showForm === 'onibus' ? <><X size={14} style={{verticalAlign:'middle',marginRight:4}} />Fechar</> : hasPrescricao ? <><Pencil size={14} style={{verticalAlign:'middle',marginRight:4}} />Editar Prescrição</> : <><Bus size={14} style={{verticalAlign:'middle',marginRight:4}} />Nova Prescrição</>}
           </button>
@@ -620,7 +620,7 @@ export default function Prontuario() {
       </div>
 
       {/* ===== BOTÕES DE IMPRESSÃO ===== */}
-      {(user?.role === 'admin' || user?.role === 'medico') && (
+      {hasTela('prontuario_laudo') && (
       <div className="pdf-buttons">
         <span className="pdf-buttons-label"><Printer size={14} /> Documentos:</span>
         {prescricoes.length > 0 && (
@@ -630,7 +630,7 @@ export default function Prontuario() {
         )}
         <button className="btn btn-pdf" onClick={() => { setPdfTexto(''); setPdfModal('atestado') }}>Atestado</button>
         <button className="btn btn-pdf" onClick={() => { setPdfTexto(''); setPdfModal('receita_medica') }}>Receita Médica</button>
-        {user?.role === 'admin' && (
+        {hasTela('admin') && (
           <button className="btn btn-pdf" onClick={async () => gerarRelatorio(
             paciente, medicoInfo, {
               anamnese: anamneses[0],
@@ -1261,7 +1261,7 @@ export default function Prontuario() {
       <div className="historico-section">
         <div style={{display:'flex',justifyContent:'space-between',alignItems:'center'}}>
           <h2 className="section-title" style={{margin:0}}><BookOpen size={16} />Laudo do Atendimento</h2>
-          {user?.role === 'admin' && (anamneses.length > 0 || exames.length > 0 || laudos.length > 0 || data.acuidade_visual) && (
+          {hasTela('admin') && (anamneses.length > 0 || exames.length > 0 || laudos.length > 0 || data.acuidade_visual) && (
             <button className="btn btn-danger btn-sm" onClick={async () => {
               if (!confirm('Tem certeza que deseja excluir todo o laudo deste paciente? Esta ação não pode ser desfeita.')) return
               try {

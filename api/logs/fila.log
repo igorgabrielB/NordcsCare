@@ -9446,3 +9446,37 @@
 [2026-04-10 14:39:29] Removido paciente de 1 filas anteriores
 [2026-04-10 14:39:29] INSERT resultado: SUCCESS (created_at preservado: 2026-04-10 11:32:43)
 [2026-04-10 14:39:29] Histórico SALVO para paciente 4536 (resultado: oculos)
+[2026-04-22 10:39:12] Conduta Inicial recebida: 'encaminhamento', Conduta Final: 'alta', Alta sem óculos: NÃO
+[2026-04-22 10:39:12] Detectada conduta ENCAMINHAMENTO para paciente 2926
+[2026-04-22 10:39:12] Tentando mover paciente 2926 para fila 'encaminhamentos'
+[2026-04-22 10:39:12] Removido paciente de 2 filas anteriores
+[2026-04-22 10:39:12] INSERT resultado: SUCCESS (created_at preservado: 2026-04-22 10:36:46)
+[2026-04-22 10:39:12] Histórico SALVO para paciente 2926 (resultado: encaminhamento)
+[2026-04-22 10:40:28] Prescricao salva com conduta_final alta - movendo paciente 4495 para altas
+[2026-04-22 10:40:28] Tentando mover paciente 4495 para fila 'altas'
+[2026-04-22 10:40:28] Removido paciente de 2 filas anteriores
+[2026-04-22 10:40:28] INSERT resultado: SUCCESS (created_at preservado: 2026-04-22 10:36:44)
+[2026-04-22 10:40:28] Histórico SALVO para paciente 4495 (resultado: oculos)
+[2026-04-22 10:42:55] Conduta Inicial recebida: 'alta', Conduta Final: 'alta', Alta sem óculos: NÃO
+[2026-04-22 10:42:55] Detectada conduta ALTA para paciente 4551
+[2026-04-22 10:42:55] Tentando mover paciente 4551 para fila 'altas'
+[2026-04-22 10:42:55] Removido paciente de 2 filas anteriores
+[2026-04-22 10:42:55] INSERT resultado: SUCCESS (created_at preservado: 2026-04-22 10:36:45)
+[2026-04-22 10:42:55] Histórico SALVO para paciente 4551 (resultado: alta)
+[2026-04-22 11:37:43] Conduta Inicial recebida: 'alta', Conduta Final: '', Alta sem óculos: NÃO
+[2026-04-22 11:37:43] Detectada conduta ALTA para paciente 4928
+[2026-04-22 11:37:43] Tentando mover paciente 4928 para fila 'altas'
+[2026-04-22 11:37:43] Removido paciente de 1 filas anteriores
+[2026-04-22 11:37:43] INSERT resultado: SUCCESS (created_at preservado: N/A)
+[2026-04-22 11:37:43] Histórico SALVO para paciente 4928 (resultado: alta)
+[2026-04-22 11:43:16] Conduta Inicial recebida: 'encaminhamento', Conduta Final: '', Alta sem óculos: NÃO
+[2026-04-22 11:43:16] Detectada conduta ENCAMINHAMENTO para paciente 5497
+[2026-04-22 11:43:16] Tentando mover paciente 5497 para fila 'encaminhamentos'
+[2026-04-22 11:43:16] Removido paciente de 1 filas anteriores
+[2026-04-22 11:43:16] INSERT resultado: SUCCESS (created_at preservado: N/A)
+[2026-04-22 11:43:16] Histórico SALVO para paciente 5497 (resultado: encaminhamento)
+[2026-04-22 11:43:47] Conduta Inicial recebida: 'onibus', Conduta Final: '', Alta sem óculos: NÃO
+[2026-04-22 11:43:47] Detectada conduta ONIBUS para paciente 5398
+[2026-04-22 11:43:47] Tentando mover paciente 5398 para fila 'oculos' (saindo de 'laudos')
+[2026-04-22 11:43:47] Removido paciente de 1 filas anteriores
+[2026-04-22 11:43:47] INSERT resultado: SUCCESS (created_at preservado: N/A)

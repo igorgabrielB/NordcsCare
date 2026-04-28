@@ -7,6 +7,29 @@ class FilaController {
 
     private static array $estacoesOrdem = ['acuidade', 'laudos', 'oculos', 'altas', 'encaminhamentos'];
 
+    private static array $senhaPrefix = [
+        'acuidade'        => 'AC',
+        'exames'          => 'EX',
+        'laudos'          => 'LA',
+        'oculos'          => 'OC',
+        'altas'           => 'AL',
+        'encaminhamentos' => 'EN',
+    ];
+
+    /**
+     * Gera o próximo número de senha formatado para a estação (ex: AC001, EX003).
+     */
+    public static function gerarSenha(PDO $db, string $estacao, int $tenantId): string {
+        $prefixes = self::$senhaPrefix;
+        $prefix = $prefixes[$estacao] ?? strtoupper(substr($estacao, 0, 2));
+        $stmt = $db->prepare(
+            'SELECT COUNT(*) FROM fila WHERE tenant_id = :tid AND estacao = :estacao AND DATE(created_at) = CURDATE()'
+        );
+        $stmt->execute([':tid' => $tenantId, ':estacao' => $estacao]);
+        $seq = (int)$stmt->fetchColumn() + 1;
+        return $prefix . str_pad($seq, 3, '0', STR_PAD_LEFT);
+    }
+
     /**
      * GET /api/fila — Lista toda a fila do dia, agrupada por estação.
      */
@@ -14,6 +37,7 @@ class FilaController {
         Auth::requireAuth();
 
         $db = Database::getInstance();
+        $tenantId = Tenant::id();
         $dataParam = $_GET['data'] ?? null;
         $escolaParam = isset($_GET['escola']) ? trim($_GET['escola']) : null;
 
@@ -53,32 +77,32 @@ class FilaController {
 
         if ($dataParam) {
             $sql = "SELECT f.id, f.paciente_id, f.estacao, f.status, f.prioridade, f.observacoes,
-                        f.atendente_id, f.created_at, f.updated_at,
+                        f.atendente_id, f.created_at, f.updated_at, f.senha,
                         p.nome_completo, p.codigo, p.convenio, p.escola,
                         u.nome AS atendente_nome
                  FROM fila f
                  JOIN pacientes p ON p.id = f.paciente_id
                  LEFT JOIN usuarios u ON u.id = f.atendente_id
-                 WHERE {$sqlMultiDia}{$escolaFilter}
+                 WHERE f.tenant_id = :tid AND {$sqlMultiDia}{$escolaFilter}
                  ORDER BY f.prioridade DESC, f.created_at ASC";
-            $params = [':data' => $dataParam, ':data2' => $dataParam];
+            $params = [':tid' => $tenantId, ':data' => $dataParam, ':data2' => $dataParam];
             if ($escolaParam) $params[':escola'] = $escolaParam;
             $stmt = $db->prepare($sql);
             $stmt->execute($params);
         } else {
             $sql = "SELECT f.id, f.paciente_id, f.estacao, f.status, f.prioridade, f.observacoes,
-                        f.atendente_id, f.created_at, f.updated_at,
+                        f.atendente_id, f.created_at, f.updated_at, f.senha,
                         p.nome_completo, p.codigo, p.convenio, p.escola,
                         u.nome AS atendente_nome
                  FROM fila f
                  JOIN pacientes p ON p.id = f.paciente_id
                  LEFT JOIN usuarios u ON u.id = f.atendente_id
-                 WHERE {$sqlMultiDiaCurdate}{$escolaFilter}
+                 WHERE f.tenant_id = :tid AND {$sqlMultiDiaCurdate}{$escolaFilter}
                  ORDER BY f.prioridade DESC, f.created_at ASC";
-            $params = [];
+            $params = [':tid' => $tenantId];
             if ($escolaParam) $params[':escola'] = $escolaParam;
             $stmt = $db->prepare($sql);
-            $stmt->execute($params ?: []);
+            $stmt->execute($params);
         }
         $items = $stmt->fetchAll();
 
@@ -98,7 +122,7 @@ class FilaController {
      * POST /api/fila — Adiciona paciente na fila (check-in direto para acuidade).
      */
     public static function store(): void {
-        $user = Auth::requireRole(['admin', 'administrativo']);
+        $user = Auth::requireTela('fila');
 
         $input = json_decode(file_get_contents('php://input'), true);
 
@@ -109,10 +133,11 @@ class FilaController {
         }
 
         $db = Database::getInstance();
+        $tenantId = Tenant::id();
 
-        // Verificar se paciente existe
-        $stmt = $db->prepare('SELECT id, nome_completo FROM pacientes WHERE id = :id');
-        $stmt->execute([':id' => $input['paciente_id']]);
+        // Verificar se paciente existe no tenant
+        $stmt = $db->prepare('SELECT id, nome_completo FROM pacientes WHERE id = :id AND tenant_id = :tid');
+        $stmt->execute([':id' => $input['paciente_id'], ':tid' => $tenantId]);
         if (!$stmt->fetch()) {
             http_response_code(404);
             echo json_encode(['error' => 'Paciente não encontrado']);
@@ -166,16 +191,20 @@ class FilaController {
             $warning = "Paciente já foi atendido hoje ({$resultadoLabel}" . ($horaSaida ? " às {$horaSaida}" : '') . ")";
         }
 
+        $senha = self::gerarSenha($db, 'acuidade', $tenantId);
+
         $stmt = $db->prepare(
-            'INSERT INTO fila (paciente_id, estacao, status, prioridade, observacoes)
-             VALUES (:paciente_id, :estacao, :status, :prioridade, :observacoes)'
+            'INSERT INTO fila (tenant_id, paciente_id, estacao, status, prioridade, observacoes, senha)
+             VALUES (:tid, :paciente_id, :estacao, :status, :prioridade, :observacoes, :senha)'
         );
         $stmt->execute([
-            ':paciente_id' => $input['paciente_id'],
-            ':estacao' => 'acuidade',
-            ':status' => 'em_atendimento',
+            ':tid'        => $tenantId,
+            ':paciente_id'=> $input['paciente_id'],
+            ':estacao'    => 'acuidade',
+            ':status'     => 'em_atendimento',
             ':prioridade' => (int)($input['prioridade'] ?? 0),
-            ':observacoes' => $input['observacoes'] ?? null,
+            ':observacoes'=> $input['observacoes'] ?? null,
+            ':senha'      => $senha,
         ]);
 
         $filaId = (int)$db->lastInsertId();
@@ -197,8 +226,8 @@ class FilaController {
         $user = Auth::requireAuth();
 
         $db = Database::getInstance();
-        $stmt = $db->prepare('SELECT * FROM fila WHERE id = :id');
-        $stmt->execute([':id' => $id]);
+        $stmt = $db->prepare('SELECT * FROM fila WHERE id = :id AND tenant_id = :tid');
+        $stmt->execute([':id' => $id, ':tid' => Tenant::id()]);
         $fila = $stmt->fetch();
 
         if (!$fila) {
@@ -207,8 +236,8 @@ class FilaController {
             return;
         }
 
-        // Somente admin pode avançar pacientes que estão em altas
-        if ($fila['estacao'] === 'altas' && $user['role'] !== 'admin') {
+        // Somente admin/master pode avançar pacientes que estão em altas
+        if ($fila['estacao'] === 'altas' && !Auth::hasTela($user, 'admin')) {
             http_response_code(403);
             echo json_encode(['error' => 'Somente administradores podem alterar pacientes em alta']);
             return;
@@ -225,19 +254,22 @@ class FilaController {
         }
 
         $nextEstacao = self::$estacoesOrdem[$currentIndex + 1];
+        $novaSenha = self::gerarSenha($db, $nextEstacao, Tenant::id());
 
         $stmt = $db->prepare(
-            'UPDATE fila SET estacao = :estacao, status = :status, atendente_id = NULL WHERE id = :id'
+            'UPDATE fila SET estacao = :estacao, status = :status, senha = :senha, atendente_id = NULL WHERE id = :id'
         );
         $stmt->execute([
             ':estacao' => $nextEstacao,
-            ':status' => 'em_atendimento',
-            ':id' => $id,
+            ':status'  => 'em_atendimento',
+            ':senha'   => $novaSenha,
+            ':id'      => $id,
         ]);
 
         echo json_encode([
             'message' => 'Paciente movido para ' . $nextEstacao,
             'estacao' => $nextEstacao,
+            'senha'   => $novaSenha,
         ]);
         AuditLog::registrar('avancar', 'fila', $id, "Paciente avançou para {$nextEstacao}", $user);
     }
@@ -259,8 +291,8 @@ class FilaController {
 
         $db = Database::getInstance();
 
-        $stmt = $db->prepare('SELECT id FROM fila WHERE id = :id');
-        $stmt->execute([':id' => $id]);
+        $stmt = $db->prepare('SELECT id FROM fila WHERE id = :id AND tenant_id = :tid');
+        $stmt->execute([':id' => $id, ':tid' => Tenant::id()]);
         if (!$stmt->fetch()) {
             http_response_code(404);
             echo json_encode(['error' => 'Registro não encontrado']);
@@ -270,11 +302,12 @@ class FilaController {
         $user = Auth::requireAuth();
         $atendenteId = $input['status'] === 'em_atendimento' ? $user['sub'] : null;
 
-        $stmt = $db->prepare('UPDATE fila SET status = :status, atendente_id = :atendente WHERE id = :id');
+        $stmt = $db->prepare('UPDATE fila SET status = :status, atendente_id = :atendente WHERE id = :id AND tenant_id = :tid');
         $stmt->execute([
             ':status' => $input['status'],
             ':atendente' => $atendenteId,
             ':id' => $id,
+            ':tid' => Tenant::id(),
         ]);
 
         echo json_encode(['message' => 'Status atualizado']);
@@ -296,8 +329,8 @@ class FilaController {
 
         $db = Database::getInstance();
 
-        $stmt = $db->prepare('SELECT id, estacao FROM fila WHERE id = :id');
-        $stmt->execute([':id' => $id]);
+        $stmt = $db->prepare('SELECT id, estacao FROM fila WHERE id = :id AND tenant_id = :tid');
+        $stmt->execute([':id' => $id, ':tid' => Tenant::id()]);
         $fila = $stmt->fetch();
         if (!$fila) {
             http_response_code(404);
@@ -305,23 +338,27 @@ class FilaController {
             return;
         }
 
-        // Somente admin pode mover pacientes que estão em altas
-        if ($fila['estacao'] === 'altas' && $user['role'] !== 'admin') {
+        // Somente admin/master pode mover pacientes que estão em altas
+        if ($fila['estacao'] === 'altas' && !Auth::hasTela($user, 'admin')) {
             http_response_code(403);
             echo json_encode(['error' => 'Somente administradores podem alterar pacientes em alta']);
             return;
         }
 
+        $novaSenha = self::gerarSenha($db, $input['estacao'], Tenant::id());
+
         $stmt = $db->prepare(
-            'UPDATE fila SET estacao = :estacao, status = :status, atendente_id = NULL WHERE id = :id'
+            'UPDATE fila SET estacao = :estacao, status = :status, senha = :senha, atendente_id = NULL WHERE id = :id AND tenant_id = :tid'
         );
         $stmt->execute([
             ':estacao' => $input['estacao'],
-            ':status' => 'em_atendimento',
-            ':id' => $id,
+            ':status'  => 'em_atendimento',
+            ':senha'   => $novaSenha,
+            ':id'      => $id,
+            ':tid'     => Tenant::id(),
         ]);
 
-        echo json_encode(['message' => 'Paciente movido para ' . $input['estacao']]);
+        echo json_encode(['message' => 'Paciente movido para ' . $input['estacao'], 'senha' => $novaSenha]);
 
         AuditLog::registrar('mover', 'fila', $id, "Paciente movido para estação {$input['estacao']}", $user);
     }
@@ -330,12 +367,12 @@ class FilaController {
      * DELETE /api/fila/{id} — Remove paciente da fila.
      */
     public static function destroy(int $id): void {
-        $user = Auth::requireRole(['admin', 'administrativo']);
+        $user = Auth::requireTela('fila');
 
         $db = Database::getInstance();
 
-        $stmt = $db->prepare('SELECT id, estacao FROM fila WHERE id = :id');
-        $stmt->execute([':id' => $id]);
+        $stmt = $db->prepare('SELECT id, estacao FROM fila WHERE id = :id AND tenant_id = :tid');
+        $stmt->execute([':id' => $id, ':tid' => Tenant::id()]);
         $fila = $stmt->fetch();
         if (!$fila) {
             http_response_code(404);
@@ -343,15 +380,15 @@ class FilaController {
             return;
         }
 
-        // Somente admin pode remover pacientes que estão em altas
-        if ($fila['estacao'] === 'altas' && $user['role'] !== 'admin') {
+        // Somente admin/master pode remover pacientes que estão em altas
+        if ($fila['estacao'] === 'altas' && !Auth::hasTela($user, 'admin')) {
             http_response_code(403);
             echo json_encode(['error' => 'Somente administradores podem alterar pacientes em alta']);
             return;
         }
 
-        $stmt = $db->prepare('DELETE FROM fila WHERE id = :id');
-        $stmt->execute([':id' => $id]);
+        $stmt = $db->prepare('DELETE FROM fila WHERE id = :id AND tenant_id = :tid');
+        $stmt->execute([':id' => $id, ':tid' => Tenant::id()]);
 
         AuditLog::registrar('excluir', 'fila', $id, 'Paciente removido da fila', $user);
 
@@ -365,12 +402,13 @@ class FilaController {
         Auth::requireAuth();
 
         $db = Database::getInstance();
+        $tenantId = Tenant::id();
         $search = $_GET['search'] ?? '';
 
         $sql = 'SELECT p.id, p.nome_completo, p.cpf, p.convenio
                 FROM pacientes p
-                WHERE p.id NOT IN (
-                    SELECT f.paciente_id FROM fila f
+                WHERE p.tenant_id = :tid AND p.id NOT IN (
+                    SELECT f.paciente_id FROM fila f WHERE f.tenant_id = :tid2
                 )';
 
         if ($search !== '') {
@@ -379,7 +417,7 @@ class FilaController {
         $sql .= ' ORDER BY p.nome_completo ASC LIMIT 20';
 
         $stmt = $db->prepare($sql);
-        $params = [];
+        $params = [':tid' => $tenantId, ':tid2' => $tenantId];
         if ($search !== '') {
             $searchTerm = "%$search%";
             $params[':search'] = $searchTerm;
@@ -394,11 +432,11 @@ class FilaController {
      * PUT /api/fila/{id}/prioridade — Alterna prioridade do paciente na fila.
      */
     public static function togglePrioridade(int $id): void {
-        $user = Auth::requireRole(['admin', 'administrativo']);
+        $user = Auth::requireTela('fila');
 
         $db = Database::getInstance();
-        $stmt = $db->prepare('SELECT id, prioridade FROM fila WHERE id = :id');
-        $stmt->execute([':id' => $id]);
+        $stmt = $db->prepare('SELECT id, prioridade FROM fila WHERE id = :id AND tenant_id = :tid');
+        $stmt->execute([':id' => $id, ':tid' => Tenant::id()]);
         $fila = $stmt->fetch();
 
         if (!$fila) {
@@ -415,5 +453,40 @@ class FilaController {
         AuditLog::registrar('prioridade', 'fila', $id, "Prioridade {$label}", $user);
 
         echo json_encode(['message' => "Prioridade {$label}", 'prioridade' => $novaPrioridade]);
+    }
+
+    /**
+     * POST /api/fila/{id}/chamar — Chama paciente no painel de senha.
+     */
+    public static function chamar(int $id): void {
+        $user = Auth::requireTela('fila');
+
+        $db = Database::getInstance();
+        $stmt = $db->prepare(
+            'SELECT f.id, f.senha, f.estacao, p.nome_completo
+             FROM fila f
+             JOIN pacientes p ON p.id = f.paciente_id
+             WHERE f.id = :id AND f.tenant_id = :tid'
+        );
+        $stmt->execute([':id' => $id, ':tid' => Tenant::id()]);
+        $fila = $stmt->fetch();
+
+        if (!$fila) {
+            http_response_code(404);
+            echo json_encode(['error' => 'Registro não encontrado']);
+            return;
+        }
+
+        $stmt = $db->prepare('UPDATE fila SET chamada_em = NOW() WHERE id = :id');
+        $stmt->execute([':id' => $id]);
+
+        AuditLog::registrar('chamar', 'fila', $id, "Paciente chamado no painel", $user);
+
+        echo json_encode([
+            'message' => 'Paciente chamado',
+            'senha' => $fila['senha'],
+            'nome_completo' => $fila['nome_completo'],
+            'estacao' => $fila['estacao'],
+        ]);
     }
 }

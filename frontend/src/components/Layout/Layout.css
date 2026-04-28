@@ -44,10 +44,10 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 16px 0 12px;
+  padding: 0;
   border-bottom: 1px solid var(--border);
   position: relative;
-  min-height: 56px;
+  height: var(--header-height);
   overflow: hidden;
   text-decoration: none;
   cursor: pointer;
@@ -227,6 +227,12 @@
 
 .header-logo {
   height: 36px;
+  width: auto;
+  object-fit: contain;
+}
+
+.header-logo-icon {
+  height: 28px;
   width: auto;
   object-fit: contain;
 }

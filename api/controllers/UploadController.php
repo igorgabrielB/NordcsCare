@@ -1,6 +1,7 @@
 <?php
 require_once __DIR__ . '/../config/database.php';
 require_once __DIR__ . '/../middleware/auth.php';
+require_once __DIR__ . '/../middleware/tenant.php';
 
 class UploadController {
 
@@ -21,10 +22,10 @@ class UploadController {
             'SELECT u.*, usr.nome AS uploaded_by_nome
              FROM uploads u
              JOIN usuarios usr ON usr.id = u.uploaded_by
-             WHERE u.paciente_id = :pid
+             WHERE u.paciente_id = :pid AND u.tenant_id = :tid
              ORDER BY u.created_at DESC'
         );
-        $stmt->execute([':pid' => $pacienteId]);
+        $stmt->execute([':pid' => $pacienteId, ':tid' => Tenant::id()]);
         echo json_encode($stmt->fetchAll());
     }
 
@@ -34,8 +35,8 @@ class UploadController {
         $db = Database::getInstance();
 
         // Verifica paciente
-        $stmt = $db->prepare('SELECT id FROM pacientes WHERE id = :id');
-        $stmt->execute([':id' => $pacienteId]);
+        $stmt = $db->prepare('SELECT id FROM pacientes WHERE id = :id AND tenant_id = :tid');
+        $stmt->execute([':id' => $pacienteId, ':tid' => Tenant::id()]);
         if (!$stmt->fetch()) {
             http_response_code(404);
             echo json_encode(['error' => 'Paciente não encontrado']);
@@ -97,10 +98,11 @@ class UploadController {
         $nomeOriginal = basename($file['name']);
 
         $stmt = $db->prepare(
-            'INSERT INTO uploads (paciente_id, tipo, nome_arquivo, caminho_arquivo, uploaded_by)
-             VALUES (:pid, :tipo, :nome, :caminho, :uid)'
+            'INSERT INTO uploads (tenant_id, paciente_id, tipo, nome_arquivo, caminho_arquivo, uploaded_by)
+             VALUES (:tid, :pid, :tipo, :nome, :caminho, :uid)'
         );
         $stmt->execute([
+            ':tid' => Tenant::id(),
             ':pid' => $pacienteId,
             ':tipo' => $tipo,
             ':nome' => $nomeOriginal,
@@ -122,8 +124,8 @@ class UploadController {
         Auth::requireAuth();
         $db = Database::getInstance();
 
-        $stmt = $db->prepare('SELECT * FROM uploads WHERE id = :id');
-        $stmt->execute([':id' => $id]);
+        $stmt = $db->prepare('SELECT * FROM uploads WHERE id = :id AND tenant_id = :tid');
+        $stmt->execute([':id' => $id, ':tid' => Tenant::id()]);
         $upload = $stmt->fetch();
 
         if (!$upload) {
@@ -164,8 +166,8 @@ class UploadController {
         $user = Auth::requireAuth();
         $db = Database::getInstance();
 
-        $stmt = $db->prepare('SELECT * FROM uploads WHERE id = :id');
-        $stmt->execute([':id' => $id]);
+        $stmt = $db->prepare('SELECT * FROM uploads WHERE id = :id AND tenant_id = :tid');
+        $stmt->execute([':id' => $id, ':tid' => Tenant::id()]);
         $upload = $stmt->fetch();
 
         if (!$upload) {
@@ -183,8 +185,8 @@ class UploadController {
             }
         }
 
-        $stmt = $db->prepare('DELETE FROM uploads WHERE id = :id');
-        $stmt->execute([':id' => $id]);
+        $stmt = $db->prepare('DELETE FROM uploads WHERE id = :id AND tenant_id = :tid');
+        $stmt->execute([':id' => $id, ':tid' => Tenant::id()]);
         echo json_encode(['message' => 'Arquivo excluído com sucesso']);
     }
 }

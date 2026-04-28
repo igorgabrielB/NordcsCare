@@ -201,22 +201,6 @@ export default function RelatorioAtendimentos() {
         `<tr><td style="padding:5px 10px">${m.medico_nome}</td><td style="padding:5px 10px;text-align:center;font-weight:600">${m.total}</td></tr>`
       ).join('')
 
-      const listaRows = dadosLista.map(item => {
-        const colors: Record<string, string> = { alta: '#48bb78', encaminhamento: '#ed8936', oculos: '#4299e1', oculos_encaminhamento: '#ed64a6' }
-        const color = colors[item.resultado] || '#a0aec0'
-        const sexoLabel = item.sexo === 'M' ? 'Masc.' : item.sexo === 'F' ? 'Fem.' : item.sexo || '—'
-        const dataNasc = item.data_nascimento ? new Date(item.data_nascimento + 'T12:00:00').toLocaleDateString('pt-BR') : '—'
-        return `<tr>
-          <td>${new Date(item.data_atendimento + 'T12:00:00').toLocaleDateString('pt-BR')}</td>
-          <td>${item.nome_completo}</td>
-          <td>${sexoLabel}</td>
-          <td>${dataNasc}</td>
-          <td>${item.cpf || '—'}</td>
-          <td><span style="background:${color}18;color:${color};padding:1px 6px;border-radius:8px;font-size:7pt;font-weight:600">${RESULTADO_LABELS[item.resultado] || item.resultado}</span></td>
-          <td>${item.especialidade || '\u2014'}</td>
-        </tr>`
-      }).join('')
-
       const cssReport = `
         * { margin:0; padding:0; box-sizing:border-box; }
         body { font-family:'Segoe UI',Arial,sans-serif; font-size:9pt; color:#222; background:#fff;
@@ -281,20 +265,6 @@ export default function RelatorioAtendimentos() {
     ${dadosResumo.por_escola.length > 0 ? `<div class="section"><h3>Por Escola</h3><table><thead><tr><th>Escola</th><th style="text-align:center">Total</th></tr></thead><tbody>${escolasRows}</tbody></table></div>` : ''}
     ${dadosResumo.por_medico.length > 0 ? `<div class="section"><h3>Por Médico</h3><table><thead><tr><th>Médico</th><th style="text-align:center">Total</th></tr></thead><tbody>${medicosRows}</tbody></table></div>` : ''}
   </div>
-  <div class="footer">NordcsCare — Saúde Ocular • Relatório gerado em ${hoje}</div>
-</div>`
-
-      // Part 2: Attendance list (portrait)
-      const htmlLista = `
-<div class="page">
-  ${headerBlock}
-  <div class="doc-title">Lista de Atendimentos</div>
-  <div class="doc-title-line"></div>
-  <div class="periodo-info">${dadosLista.length} registros &nbsp;•&nbsp; <strong>Período:</strong> ${periodoTexto}${escola ? ` &nbsp;•&nbsp; <strong>Escola:</strong> ${escola}` : ''}</div>
-  <table class="lista-table">
-    <thead><tr><th>Data</th><th>Paciente</th><th>Sexo</th><th>Nasc.</th><th>CPF</th><th>Desfecho</th><th>Especialidade</th></tr></thead>
-    <tbody>${listaRows}</tbody>
-  </table>
   <div class="footer">NordcsCare — Saúde Ocular • Relatório gerado em ${hoje}</div>
 </div>`
 

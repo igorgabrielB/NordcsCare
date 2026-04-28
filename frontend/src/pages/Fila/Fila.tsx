@@ -2,8 +2,7 @@ import { useState, useEffect, useCallback } from 'react'
 import { Link } from 'react-router-dom'
 import api from '../../services/api.ts'
 import { useAuth } from '../../contexts/AuthContext.tsx'
-import { useSchool } from '../../contexts/SchoolContext.tsx'
-import { Eye, FileText, Glasses, Zap, Timer, Building2, User, ClipboardList, X, ArrowRight, CheckCircle2, Send, Lock, Search, School } from 'lucide-react'
+import { Eye, FileText, Glasses, Zap, Timer, Building2, User, ClipboardList, X, ArrowRight, CheckCircle2, Send, Lock, Search, School, Bell } from 'lucide-react'
 import './Fila.css'
 
 interface FilaItem {
@@ -21,6 +20,7 @@ interface FilaItem {
   codigo: string | null
   convenio: string | null
   escola: string | null
+  senha: string | null
 }
 
 type FilaAgrupada = Record<string, FilaItem[]>
@@ -34,23 +34,20 @@ const ESTACOES = [
 ]
 
 export default function Fila() {
-  const { user } = useAuth()
-  const { selectedSchool } = useSchool()
+  const { user, isAdmin } = useAuth()
   const [fila, setFila] = useState<FilaAgrupada>({})
   const [loading, setLoading] = useState(true)
 
   const fetchFila = useCallback(async () => {
     try {
-      const params: Record<string, string> = {}
-      if (selectedSchool) params.escola = selectedSchool
-      const res = await api.get('/fila', { params })
+      const res = await api.get('/fila')
       setFila(res.data)
     } catch {
       console.error('Erro ao carregar fila')
     } finally {
       setLoading(false)
     }
-  }, [selectedSchool])
+  }, [])
 
   useEffect(() => {
     fetchFila()
@@ -86,6 +83,14 @@ export default function Fila() {
     }
   }
 
+  const chamarPainel = async (filaId: number) => {
+    try {
+      await api.post(`/fila/${filaId}/chamar`)
+    } catch {
+      alert('Erro ao chamar paciente no painel')
+    }
+  }
+
   const formatTempo = (diffMs: number): string => {
     const mins = Math.floor(diffMs / 60000)
     if (mins < 60) return `${mins}min`
@@ -118,7 +123,7 @@ export default function Fila() {
     return formatTempo(totalMs / finalizados.length)
   }
 
-  const canManage = user?.role === 'admin' || user?.role === 'administrativo'
+  const canManage = isAdmin || user?.role === 'administrativo'
   const [collapsedStations, setCollapsedStations] = useState<Record<string, boolean>>({})
   const [expandedCards, setExpandedCards] = useState<Record<number, boolean>>({})
   const [stationSearch, setStationSearch] = useState<Record<string, string>>({})
@@ -138,12 +143,6 @@ export default function Fila() {
       <div className="page-header">
         <h1>Fila de Atendimento</h1>
         <div className="page-header-right">
-          {selectedSchool && (
-            <span className="escola-badge-fila">
-              <School size={14} style={{verticalAlign:'middle',marginRight:4}} />
-              {selectedSchool}
-            </span>
-          )}
           {getMediaAtendimento() && (
             <span className="media-atendimento">
               <Timer size={16} style={{verticalAlign:'middle',marginRight:4}} />
@@ -213,6 +212,7 @@ export default function Fila() {
                               {estacao.key === 'altas' && <span title="Atendimento finalizado — somente admin pode alterar"><Lock size={14} className="card-lock" /></span>}
                             </div>
                             <div className="card-top-right">
+                              {item.senha && <span className="card-senha">{item.senha}</span>}
                               {item.prioridade > 0 && <span className="card-prioridade"><Zap size={14} /></span>}
                               <span className="card-tempo" title={!estacao.isAtendimento ? 'Tempo total de atendimento' : 'Tempo na estação'}>
                                 <Timer size={13} />
@@ -250,7 +250,16 @@ export default function Fila() {
                                         <Zap size={14} />{item.prioridade > 0 ? 'Prioridade' : 'Priorizar'}
                                       </button>
                                     )}
-                                    {user?.role === 'admin' && (
+                                    {canManage && (
+                                      <button
+                                        className="btn-card btn-chamar"
+                                        onClick={() => chamarPainel(item.id)}
+                                        title="Chamar no painel de senha"
+                                      >
+                                        <Bell size={14} />Chamar
+                                      </button>
+                                    )}
+                                    {isAdmin && (
                                       <button
                                         className="btn-card btn-avancar"
                                         onClick={() => avancarEstacao(item.id)}
@@ -272,7 +281,7 @@ export default function Fila() {
                                   </Link>
                                 )}
 
-                                {(estacao.key === 'altas' ? user?.role === 'admin' : canManage) && (
+                                {(estacao.key === 'altas' ? isAdmin : canManage) && (
                                   <button
                                     className="btn-card btn-remover"
                                     onClick={() => removerDaFila(item.id, item.nome_completo)}

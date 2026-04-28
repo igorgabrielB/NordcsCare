@@ -1,6 +1,7 @@
 <?php
 require_once __DIR__ . '/../config/database.php';
 require_once __DIR__ . '/../middleware/auth.php';
+require_once __DIR__ . '/../middleware/tenant.php';
 
 class HistoricoController {
 
@@ -17,8 +18,8 @@ class HistoricoController {
         $limit = min(10000, max(1, (int)($_GET['limit'] ?? 50)));
         $offset = ($page - 1) * $limit;
 
-        $where = '1=1';
-        $params = [];
+        $where = 'h.tenant_id = :tid';
+        $params = [':tid' => Tenant::id()];
 
         if (!empty($_GET['data_inicio'])) {
             $where .= ' AND h.data_atendimento >= :di';
@@ -80,8 +81,8 @@ class HistoricoController {
 
         $db = Database::getInstance();
 
-        $where = '1=1';
-        $params = [];
+        $where = 'tenant_id = :tid';
+        $params = [':tid' => Tenant::id()];
 
         if (!empty($_GET['data_inicio'])) {
             $where .= ' AND data_atendimento >= :di';
@@ -116,7 +117,7 @@ class HistoricoController {
         $stmt->execute($params);
         $porDia = $stmt->fetchAll();
 
-        // Tempo médio de atendimento (entrada → saída)
+        // Tempo médio de atendimento (entrada ? saída)
         $stmt = $db->prepare("SELECT AVG(TIMESTAMPDIFF(MINUTE, CONCAT(data_atendimento, ' ', hora_entrada), CONCAT(data_atendimento, ' ', hora_saida))) as media_minutos FROM atendimentos_historico WHERE {$where} AND hora_saida IS NOT NULL");
         $stmt->execute($params);
         $mediaMinutos = $stmt->fetchColumn();
@@ -167,8 +168,8 @@ class HistoricoController {
         Auth::requireAuth();
 
         $db = Database::getInstance();
-        $stmt = $db->prepare("SELECT DISTINCT escola FROM atendimentos_historico WHERE escola IS NOT NULL ORDER BY escola ASC");
-        $stmt->execute();
+        $stmt = $db->prepare("SELECT DISTINCT escola FROM atendimentos_historico WHERE tenant_id = :tid AND escola IS NOT NULL ORDER BY escola ASC");
+        $stmt->execute([':tid' => Tenant::id()]);
         $escolas = array_column($stmt->fetchAll(), 'escola');
 
         echo json_encode($escolas);
@@ -179,12 +180,12 @@ class HistoricoController {
      * Query params: data_inicio, data_fim, escola, resultado
      */
     public static function exportar(): void {
-        Auth::requireRole(['admin']);
+        Auth::requireTela('relatorios_atendimentos');
 
         $db = Database::getInstance();
 
-        $where = '1=1';
-        $params = [];
+        $where = 'h.tenant_id = :tid';
+        $params = [':tid' => Tenant::id()];
 
         if (!empty($_GET['data_inicio'])) {
             $where .= ' AND h.data_atendimento >= :di';

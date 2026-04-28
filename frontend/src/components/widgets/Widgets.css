@@ -1,0 +1,419 @@
+/* ============================================================ */
+/* WIDGETS — DESIGN SYSTEM                                      */
+/* ============================================================ */
+
+/* ─── Metric Widget ─────────────────────────────────────────── */
+.widget-metric {
+  position: relative;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 1.25rem 1.25rem 1.25rem 1rem;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  height: 100%;
+  overflow: hidden;
+  transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+}
+
+.widget-metric::before {
+  content: '';
+  position: absolute;
+  left: 0; top: 0; bottom: 0;
+  width: 3px;
+  background: var(--wm-glow, var(--primary));
+  border-radius: 3px 0 0 3px;
+}
+
+.widget-metric:hover {
+  transform: translateY(-2px);
+  border-color: var(--wm-glow, var(--primary));
+  box-shadow: 0 8px 24px rgba(0,0,0,0.2), 0 0 0 1px var(--wm-glow, var(--primary)) inset;
+}
+
+.wm-icon-wrap {
+  width: 46px;
+  height: 46px;
+  border-radius: 12px;
+  background: var(--wm-bg, rgba(115,69,214,0.12));
+  color: var(--wm-text, var(--primary));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition: transform 0.2s;
+}
+
+.widget-metric:hover .wm-icon-wrap {
+  transform: scale(1.1) rotate(-4deg);
+}
+
+.wm-body {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  flex: 1;
+}
+
+.wm-value {
+  font-size: 2rem;
+  font-weight: 800;
+  color: var(--text);
+  line-height: 1;
+  letter-spacing: -0.5px;
+}
+
+.wm-title {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-weight: 500;
+  letter-spacing: 0.2px;
+}
+
+.wm-skeleton {
+  display: block;
+  width: 60px;
+  height: 28px;
+  background: var(--border);
+  border-radius: 6px;
+  animation: shimmer 1.4s infinite;
+}
+
+@keyframes shimmer {
+  0%   { opacity: 0.5; }
+  50%  { opacity: 1; }
+  100% { opacity: 0.5; }
+}
+
+.wm-glow-orb {
+  display: none;
+}
+
+
+/* ─── Panel (base for non-metric widgets) ───────────────────── */
+.widget-panel {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  overflow: hidden;
+}
+
+.widget-panel-header {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.85rem 1.1rem;
+  border-bottom: 1px solid var(--border);
+  color: var(--text);
+  font-weight: 600;
+  font-size: 0.9rem;
+  flex-shrink: 0;
+}
+
+.widget-panel-header svg {
+  color: var(--primary);
+  flex-shrink: 0;
+}
+
+.widget-panel-content {
+  flex: 1;
+  padding: 0.85rem 1.1rem;
+  overflow-y: auto;
+  min-height: 0;
+}
+
+.widget-loading,
+.widget-empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  min-height: 80px;
+  color: var(--text-muted);
+  font-size: 0.88rem;
+}
+
+
+/* ─── Schools Widget ────────────────────────────────────────── */
+.widget-schools .widget-panel-header { gap: 0.5rem; }
+
+.schools-count-badge {
+  margin-left: auto;
+  background: var(--primary-light);
+  color: var(--primary);
+  font-size: 0.72rem;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 20px;
+}
+
+.schools-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.schools-list-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 10px;
+  border-radius: 10px;
+  background: var(--bg-body, var(--bg));
+  border: 1px solid var(--border);
+  transition: background 0.15s, transform 0.15s;
+}
+
+.schools-list-item:hover {
+  background: var(--bg-hover);
+  transform: translateX(2px);
+}
+
+.schools-avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: #fff;
+  flex-shrink: 0;
+}
+
+.schools-name {
+  flex: 1;
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: var(--text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.schools-time {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.78rem;
+  color: var(--text-muted);
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+
+/* ─── Queue Widget ──────────────────────────────────────────── */
+.queue-total-badge {
+  margin-left: auto;
+  background: var(--bg-elevated, var(--bg-hover));
+  color: var(--text-muted);
+  font-size: 0.72rem;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 20px;
+}
+
+.queue-stations {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.queue-station-card {
+  padding: 10px 12px 8px;
+  background: var(--qs-bg, rgba(115,69,214,0.08));
+  border: 1px solid rgba(255,255,255,0.06);
+  border-radius: 10px;
+  transition: transform 0.15s;
+}
+
+.queue-station-card:hover {
+  transform: translateX(3px);
+}
+
+.qs-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 6px;
+}
+
+.qs-label {
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--qs-color, var(--primary));
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+}
+
+.qs-count {
+  font-size: 1.5rem;
+  font-weight: 800;
+  color: var(--qs-color, var(--primary));
+  line-height: 1;
+}
+
+.qs-bar-track {
+  height: 5px;
+  background: rgba(255,255,255,0.08);
+  border-radius: 3px;
+  overflow: hidden;
+  margin-bottom: 4px;
+}
+
+.qs-bar-fill {
+  height: 100%;
+  background: var(--qs-color, var(--primary));
+  border-radius: 3px;
+  transition: width 0.5s cubic-bezier(0.4,0,0.2,1);
+}
+
+.qs-pct {
+  font-size: 0.72rem;
+  color: var(--text-muted);
+  font-weight: 500;
+}
+
+
+/* ─── Chart Widget ──────────────────────────────────────────── */
+.widget-chart .widget-panel-content {
+  padding: 0.5rem 0.5rem 0.75rem;
+}
+
+.widget-chart-content {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+/* Recharts responsive container needs height */
+.widget-chart .widget-panel-content .recharts-responsive-container {
+  flex: 1;
+}
+
+/* Pie chart layout */
+.chart-pie-wrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  height: 100%;
+}
+
+.chart-pie-legend {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  padding: 0 0.5rem 0.25rem;
+}
+
+.chart-pie-legend-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.82rem;
+}
+
+.chart-pie-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 3px;
+  flex-shrink: 0;
+}
+
+.chart-pie-name {
+  flex: 1;
+  color: var(--text-secondary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  text-transform: capitalize;
+}
+
+.chart-pie-val {
+  font-weight: 700;
+  color: var(--text);
+  font-size: 0.85rem;
+}
+
+/* Tooltip */
+.chart-tooltip {
+  background: var(--bg-elevated, #2a2a3c);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 6px 12px;
+  font-size: 0.85rem;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.3);
+}
+
+.chart-tooltip-label {
+  color: var(--text-muted);
+  font-size: 0.78rem;
+  margin-bottom: 2px;
+}
+
+.chart-tooltip-value {
+  font-weight: 700;
+  font-size: 1rem;
+}
+.widget-pie-item {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.widget-pie-color {
+  width: 12px;
+  height: 12px;
+  border-radius: 3px;
+  flex-shrink: 0;
+}
+
+.widget-pie-label {
+  flex: 1;
+  font-size: 0.85rem;
+  color: var(--text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.widget-pie-value {
+  font-weight: 600;
+  font-size: 0.9rem;
+  color: var(--text);
+}
+
+/* ===================== */
+/* RESPONSIVE           */
+/* ===================== */
+
+@media (max-width: 768px) {
+  .widget-metric {
+    padding: 1rem;
+  }
+  
+  .widget-metric-icon {
+    width: 40px;
+    height: 40px;
+  }
+  
+  .widget-metric-value {
+    font-size: 1.5rem;
+  }
+  
+  .widget-bar-item {
+    grid-template-columns: 60px 1fr 35px;
+  }
+}

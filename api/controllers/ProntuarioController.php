@@ -1,7 +1,9 @@
 <?php
 require_once __DIR__ . '/../config/database.php';
 require_once __DIR__ . '/../middleware/auth.php';
+require_once __DIR__ . '/../middleware/tenant.php';
 require_once __DIR__ . '/../utils/AuditLog.php';
+require_once __DIR__ . '/FilaController.php';
 
 class ProntuarioController {
     // ========== FUNÇÃO AUXILIAR: Adicionar à Fila Automaticamente ==========
@@ -13,39 +15,44 @@ class ProntuarioController {
             file_put_contents($logFile, $logMsg, FILE_APPEND);
 
             // Preservar o created_at original (hora de entrada na fila HOJE) antes de deletar
-            $stmtOrig = $db->prepare('SELECT created_at FROM fila WHERE paciente_id = :pid AND DATE(created_at) = CURDATE() ORDER BY created_at ASC LIMIT 1');
-            $stmtOrig->execute([':pid' => $pacienteId]);
+            $stmtOrig = $db->prepare('SELECT created_at FROM fila WHERE paciente_id = :pid AND tenant_id = :tid AND DATE(created_at) = CURDATE() ORDER BY created_at ASC LIMIT 1');
+            $stmtOrig->execute([':pid' => $pacienteId, ':tid' => Tenant::id()]);
             $originalCreatedAt = $stmtOrig->fetchColumn();
 
             // Remove TODOS os registros do paciente na fila (garante apenas 1 registro por paciente)
-            $stmt = $db->prepare('DELETE FROM fila WHERE paciente_id = :pid');
-            $stmt->execute([':pid' => $pacienteId]);
+            $stmt = $db->prepare('DELETE FROM fila WHERE paciente_id = :pid AND tenant_id = :tid');
+            $stmt->execute([':pid' => $pacienteId, ':tid' => Tenant::id()]);
             $deleted = $stmt->rowCount();
             file_put_contents($logFile, "[" . date('Y-m-d H:i:s') . "] Removido paciente de $deleted filas anteriores\n", FILE_APPEND);
 
             // Adiciona à fila na nova estação, mantendo created_at original
             // Altas/encaminhamentos = concluido (atendimento finalizado); demais = em_atendimento
             $status = in_array($estacao, ['altas', 'encaminhamentos']) ? 'concluido' : 'em_atendimento';
+            $novaSenha = FilaController::gerarSenha($db, $estacao, Tenant::id());
             if ($originalCreatedAt) {
                 $stmt = $db->prepare(
-                    'INSERT INTO fila (paciente_id, estacao, status, created_at)
-                     VALUES (:pid, :estacao, :status, :created_at)'
+                    'INSERT INTO fila (tenant_id, paciente_id, estacao, status, senha, created_at)
+                     VALUES (:tid, :pid, :estacao, :status, :senha, :created_at)'
                 );
                 $result = $stmt->execute([
-                    ':pid' => $pacienteId,
-                    ':estacao' => $estacao,
-                    ':status' => $status,
+                    ':tid'        => Tenant::id(),
+                    ':pid'        => $pacienteId,
+                    ':estacao'    => $estacao,
+                    ':status'     => $status,
+                    ':senha'      => $novaSenha,
                     ':created_at' => $originalCreatedAt,
                 ]);
             } else {
                 $stmt = $db->prepare(
-                    'INSERT INTO fila (paciente_id, estacao, status)
-                     VALUES (:pid, :estacao, :status)'
+                    'INSERT INTO fila (tenant_id, paciente_id, estacao, status, senha)
+                     VALUES (:tid, :pid, :estacao, :status, :senha)'
                 );
                 $result = $stmt->execute([
-                    ':pid' => $pacienteId,
+                    ':tid'     => Tenant::id(),
+                    ':pid'     => $pacienteId,
                     ':estacao' => $estacao,
-                    ':status' => $status,
+                    ':status'  => $status,
+                    ':senha'   => $novaSenha,
                 ]);
             }
             file_put_contents($logFile, "[" . date('Y-m-d H:i:s') . "] INSERT resultado: " . ($result ? 'SUCCESS' : 'FAIL') . " (created_at preservado: " . ($originalCreatedAt ?: 'N/A') . ")\n", FILE_APPEND);
@@ -69,13 +76,13 @@ class ProntuarioController {
             $logFile = __DIR__ . '/../logs/fila.log';
 
             // Buscar dados do paciente (escola)
-            $stmt = $db->prepare('SELECT escola FROM pacientes WHERE id = :id');
-            $stmt->execute([':id' => $pacienteId]);
+            $stmt = $db->prepare('SELECT escola FROM pacientes WHERE id = :id AND tenant_id = :tid');
+            $stmt->execute([':id' => $pacienteId, ':tid' => Tenant::id()]);
             $escola = $stmt->fetchColumn();
 
             // Buscar laudo (diagnostico, conduta)
-            $stmt = $db->prepare('SELECT diagnostico, diagnostico_od, diagnostico_oe, conduta_inicial, conduta_final, medico_id, especialidade FROM laudos WHERE paciente_id = :pid ORDER BY created_at DESC LIMIT 1');
-            $stmt->execute([':pid' => $pacienteId]);
+            $stmt = $db->prepare('SELECT diagnostico, diagnostico_od, diagnostico_oe, conduta_inicial, conduta_final, medico_id, especialidade FROM laudos WHERE paciente_id = :pid AND tenant_id = :tid ORDER BY created_at DESC LIMIT 1');
+            $stmt->execute([':pid' => $pacienteId, ':tid' => Tenant::id()]);
             $laudo = $stmt->fetch();
 
             // Buscar nome do médico
@@ -87,7 +94,7 @@ class ProntuarioController {
                 $medicoNome = $stmt->fetchColumn();
             }
 
-            // Mapear resultado: estação da fila → valor do ENUM
+            // Mapear resultado: estação da fila ? valor do ENUM
             $resultadoMap = [
                 'altas' => 'alta',
                 'encaminhamentos' => 'encaminhamento',
@@ -107,15 +114,15 @@ class ProntuarioController {
             $horaSaida = date('H:i:s');
 
             // Evitar duplicata: não inserir se já existe registro para esse paciente hoje
-            $stmt = $db->prepare('SELECT id FROM atendimentos_historico WHERE paciente_id = :pid AND data_atendimento = CURDATE() LIMIT 1');
-            $stmt->execute([':pid' => $pacienteId]);
+            $stmt = $db->prepare('SELECT id FROM atendimentos_historico WHERE paciente_id = :pid AND tenant_id = :tid AND data_atendimento = CURDATE() LIMIT 1');
+            $stmt->execute([':pid' => $pacienteId, ':tid' => Tenant::id()]);
             if ($stmt->fetch()) {
                 // Atualizar registro existente
                 $stmt = $db->prepare(
                     'UPDATE atendimentos_historico SET hora_saida = :hora_saida, resultado = :resultado,
                      diagnostico = :diagnostico, especialidade = :especialidade, conduta_inicial = :conduta_ini, conduta_final = :conduta_fin,
                      medico_id = :medico_id, medico_nome = :medico_nome
-                     WHERE paciente_id = :pid AND data_atendimento = CURDATE()'
+                     WHERE paciente_id = :pid AND tenant_id = :tid AND data_atendimento = CURDATE()'
                 );
                 $stmt->execute([
                     ':hora_saida' => $horaSaida,
@@ -127,15 +134,16 @@ class ProntuarioController {
                     ':medico_id' => $medicoId,
                     ':medico_nome' => $medicoNome,
                     ':pid' => $pacienteId,
+                    ':tid' => Tenant::id(),
                 ]);
-                file_put_contents($logFile, "[" . date('Y-m-d H:i:s') . "] Histórico ATUALIZADO para paciente {$pacienteId} (resultado: {$resultadoFinal})\n", FILE_APPEND);
             } else {
                 // Inserir novo registro
                 $stmt = $db->prepare(
-                    'INSERT INTO atendimentos_historico (paciente_id, escola, data_atendimento, hora_entrada, hora_saida, resultado, diagnostico, especialidade, conduta_inicial, conduta_final, medico_id, medico_nome)
-                     VALUES (:pid, :escola, :data, :hora_entrada, :hora_saida, :resultado, :diagnostico, :especialidade, :conduta_ini, :conduta_fin, :medico_id, :medico_nome)'
+                    'INSERT INTO atendimentos_historico (tenant_id, paciente_id, escola, data_atendimento, hora_entrada, hora_saida, resultado, diagnostico, especialidade, conduta_inicial, conduta_final, medico_id, medico_nome)
+                     VALUES (:tid, :pid, :escola, :data, :hora_entrada, :hora_saida, :resultado, :diagnostico, :especialidade, :conduta_ini, :conduta_fin, :medico_id, :medico_nome)'
                 );
                 $stmt->execute([
+                    ':tid' => Tenant::id(),
                     ':pid' => $pacienteId,
                     ':escola' => $escola,
                     ':data' => $dataAtendimento,
@@ -165,8 +173,8 @@ class ProntuarioController {
         $db = Database::getInstance();
 
         // Dados do paciente
-        $stmt = $db->prepare('SELECT * FROM pacientes WHERE id = :id');
-        $stmt->execute([':id' => $pacienteId]);
+        $stmt = $db->prepare('SELECT * FROM pacientes WHERE id = :id AND tenant_id = :tid');
+        $stmt->execute([':id' => $pacienteId, ':tid' => Tenant::id()]);
         $paciente = $stmt->fetch();
 
         if (!$paciente) {
@@ -234,7 +242,7 @@ class ProntuarioController {
     // ========== SALVAR ATENDIMENTO UNIFICADO ==========
 
     public static function storeAtendimento(int $pacienteId): void {
-        $user = Auth::requireRole(['admin', 'medico', 'administrativo']);
+        $user = Auth::requireTela('prontuario');
         $input = json_decode(file_get_contents('php://input'), true);
         $db = Database::getInstance();
 
@@ -295,11 +303,12 @@ class ProntuarioController {
                 $ids['anamnese_id'] = (int)$existingAnamnese['id'];
             } else {
                 $stmt = $db->prepare(
-                    'INSERT INTO anamneses (paciente_id, medico_id, queixa_principal, historico_ocular,
+                    'INSERT INTO anamneses (tenant_id, paciente_id, medico_id, queixa_principal, historico_ocular,
                      historico_familiar, alergias, medicamentos_em_uso, cirurgias_anteriores, historico_pessoal, observacoes)
-                     VALUES (:pid, :mid, :queixa, :hist_ocular, :hist_familiar, :alergias, :medicamentos, :cirurgias, :hist_pessoal, :obs)'
+                     VALUES (:tid, :pid, :mid, :queixa, :hist_ocular, :hist_familiar, :alergias, :medicamentos, :cirurgias, :hist_pessoal, :obs)'
                 );
                 $stmt->execute([
+                    ':tid' => Tenant::id(),
                     ':pid' => $pacienteId,
                     ':mid' => $medicoId,
                     ':queixa' => $anamnese['queixa_principal'],
@@ -325,10 +334,11 @@ class ProntuarioController {
         foreach ($exames as $exame) {
             if (empty($exame['tipo_exame'])) continue;
             $stmt = $db->prepare(
-                'INSERT INTO exames (paciente_id, medico_id, tipo_exame, olho, resultado, observacoes)
-                 VALUES (:pid, :mid, :tipo, :olho, :resultado, :obs)'
+                'INSERT INTO exames (tenant_id, paciente_id, medico_id, tipo_exame, olho, resultado, observacoes)
+                 VALUES (:tid, :pid, :mid, :tipo, :olho, :resultado, :obs)'
             );
             $stmt->execute([
+                ':tid' => Tenant::id(),
                 ':pid' => $pacienteId,
                 ':mid' => $medicoId,
                 ':tipo' => $exame['tipo_exame'],
@@ -338,7 +348,7 @@ class ProntuarioController {
             ]);
             $ids['exame_ids'][] = (int)$db->lastInsertId();
         }
-        // Mover automaticamente: exames → laudos (se houve exames novos)
+        // Mover automaticamente: exames ? laudos (se houve exames novos)
         if (!empty($ids['exame_ids'])) {
             self::adicionarNaFilaAutomatico($db, $pacienteId, 'laudos', 'exames');
         }
@@ -350,13 +360,13 @@ class ProntuarioController {
             // Remove registros anteriores de tonometria manual desse paciente
             $db->prepare("DELETE FROM exames WHERE paciente_id = :pid AND tipo_exame = 'tonometria'")->execute([':pid' => $pacienteId]);
             $stmtTono = $db->prepare(
-                'INSERT INTO exames (paciente_id, medico_id, tipo_exame, olho, resultado) VALUES (:pid, :mid, :tipo, :olho, :resultado)'
+                'INSERT INTO exames (tenant_id, paciente_id, medico_id, tipo_exame, olho, resultado) VALUES (:tid, :pid, :mid, :tipo, :olho, :resultado)'
             );
             if ($tonoOD !== '') {
-                $stmtTono->execute([':pid' => $pacienteId, ':mid' => $medicoId, ':tipo' => 'tonometria', ':olho' => 'OD', ':resultado' => $tonoOD]);
+                $stmtTono->execute([':tid' => Tenant::id(), ':pid' => $pacienteId, ':mid' => $medicoId, ':tipo' => 'tonometria', ':olho' => 'OD', ':resultado' => $tonoOD]);
             }
             if ($tonoOE !== '') {
-                $stmtTono->execute([':pid' => $pacienteId, ':mid' => $medicoId, ':tipo' => 'tonometria', ':olho' => 'OE', ':resultado' => $tonoOE]);
+                $stmtTono->execute([':tid' => Tenant::id(), ':pid' => $pacienteId, ':mid' => $medicoId, ':tipo' => 'tonometria', ':olho' => 'OE', ':resultado' => $tonoOE]);
             }
         }
 
@@ -366,13 +376,13 @@ class ProntuarioController {
         if ($bioOD !== '' || $bioOE !== '') {
             $db->prepare("DELETE FROM exames WHERE paciente_id = :pid AND tipo_exame = 'biomicroscopia'")->execute([':pid' => $pacienteId]);
             $stmtBio = $db->prepare(
-                'INSERT INTO exames (paciente_id, medico_id, tipo_exame, olho, resultado) VALUES (:pid, :mid, :tipo, :olho, :resultado)'
+                'INSERT INTO exames (tenant_id, paciente_id, medico_id, tipo_exame, olho, resultado) VALUES (:tid, :pid, :mid, :tipo, :olho, :resultado)'
             );
             if ($bioOD !== '') {
-                $stmtBio->execute([':pid' => $pacienteId, ':mid' => $medicoId, ':tipo' => 'biomicroscopia', ':olho' => 'OD', ':resultado' => $bioOD]);
+                $stmtBio->execute([':tid' => Tenant::id(), ':pid' => $pacienteId, ':mid' => $medicoId, ':tipo' => 'biomicroscopia', ':olho' => 'OD', ':resultado' => $bioOD]);
             }
             if ($bioOE !== '') {
-                $stmtBio->execute([':pid' => $pacienteId, ':mid' => $medicoId, ':tipo' => 'biomicroscopia', ':olho' => 'OE', ':resultado' => $bioOE]);
+                $stmtBio->execute([':tid' => Tenant::id(), ':pid' => $pacienteId, ':mid' => $medicoId, ':tipo' => 'biomicroscopia', ':olho' => 'OE', ':resultado' => $bioOE]);
             }
         }
 
@@ -420,16 +430,17 @@ class ProntuarioController {
                 $ids['prescricao_id'] = (int)$existingPrescricao['id'];
             } else {
                 $stmt = $db->prepare(
-                    'INSERT INTO prescricoes (paciente_id, medico_id, tipo,
+                    'INSERT INTO prescricoes (tenant_id, paciente_id, medico_id, tipo,
                      od_esferico, od_cilindrico, od_eixo, od_adicao,
                      oe_esferico, oe_cilindrico, oe_eixo, oe_adicao,
                      dp, acuidade_od, acuidade_oe, observacoes)
-                     VALUES (:pid, :mid, :tipo,
+                     VALUES (:tid, :pid, :mid, :tipo,
                      :od_esf, :od_cil, :od_eixo, :od_add,
                      :oe_esf, :oe_cil, :oe_eixo, :oe_add,
                      :dp, :ac_od, :ac_oe, :obs)'
                 );
                 $stmt->execute([
+                    ':tid' => Tenant::id(),
                     ':pid' => $pacienteId,
                     ':mid' => $medicoId,
                     ':tipo' => $prescricao['tipo'] ?? 'oculos',
@@ -482,12 +493,13 @@ class ProntuarioController {
             $refMedicoNome = $stmtRefMedico->fetchColumn();
             $stmtRefHist = $db->prepare(
                 'UPDATE atendimentos_historico SET medico_refracao_id = :ref_id, medico_refracao_nome = :ref_nome
-                 WHERE paciente_id = :pid AND data_atendimento = CURDATE()'
+                 WHERE paciente_id = :pid AND tenant_id = :tid AND data_atendimento = CURDATE()'
             );
             $stmtRefHist->execute([
                 ':ref_id' => $medicoId,
                 ':ref_nome' => $refMedicoNome ?: null,
                 ':pid' => $pacienteId,
+                ':tid' => Tenant::id(),
             ]);
         }
 
@@ -526,10 +538,11 @@ class ProntuarioController {
                 $ids['laudo_id'] = (int)$existingLaudo['id'];
             } else {
                 $stmt = $db->prepare(
-                    'INSERT INTO laudos (paciente_id, medico_id, diagnostico, diagnostico_od, diagnostico_oe, conduta_inicial, conduta_final, observacoes, especialidade)
-                     VALUES (:pid, :mid, :diagnostico, :diagnostico_od, :diagnostico_oe, :conduta_ini, :conduta_fin, :obs, :especialidade)'
+                    'INSERT INTO laudos (tenant_id, paciente_id, medico_id, diagnostico, diagnostico_od, diagnostico_oe, conduta_inicial, conduta_final, observacoes, especialidade)
+                     VALUES (:tid, :pid, :mid, :diagnostico, :diagnostico_od, :diagnostico_oe, :conduta_ini, :conduta_fin, :obs, :especialidade)'
                 );
                 $stmt->execute([
+                    ':tid' => Tenant::id(),
                     ':pid' => $pacienteId,
                     ':mid' => $medicoId,
                     ':diagnostico' => $laudo['diagnostico'] ?? null,
@@ -614,10 +627,11 @@ class ProntuarioController {
                 $ids['acuidade_id'] = (int)$existingAcuidade['id'];
             } else {
                 $stmt = $db->prepare(
-                    'INSERT INTO acuidade_visual (paciente_id, medico_id, sem_oculos_od, sem_oculos_oe, usa_oculos, com_oculos_od, com_oculos_oe, dilata, observacoes)
-                     VALUES (:pid, :mid, :sem_od, :sem_oe, :usa_oc, :com_od, :com_oe, :dilata, :obs)'
+                    'INSERT INTO acuidade_visual (tenant_id, paciente_id, medico_id, sem_oculos_od, sem_oculos_oe, usa_oculos, com_oculos_od, com_oculos_oe, dilata, observacoes)
+                     VALUES (:tid, :pid, :mid, :sem_od, :sem_oe, :usa_oc, :com_od, :com_oe, :dilata, :obs)'
                 );
                 $stmt->execute([
+                    ':tid' => Tenant::id(),
                     ':pid' => $pacienteId,
                     ':mid' => $medicoId,
                     ':sem_od' => $acuidade['sem_oculos_od'] ?? null,
@@ -631,7 +645,7 @@ class ProntuarioController {
                 $ids['acuidade_id'] = (int)$db->lastInsertId();
             }
 
-            // Mover automaticamente: acuidade → laudos
+            // Mover automaticamente: acuidade ? laudos
             self::adicionarNaFilaAutomatico($db, $pacienteId, 'laudos', 'acuidade');
         }
 
@@ -655,24 +669,25 @@ class ProntuarioController {
         $user = Auth::requireAuth();
         $db = Database::getInstance();
 
-        // Admin vê todos, demais veem só os seus
-        if ($user['role'] === 'admin') {
+        // Admin/master vê todos, demais veem só os seus
+        if (Auth::hasTela($user, 'admin')) {
             $stmt = $db->prepare(
                 'SELECT m.id, m.nome, m.dados, u.nome AS autor_nome, u.role AS autor_role, m.created_at
                  FROM modelo_laudos m
                  JOIN usuarios u ON u.id = m.usuario_id
+                 WHERE m.tenant_id = :tid
                  ORDER BY m.nome ASC'
             );
-            $stmt->execute();
+            $stmt->execute([':tid' => Tenant::id()]);
         } else {
             $stmt = $db->prepare(
                 'SELECT m.id, m.nome, m.dados, u.nome AS autor_nome, u.role AS autor_role, m.created_at
                  FROM modelo_laudos m
                  JOIN usuarios u ON u.id = m.usuario_id
-                 WHERE m.usuario_id = :uid
+                 WHERE m.tenant_id = :tid AND m.usuario_id = :uid
                  ORDER BY m.nome ASC'
             );
-            $stmt->execute([':uid' => $user['sub']]);
+            $stmt->execute([':tid' => Tenant::id(), ':uid' => $user['sub']]);
         }
         $modelos = $stmt->fetchAll();
         foreach ($modelos as &$m) {
@@ -682,7 +697,7 @@ class ProntuarioController {
     }
 
     public static function criarModelo(): void {
-        $user = Auth::requireRole(['admin', 'medico']);
+        $user = Auth::requireTela('prontuario');
         $input = json_decode(file_get_contents('php://input'), true);
         $db = Database::getInstance();
 
@@ -696,10 +711,11 @@ class ProntuarioController {
         $dados = $input['dados'] ?? null;
 
         $stmt = $db->prepare(
-            'INSERT INTO modelo_laudos (nome, dados, usuario_id)
-             VALUES (:nome, :dados, :uid)'
+            'INSERT INTO modelo_laudos (tenant_id, nome, dados, usuario_id)
+             VALUES (:tid, :nome, :dados, :uid)'
         );
         $stmt->execute([
+            ':tid' => Tenant::id(),
             ':nome' => $nome,
             ':dados' => $dados ? json_encode($dados) : null,
             ':uid' => $user['sub'],
@@ -710,11 +726,11 @@ class ProntuarioController {
     }
 
     public static function excluirModelo(int $id): void {
-        $user = Auth::requireRole(['admin', 'medico']);
+        $user = Auth::requireTela('prontuario');
         $db = Database::getInstance();
 
-        $stmt = $db->prepare('SELECT id, usuario_id FROM modelo_laudos WHERE id = :id');
-        $stmt->execute([':id' => $id]);
+        $stmt = $db->prepare('SELECT id, usuario_id FROM modelo_laudos WHERE id = :id AND tenant_id = :tid');
+        $stmt->execute([':id' => $id, ':tid' => Tenant::id()]);
         $modelo = $stmt->fetch();
 
         if (!$modelo) {
@@ -723,26 +739,26 @@ class ProntuarioController {
             return;
         }
 
-        if ((int)$modelo['usuario_id'] !== $user['sub'] && $user['role'] !== 'admin') {
+        if ((int)$modelo['usuario_id'] !== $user['sub'] && !Auth::hasTela($user, 'admin')) {
             http_response_code(403);
             echo json_encode(['error' => 'Sem permissão para excluir este modelo']);
             return;
         }
 
-        $stmt = $db->prepare('DELETE FROM modelo_laudos WHERE id = :id');
-        $stmt->execute([':id' => $id]);
+        $stmt = $db->prepare('DELETE FROM modelo_laudos WHERE id = :id AND tenant_id = :tid');
+        $stmt->execute([':id' => $id, ':tid' => Tenant::id()]);
         echo json_encode(['message' => 'Modelo excluído com sucesso']);
     }
 
     // ========== EXCLUIR LAUDO COMPLETO (somente admin) ==========
 
     public static function excluirLaudo(int $pacienteId): void {
-        $user = Auth::requireRole(['admin']);
+        $user = Auth::requireTela('prontuario');
         $db = Database::getInstance();
 
         // Verifica se paciente existe
-        $stmt = $db->prepare('SELECT id FROM pacientes WHERE id = :id');
-        $stmt->execute([':id' => $pacienteId]);
+        $stmt = $db->prepare('SELECT id FROM pacientes WHERE id = :id AND tenant_id = :tid');
+        $stmt->execute([':id' => $pacienteId, ':tid' => Tenant::id()]);
         if (!$stmt->fetch()) {
             http_response_code(404);
             echo json_encode(['error' => 'Paciente não encontrado']);
@@ -751,11 +767,11 @@ class ProntuarioController {
 
         try {
             $db->beginTransaction();
-            $db->prepare('DELETE FROM anamneses WHERE paciente_id = :pid')->execute([':pid' => $pacienteId]);
-            $db->prepare('DELETE FROM exames WHERE paciente_id = :pid')->execute([':pid' => $pacienteId]);
-            $db->prepare('DELETE FROM prescricoes WHERE paciente_id = :pid')->execute([':pid' => $pacienteId]);
-            $db->prepare('DELETE FROM laudos WHERE paciente_id = :pid')->execute([':pid' => $pacienteId]);
-            $db->prepare('DELETE FROM acuidade_visual WHERE paciente_id = :pid')->execute([':pid' => $pacienteId]);
+            $db->prepare('DELETE FROM anamneses WHERE paciente_id = :pid AND tenant_id = :tid')->execute([':pid' => $pacienteId, ':tid' => Tenant::id()]);
+            $db->prepare('DELETE FROM exames WHERE paciente_id = :pid AND tenant_id = :tid')->execute([':pid' => $pacienteId, ':tid' => Tenant::id()]);
+            $db->prepare('DELETE FROM prescricoes WHERE paciente_id = :pid AND tenant_id = :tid')->execute([':pid' => $pacienteId, ':tid' => Tenant::id()]);
+            $db->prepare('DELETE FROM laudos WHERE paciente_id = :pid AND tenant_id = :tid')->execute([':pid' => $pacienteId, ':tid' => Tenant::id()]);
+            $db->prepare('DELETE FROM acuidade_visual WHERE paciente_id = :pid AND tenant_id = :tid')->execute([':pid' => $pacienteId, ':tid' => Tenant::id()]);
             $db->commit();
             AuditLog::registrar('excluir', 'prontuario', $pacienteId, 'Laudo completo excluído', $user);
             echo json_encode(['message' => 'Laudo excluído com sucesso']);

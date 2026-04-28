@@ -1,4 +1,4 @@
-import { Navigate, Outlet } from 'react-router-dom'
+import { Navigate, Outlet, useLocation } from 'react-router-dom'
 import { useAuth } from '../../contexts/AuthContext.tsx'
 import { useState, useEffect } from 'react'
 import Sidebar from './Sidebar.tsx'
@@ -7,13 +7,10 @@ import ThemeSwitch from '../ThemeSwitch'
 import Footer from './Footer.tsx'
 import './Layout.css'
 
-interface LayoutProps {
-  allowedRoles?: string[]
-}
-
-export default function Layout({ allowedRoles }: LayoutProps) {
-  const { isAuthenticated, user } = useAuth()
-  const [sidebarOpen, setSidebarOpen] = useState(true)
+export default function Layout() {
+  const { isAuthenticated } = useAuth()
+  const location = useLocation()
+  const isMenuPage = location.pathname === '/menu'
   const [light, setLight] = useState(() => {
     return localStorage.getItem('theme') === 'light';
   });
@@ -32,15 +29,11 @@ export default function Layout({ allowedRoles }: LayoutProps) {
     return <Navigate to="/login" replace />
   }
 
-  if (allowedRoles && user && !allowedRoles.includes(user.role)) {
-    return <Navigate to="/home" replace />
-  }
-
   return (
     <div className="layout">
-      <Sidebar isOpen={sidebarOpen} />
-      <div className="layout-main" style={{ marginLeft: sidebarOpen ? 'var(--sidebar-width)' : '60px' }}>
-        <Header onToggleSidebar={() => setSidebarOpen(!sidebarOpen)} sidebarOpen={sidebarOpen}>
+      {!isMenuPage && <Sidebar />}
+      <div className="layout-main" style={{ marginLeft: isMenuPage ? '0' : '60px' }}>
+        <Header onToggleSidebar={() => {}} sidebarOpen={false} hideSidebarToggle={isMenuPage}>
           <ThemeSwitch light={light} setLight={setLight} />
         </Header>
         <main className="layout-content">

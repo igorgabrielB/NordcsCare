@@ -1,6 +1,10 @@
-import { useState, useEffect, useMemo } from 'react'
+import { useState, useEffect, useMemo, useRef } from 'react'
 import { Link } from 'react-router-dom'
-import { Shield, Stethoscope, Briefcase, Check, X, ArrowLeft, Users, UserCheck, UserX, ChevronDown, Search, Lock } from 'lucide-react'
+import {
+  ArrowLeft, ShieldCheck, Search, Users, UserX, Save,
+  Shield, Stethoscope, Briefcase, Crown, ChevronDown,
+  ChevronRight, Check, Minus, AlertTriangle, X
+} from 'lucide-react'
 import api from '../../services/api'
 import './GerenciamentoRoles.css'
 
@@ -13,281 +17,423 @@ interface Usuario {
   ativo: number
 }
 
-const ROLES_CONFIG = [
-  {
-    role: 'admin',
-    label: 'Administrador',
-    prefix: 'Adm.',
-    icon: <Shield size={22} />,
-    gradient: 'linear-gradient(135deg, #805ad5, #b794f4)',
-    color: 'rgba(128,90,213,0.15)',
-    iconColor: '#b794f4',
-    borderColor: '#805ad5',
-    description: 'Acesso completo a todas as funcionalidades do sistema',
-    permissions: [
-      { label: 'Acesso total ao sistema', allowed: true },
-      { label: 'Gerenciar usuários e médicos', allowed: true },
-      { label: 'Cadastrar/editar pacientes', allowed: true },
-      { label: 'Gerenciar fila de atendimento', allowed: true },
-      { label: 'Registrar acuidade visual', allowed: true },
-      { label: 'Criar laudos e prescrições', allowed: true },
-      { label: 'Imprimir documentos (receita, atestado)', allowed: true },
-      { label: 'Relatório completo', allowed: true },
-      { label: 'Importar/excluir alunos em lote', allowed: true },
-    ],
-  },
-  {
-    role: 'medico',
-    label: 'Médico',
-    prefix: 'Dr(a).',
-    icon: <Stethoscope size={22} />,
-    gradient: 'linear-gradient(135deg, #38a169, #68d391)',
-    color: 'rgba(56,161,105,0.15)',
-    iconColor: '#68d391',
-    borderColor: '#38a169',
-    description: 'Foco em laudos, prescrições e atendimentos clínicos',
-    permissions: [
-      { label: 'Cadastrar/editar pacientes', allowed: true },
-      { label: 'Registrar acuidade visual', allowed: false },
-      { label: 'Criar laudos e prescrições', allowed: true },
-      { label: 'Imprimir documentos (receita, atestado)', allowed: true },
-      { label: 'Gerenciar fila de atendimento', allowed: false },
-      { label: 'Gerenciar usuários e médicos', allowed: false },
-      { label: 'Importar/excluir alunos em lote', allowed: false },
-      { label: 'Relatório completo', allowed: false },
-    ],
-  },
-  {
-    role: 'administrativo',
-    label: 'Administrativo',
-    prefix: 'Assist.',
-    icon: <Briefcase size={22} />,
-    gradient: 'linear-gradient(135deg, #d69e2e, #ecc94b)',
-    color: 'rgba(214,158,46,0.15)',
-    iconColor: '#ecc94b',
-    borderColor: '#d69e2e',
-    description: 'Gerenciamento de filas, pacientes e acuidade visual',
-    permissions: [
-      { label: 'Cadastrar/editar pacientes', allowed: true },
-      { label: 'Gerenciar fila de atendimento', allowed: true },
-      { label: 'Registrar acuidade visual', allowed: true },
-      { label: 'Criar laudos e prescrições', allowed: false },
-      { label: 'Imprimir documentos (receita, atestado)', allowed: false },
-      { label: 'Gerenciar usuários e médicos', allowed: false },
-      { label: 'Importar/excluir alunos em lote', allowed: false },
-      { label: 'Relatório completo', allowed: false },
-    ],
-  },
-]
+interface TelaInfo {
+  codigo: string
+  nome: string
+  categoria: string
+  descricao?: string
+}
 
-export default function GerenciamentoRoles() {
+const CATEGORIAS: Record<string, { label: string; color: string; bg: string }> = {
+  operacional: { label: 'Operacional',  color: '#3b82f6', bg: 'rgba(59,130,246,0.1)' },
+  gestao:      { label: 'Gestão',       color: '#a855f7', bg: 'rgba(168,85,247,0.1)' },
+  academico:   { label: 'Acadêmico',    color: '#f59e0b', bg: 'rgba(245,158,11,0.1)' },
+  clinico:     { label: 'Clínico',      color: '#14b8a6', bg: 'rgba(20,184,166,0.1)' },
+  sistema:     { label: 'Sistema',      color: '#6366f1', bg: 'rgba(99,102,241,0.1)' },
+  geral:       { label: 'Geral',        color: '#64748b', bg: 'rgba(100,116,139,0.1)' },
+}
+
+const CATEGORIA_ORDER = ['operacional', 'gestao', 'academico', 'clinico', 'sistema', 'geral']
+
+const ROLE_INFO: Record<string, { label: string; icon: JSX.Element; cls: string }> = {
+  master:        { label: 'Master',          icon: <Crown size={11} />,        cls: 'rl-badge-master' },
+  admin:         { label: 'Admin',           icon: <Shield size={11} />,       cls: 'rl-badge-admin' },
+  medico:        { label: 'Médico',          icon: <Stethoscope size={11} />,  cls: 'rl-badge-medico' },
+  administrativo:{ label: 'Administrativo',  icon: <Briefcase size={11} />,    cls: 'rl-badge-adm' },
+}
+
+function highlight(text: string, query: string) {
+  if (!query) return <>{text}</>
+  const idx = text.toLowerCase().indexOf(query.toLowerCase())
+  if (idx === -1) return <>{text}</>
+  return (
+    <>
+      {text.slice(0, idx)}
+      <mark className="rl-highlight">{text.slice(idx, idx + query.length)}</mark>
+      {text.slice(idx + query.length)}
+    </>
+  )
+}
+
+function roleBadgeInfo(role: string) {
+  if (role === 'master') return { icon: <Crown size={10} />, cls: 'rl-badge-master' }
+  if (role === 'admin') return { icon: <Shield size={10} />, cls: 'rl-badge-admin' }
+  if (role === 'medico') return { icon: <Stethoscope size={10} />, cls: 'rl-badge-medico' }
+  return { icon: <Briefcase size={10} />, cls: 'rl-badge-adm' }
+}
+
+export default function GerenciamentoPermissoes() {
   const [usuarios, setUsuarios] = useState<Usuario[]>([])
-  const [loading, setLoading] = useState(true)
-  const [expandedCards, setExpandedCards] = useState<Record<string, boolean>>({
-    admin: true, medico: true, administrativo: true
-  })
+  const [loadingUsers, setLoadingUsers] = useState(true)
   const [searchUser, setSearchUser] = useState('')
+  const searchRef = useRef<HTMLInputElement>(null)
 
-  useEffect(() => { loadUsuarios() }, [])
+  const [selectedUser, setSelectedUser] = useState<Usuario | null>(null)
+  const [allTelas, setAllTelas] = useState<TelaInfo[]>([])
+  const [selectedTelas, setSelectedTelas] = useState<Set<string>>(new Set())
+  const [originalTelas, setOriginalTelas] = useState<Set<string>>(new Set())
+  const [loadingPerms, setLoadingPerms] = useState(false)
+  const [saving, setSaving] = useState(false)
+  const [savedFeedback, setSavedFeedback] = useState(false)
+  const [collapsedCats, setCollapsedCats] = useState<Set<string>>(new Set())
+  const [toast, setToast] = useState<{ msg: string; type: 'success' | 'error' } | null>(null)
 
-  async function loadUsuarios() {
+  const hasChanges = useMemo(() => {
+    if (selectedTelas.size !== originalTelas.size) return true
+    for (const t of selectedTelas) if (!originalTelas.has(t)) return true
+    return false
+  }, [selectedTelas, originalTelas])
+
+  useEffect(() => {
+    api.get('/usuarios')
+      .then(r => setUsuarios(r.data))
+      .catch(() => {})
+      .finally(() => setLoadingUsers(false))
+  }, [])
+
+  useEffect(() => {
+    if (!toast) return
+    const t = setTimeout(() => setToast(null), 3000)
+    return () => clearTimeout(t)
+  }, [toast])
+
+  const filteredUsers = useMemo(() =>
+    usuarios.filter(u =>
+      u.nome.toLowerCase().includes(searchUser.toLowerCase()) ||
+      u.login.toLowerCase().includes(searchUser.toLowerCase()) ||
+      (u.email || '').toLowerCase().includes(searchUser.toLowerCase())
+    ), [usuarios, searchUser])
+
+  const selectUser = async (u: Usuario) => {
+    if (hasChanges) {
+      if (!confirm('Há alterações não salvas. Deseja descartar?')) return
+    }
+    setSelectedUser(u)
+    setAllTelas([])
+    setSelectedTelas(new Set())
+    setOriginalTelas(new Set())
+    setCollapsedCats(new Set())
+    setLoadingPerms(true)
     try {
-      const { data } = await api.get('/usuarios')
-      setUsuarios(data)
-    } catch { /* ignore */ }
-    finally { setLoading(false) }
+      const [telasRes, userRes] = await Promise.all([
+        api.get('/permissoes/telas'),
+        api.get(`/permissoes/usuario/${u.id}`),
+      ])
+      const telas: TelaInfo[] = Array.isArray(telasRes.data) ? telasRes.data : []
+      const userTelas: string[] = userRes.data.telas ?? []
+      setAllTelas(telas)
+      setSelectedTelas(new Set(userTelas))
+      setOriginalTelas(new Set(userTelas))
+    } catch {
+      setToast({ msg: 'Erro ao carregar permissões', type: 'error' })
+    } finally {
+      setLoadingPerms(false)
+    }
   }
 
-  async function changeRole(userId: number, newRole: string) {
+  const toggleTela = (codigo: string) => {
+    setSelectedTelas(prev => {
+      const next = new Set(prev)
+      if (next.has(codigo)) next.delete(codigo)
+      else next.add(codigo)
+      return next
+    })
+  }
+
+  const toggleCategoria = (cat: string) => {
+    const grupo = allTelas.filter(t => t.categoria === cat)
+    const allSel = grupo.every(t => selectedTelas.has(t.codigo))
+    setSelectedTelas(prev => {
+      const next = new Set(prev)
+      if (allSel) grupo.forEach(t => next.delete(t.codigo))
+      else grupo.forEach(t => next.add(t.codigo))
+      return next
+    })
+  }
+
+  const toggleCollapsecat = (cat: string) => {
+    setCollapsedCats(prev => {
+      const next = new Set(prev)
+      if (next.has(cat)) next.delete(cat)
+      else next.add(cat)
+      return next
+    })
+  }
+
+  const grouped = useMemo(() => {
+    const map: Record<string, TelaInfo[]> = {}
+    for (const t of allTelas) {
+      if (!map[t.categoria]) map[t.categoria] = []
+      map[t.categoria].push(t)
+    }
+    return map
+  }, [allTelas])
+
+  const savePerms = async () => {
+    if (!selectedUser) return
+    setSaving(true)
     try {
-      await api.put(`/usuarios/${userId}`, { role: newRole })
-      setUsuarios(prev => prev.map(u => u.id === userId ? { ...u, role: newRole } : u))
-    } catch { alert('Erro ao alterar perfil') }
+      await api.put(`/permissoes/usuario/${selectedUser.id}`, { telas: [...selectedTelas] })
+      setOriginalTelas(new Set(selectedTelas))
+      setSavedFeedback(true)
+      setToast({ msg: `Permissões de ${selectedUser.nome} salvas com sucesso`, type: 'success' })
+      setTimeout(() => setSavedFeedback(false), 2000)
+    } catch (err: unknown) {
+      const msg = (err as { response?: { data?: { error?: string } } })?.response?.data?.error || 'Erro ao salvar'
+      setToast({ msg, type: 'error' })
+    } finally {
+      setSaving(false)
+    }
   }
 
-  const toggleCard = (role: string) => {
-    setExpandedCards(prev => ({ ...prev, [role]: !prev[role] }))
-  }
-
-  const stats = useMemo(() => ({
-    total: usuarios.length,
-    admins: usuarios.filter(u => u.role === 'admin').length,
-    medicos: usuarios.filter(u => u.role === 'medico').length,
-    administrativos: usuarios.filter(u => u.role === 'administrativo').length,
-  }), [usuarios])
+  const isPrivileged = selectedUser && (selectedUser.role === 'admin' || selectedUser.role === 'master')
+  const totalSelecionado = selectedTelas.size
+  const totalTelas = allTelas.length
 
   return (
-    <div className="roles-page">
-      {/* Hero Header */}
-      <div className="rl-hero">
-        <div className="rl-hero-top">
-          <Link to="/admin" className="btn btn-secondary btn-sm rl-btn-back">
-            <ArrowLeft size={16} />
-          </Link>
+    <div className="rl-page">
+
+      {/* Toast */}
+      {toast && (
+        <div className={`rl-toast rl-toast-${toast.type}`}>
+          {toast.type === 'success' ? <Check size={15} /> : <AlertTriangle size={15} />}
+          <span>{toast.msg}</span>
+          <button onClick={() => setToast(null)}><X size={13} /></button>
         </div>
-        <div className="rl-hero-content">
-          <div className="rl-hero-icon">
-            <Lock size={28} />
-          </div>
-          <div>
-            <h1>Perfis &amp; Permissões</h1>
-            <p className="rl-hero-subtitle">Visualize as permissões de cada perfil e altere o perfil dos usuários</p>
-          </div>
+      )}
+
+      {/* Header */}
+      <div className="rl-header">
+        <Link to="/admin" className="btn btn-secondary btn-sm rl-btn-back">
+          <ArrowLeft size={16} />
+        </Link>
+        <div className="rl-header-icon">
+          <ShieldCheck size={20} />
         </div>
-        <div className="rl-stats-row">
-          <div className="rl-stat">
-            <span className="rl-stat-value">{stats.total}</span>
-            <span className="rl-stat-label"><Users size={12} /> Total</span>
-          </div>
-          <div className="rl-stat">
-            <span className="rl-stat-value" style={{ color: '#b794f4' }}>{stats.admins}</span>
-            <span className="rl-stat-label"><Shield size={12} /> Admins</span>
-          </div>
-          <div className="rl-stat">
-            <span className="rl-stat-value" style={{ color: '#68d391' }}>{stats.medicos}</span>
-            <span className="rl-stat-label"><Stethoscope size={12} /> Médicos</span>
-          </div>
-          <div className="rl-stat">
-            <span className="rl-stat-value" style={{ color: '#ecc94b' }}>{stats.administrativos}</span>
-            <span className="rl-stat-label"><Briefcase size={12} /> Administrativos</span>
-          </div>
+        <div className="rl-header-text">
+          <h1 className="rl-header-title">Permissões de Telas</h1>
+          <p className="rl-header-sub">{usuarios.length} usuários · {allTelas.length > 0 ? `${allTelas.length} telas` : 'selecione um usuário'}</p>
         </div>
       </div>
 
-      {loading ? (
-        <div className="rl-loading">
-          <div className="rl-loading-spinner" />
-          <p>Carregando perfis...</p>
-        </div>
-      ) : (
-        <div className="roles-grid">
-          {ROLES_CONFIG.map((rc, cardIndex) => {
-            const usersInRole = usuarios.filter(u => u.role === rc.role)
-            const filteredUsers = usersInRole.filter(u =>
-              u.nome.toLowerCase().includes(searchUser.toLowerCase()) ||
-              u.login.toLowerCase().includes(searchUser.toLowerCase())
-            )
-            const isExpanded = expandedCards[rc.role]
-            const allowedCount = rc.permissions.filter(p => p.allowed).length
-            const totalPerms = rc.permissions.length
+      {/* Split layout */}
+      <div className="rl-split">
 
-            return (
-              <div
-                key={rc.role}
-                className="role-card"
-                style={{ animationDelay: `${cardIndex * 0.08}s` }}
-              >
-                {/* Colored top accent */}
-                <div className="role-card-accent" style={{ background: rc.gradient }} />
+        {/* ── Left: user list ── */}
+        <aside className="rl-aside">
+          <div className="rl-aside-search">
+            <Search size={14} className="rl-aside-search-icon" />
+            <input
+              ref={searchRef}
+              type="text"
+              placeholder="Buscar usuário..."
+              value={searchUser}
+              onChange={e => setSearchUser(e.target.value)}
+            />
+            {searchUser && (
+              <button className="rl-aside-search-clear" onClick={() => { setSearchUser(''); searchRef.current?.focus() }}>
+                <X size={12} />
+              </button>
+            )}
+          </div>
 
-                {/* Header */}
-                <div className="role-card-header">
-                  <div className="role-card-icon" style={{ background: rc.gradient }}>
-                    {rc.icon}
-                  </div>
-                  <div className="role-card-title">
-                    <h3>{rc.label}</h3>
-                    <span className="role-card-desc">{rc.description}</span>
-                  </div>
-                </div>
-
-                {/* Stats ribbon */}
-                <div className="role-card-ribbon">
-                  <div className="role-ribbon-item">
-                    <Users size={13} />
-                    <span>{usersInRole.length} {usersInRole.length === 1 ? 'usuário' : 'usuários'}</span>
-                  </div>
-                  <div className="role-ribbon-item">
-                    <Check size={13} />
-                    <span>{allowedCount}/{totalPerms} permissões</span>
-                  </div>
-                  <div className="role-ribbon-item">
-                    <span className="role-prefix-tag">Prefixo: {rc.prefix}</span>
-                  </div>
-                </div>
-
-                {/* Permissions */}
-                <div className="role-card-permissions">
-                  <button
-                    className="role-section-toggle"
-                    onClick={() => toggleCard(rc.role)}
-                  >
-                    <h4><Lock size={13} /> Permissões</h4>
-                    <ChevronDown size={16} className={`toggle-chevron ${isExpanded ? 'open' : ''}`} />
-                  </button>
-                  {isExpanded && (
-                    <div className="perm-list">
-                      {rc.permissions.map((p, i) => (
-                        <div key={i} className={`perm-item ${p.allowed ? 'perm-allowed' : 'perm-denied'}`}>
-                          <div className={`perm-icon-wrap ${p.allowed ? 'perm-icon-yes' : 'perm-icon-no'}`}>
-                            {p.allowed ? <Check size={12} /> : <X size={12} />}
-                          </div>
-                          <span>{p.label}</span>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-
-                {/* Users */}
-                <div className="role-card-users">
-                  <div className="role-users-header">
-                    <h4><UserCheck size={13} /> Usuários ({usersInRole.length})</h4>
-                    {usersInRole.length > 3 && (
-                      <div className="role-users-search">
-                        <Search size={12} />
-                        <input
-                          type="text"
-                          placeholder="Filtrar..."
-                          value={searchUser}
-                          onChange={e => setSearchUser(e.target.value)}
-                        />
+          {loadingUsers ? (
+            <div className="rl-aside-loading">
+              <div className="rl-spin" />
+            </div>
+          ) : filteredUsers.length === 0 ? (
+            <div className="rl-aside-empty">
+              <Users size={28} strokeWidth={1.5} />
+              <span>{searchUser ? 'Nenhum resultado' : 'Nenhum usuário'}</span>
+            </div>
+          ) : (
+            <ul className="rl-user-list">
+              {filteredUsers.map(u => {
+                const rInfo = ROLE_INFO[u.role] ?? ROLE_INFO.administrativo
+                const isSelected = selectedUser?.id === u.id
+                return (
+                  <li key={u.id}>
+                    <button
+                      className={`rl-user-row${isSelected ? ' selected' : ''}${!u.ativo ? ' inactive' : ''}`}
+                      onClick={() => selectUser(u)}
+                    >
+                      <div className={`rl-user-avatar rl-avatar-${u.role}`}>
+                        {u.nome.charAt(0).toUpperCase()}
                       </div>
-                    )}
-                  </div>
-                  {usersInRole.length === 0 ? (
-                    <div className="role-user-empty">
-                      <Users size={20} strokeWidth={1.5} />
-                      <span>Nenhum usuário com este perfil</span>
-                    </div>
-                  ) : (
-                    <div className="role-user-list">
-                      {(searchUser ? filteredUsers : usersInRole).map(u => (
-                        <div key={u.id} className="role-user-item">
-                          <div className="role-user-avatar" style={{ background: rc.gradient }}>
-                            {u.nome.charAt(0).toUpperCase()}
-                          </div>
-                          <div className="role-user-info">
-                            <span className="role-user-name">
-                              {u.nome}
-                              {u.ativo === 0 && (
-                                <span className="user-status-badge inativo">
-                                  <UserX size={10} /> Inativo
-                                </span>
-                              )}
-                            </span>
-                            <span className="role-user-login">@{u.login}</span>
-                          </div>
-                          <div className="role-user-actions">
-                            <select
-                              value={u.role}
-                              onChange={e => changeRole(u.id, e.target.value)}
-                            >
-                              <option value="admin">Administrador</option>
-                              <option value="medico">Médico</option>
-                              <option value="administrativo">Administrativo</option>
-                            </select>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
+                      <div className="rl-user-info">
+                        <span className="rl-user-name">{highlight(u.nome, searchUser)}</span>
+                        <span className="rl-user-login">{highlight(`@${u.login}`, searchUser)}</span>
+                      </div>
+                      <span className={`rl-role-badge ${rInfo.cls}`}>
+                        {rInfo.icon}
+                        <span>{rInfo.label}</span>
+                      </span>
+                    </button>
+                  </li>
+                )
+              })}
+            </ul>
+          )}
+
+          <div className="rl-aside-footer">
+            <Users size={12} />
+            <span>{filteredUsers.length} de {usuarios.length} usuário{usuarios.length !== 1 ? 's' : ''}</span>
+          </div>
+        </aside>
+
+        {/* ── Right: permissions panel ── */}
+        <main className="rl-main">
+          {!selectedUser ? (
+            <div className="rl-main-empty">
+              <div className="rl-main-empty-icon">
+                <ShieldCheck size={40} strokeWidth={1.2} />
               </div>
-            )
-          })}
-        </div>
-      )}
+              <h2>Gerenciar permissões</h2>
+              <p>Selecione um usuário na lista ao lado para visualizar e editar quais telas ele pode acessar</p>
+            </div>
+          ) : (
+            <>
+              {/* User bar */}
+              <div className="rl-user-bar">
+                <div className={`rl-user-bar-avatar rl-avatar-${selectedUser.role}`}>
+                  {selectedUser.nome.charAt(0).toUpperCase()}
+                </div>
+                <div className="rl-user-bar-info">
+                  <span className="rl-user-bar-name">
+                    {selectedUser.nome}
+                    {!selectedUser.ativo && (
+                      <span className="rl-inactive-tag"><UserX size={10} /> Inativo</span>
+                    )}
+                    {hasChanges && (
+                      <span className="rl-unsaved-tag"><AlertTriangle size={10} /> Não salvo</span>
+                    )}
+                  </span>
+                  <span className="rl-user-bar-email">{selectedUser.email || `@${selectedUser.login}`}</span>
+                </div>
+
+                {isPrivileged ? (
+                  <span className="rl-admin-notice">
+                    <Shield size={13} /> Acesso total automático
+                  </span>
+                ) : (
+                  !loadingPerms && allTelas.length > 0 && (
+                    <div className="rl-bar-right">
+                      <div className="rl-progress-wrap">
+                        <div className="rl-progress-bar" style={{ width: `${totalTelas ? (totalSelecionado / totalTelas) * 100 : 0}%` }} />
+                      </div>
+                      <span className="rl-progress-label">{totalSelecionado}/{totalTelas}</span>
+                      <div className="rl-bulk-actions">
+                        <button className="rl-bulk-btn rl-bulk-all" onClick={() => setSelectedTelas(new Set(allTelas.map(t => t.codigo)))}>
+                          <Check size={12} /> Todos
+                        </button>
+                        <button className="rl-bulk-btn rl-bulk-none" onClick={() => setSelectedTelas(new Set())}>
+                          <Minus size={12} /> Nenhum
+                        </button>
+                      </div>
+                    </div>
+                  )
+                )}
+              </div>
+
+              {/* Permissions body */}
+              <div className="rl-perms-body">
+                {loadingPerms ? (
+                  <div className="rl-perms-loading-state">
+                    <div className="rl-spin" />
+                    <span>Carregando permissões...</span>
+                  </div>
+                ) : isPrivileged ? (
+                  <div className="rl-admin-all">
+                    <div className="rl-admin-all-icon">
+                      <ShieldCheck size={28} strokeWidth={1.5} />
+                    </div>
+                    <strong>Acesso total</strong>
+                    <p>Usuários <em>{selectedUser.role}</em> têm acesso irrestrito a todas as telas do sistema</p>
+                  </div>
+                ) : (
+                  CATEGORIA_ORDER.filter(cat => grouped[cat]?.length).map(cat => {
+                    const info = CATEGORIAS[cat] ?? { label: cat, color: '#64748b', bg: 'rgba(100,116,139,0.1)' }
+                    const grupo = grouped[cat]
+                    const countSel = grupo.filter(t => selectedTelas.has(t.codigo)).length
+                    const allSel = countSel === grupo.length
+                    const collapsed = collapsedCats.has(cat)
+
+                    return (
+                      <div key={cat} className={`rl-cat-block${collapsed ? ' collapsed' : ''}`}>
+                        <div className="rl-cat-header" onClick={() => toggleCollapsecat(cat)}>
+                          <div className="rl-cat-pill" style={{ background: info.bg, color: info.color }}>
+                            <div className="rl-cat-dot" style={{ background: info.color }} />
+                            <span className="rl-cat-label">{info.label}</span>
+                            <span className="rl-cat-fraction">{countSel}/{grupo.length}</span>
+                          </div>
+                          <div className="rl-cat-progress-bar-wrap">
+                            <div className="rl-cat-progress-fill" style={{ width: `${grupo.length ? (countSel / grupo.length) * 100 : 0}%`, background: info.color }} />
+                          </div>
+                          <button
+                            className="rl-cat-sel-btn"
+                            onClick={e => { e.stopPropagation(); toggleCategoria(cat) }}
+                          >
+                            {allSel ? 'Desmarcar todos' : 'Selecionar todos'}
+                          </button>
+                          <span className="rl-cat-chevron">
+                            {collapsed ? <ChevronRight size={14} /> : <ChevronDown size={14} />}
+                          </span>
+                        </div>
+
+                        {!collapsed && (
+                          <div className="rl-cat-checks">
+                            {grupo.map(t => {
+                              const active = selectedTelas.has(t.codigo)
+                              return (
+                                <button
+                                  key={t.codigo}
+                                  className={`rl-tela-card${active ? ' active' : ''}`}
+                                  onClick={() => toggleTela(t.codigo)}
+                                  style={{ '--cat-color': info.color } as React.CSSProperties}
+                                  title={t.descricao}
+                                >
+                                  <div className="rl-tela-body">
+                                    <span className="rl-tela-nome">{t.nome}</span>
+                                    <span className="rl-tela-code">{t.codigo}</span>
+                                    {t.descricao && <span className="rl-tela-desc">{t.descricao}</span>}
+                                  </div>
+                                  <div className={`rl-tela-switch${active ? ' on' : ''}`}>
+                                    <div className="rl-tela-switch-thumb" />
+                                  </div>
+                                </button>
+                              )
+                            })}
+                          </div>
+                        )}
+                      </div>
+                    )
+                  })
+                )}
+              </div>
+
+              {/* Save bar */}
+              {!isPrivileged && !loadingPerms && (
+                <div className="rl-save-bar">
+                  <div className="rl-save-info">
+                    <span className="rl-save-count">
+                      <strong>{totalSelecionado}</strong> tela{totalSelecionado !== 1 ? 's' : ''} selecionada{totalSelecionado !== 1 ? 's' : ''}
+                    </span>
+                    {hasChanges && <span className="rl-save-changed"><AlertTriangle size={12} /> Alterações pendentes</span>}
+                  </div>
+                  <button
+                    className={`btn btn-primary rl-save-btn${savedFeedback ? ' saved' : ''}`}
+                    onClick={savePerms}
+                    disabled={saving || !hasChanges}
+                  >
+                    {savedFeedback ? <Check size={15} /> : <Save size={15} />}
+                    {savedFeedback ? 'Salvo!' : saving ? 'Salvando...' : 'Salvar Permissões'}
+                  </button>
+                </div>
+              )}
+            </>
+          )}
+        </main>
+      </div>
     </div>
   )
 }

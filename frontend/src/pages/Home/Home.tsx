@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../../contexts/AuthContext.tsx'
-import { useSchool } from '../../contexts/SchoolContext.tsx'
 import api from '../../services/api.ts'
 import {
   Users,
@@ -13,7 +12,6 @@ import {
   Stethoscope,
   TrendingUp,
   Calendar,
-  School,
 } from 'lucide-react'
 import './Home.css'
 
@@ -33,8 +31,7 @@ interface Metricas {
 }
 
 export default function Home() {
-  const { user } = useAuth()
-  const { selectedSchool } = useSchool()
+  const { user, isAdmin } = useAuth()
   const navigate = useNavigate()
   const [metricas, setMetricas] = useState<Metricas | null>(null)
   const [ultimosAtendidos, setUltimosAtendidos] = useState<FilaItem[]>([])
@@ -47,20 +44,16 @@ export default function Home() {
     loadData()
     const interval = setInterval(loadData, 15000)
     return () => clearInterval(interval)
-  }, [selectedSchool])
+  }, [])
 
   async function loadData() {
     try {
       const metricasParams: Record<string, string | number> = { data_inicio: hoje, data_fim: hoje }
       if (user?.role === 'medico') metricasParams.medico_id = user.id
-      if (selectedSchool) metricasParams.escola = selectedSchool
-
-      const filaParams: Record<string, string> = {}
-      if (selectedSchool) filaParams.escola = selectedSchool
 
       const [metricasRes, filaRes] = await Promise.all([
         api.get('/dashboard/metricas', { params: metricasParams }),
-        api.get('/fila', { params: filaParams }),
+        api.get('/fila'),
       ])
 
       setMetricas(metricasRes.data)
@@ -107,18 +100,6 @@ export default function Home() {
             </div>
           </div>
           <div className="home-hero-right">
-            {selectedSchool ? (
-              <div className="home-escola-ativa">
-                <span className="home-escola-dot" />
-                <School size={14} />
-                <span>{selectedSchool}</span>
-              </div>
-            ) : user?.role === 'admin' ? (
-              <div className="home-escola-todas">
-                <School size={14} />
-                <span>Todas as escolas</span>
-              </div>
-            ) : null}
             <div className="home-hero-date">
               <Calendar size={15} />
               <span>

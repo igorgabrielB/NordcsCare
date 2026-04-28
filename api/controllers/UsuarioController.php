@@ -1,30 +1,32 @@
 <?php
 require_once __DIR__ . '/../config/database.php';
 require_once __DIR__ . '/../middleware/auth.php';
+require_once __DIR__ . '/../middleware/tenant.php';
 require_once __DIR__ . '/../utils/AuditLog.php';
 
 class UsuarioController {
 
     public static function index(): void {
-        Auth::requireRole(['admin']);
-        $db = Database::getInstance();
-
-        $stmt = $db->query(
-            'SELECT id, nome, email, login, role, ativo, created_at, updated_at
-             FROM usuarios ORDER BY nome ASC'
-        );
-        echo json_encode($stmt->fetchAll());
-    }
-
-    public static function show(int $id): void {
-        Auth::requireRole(['admin']);
+        Auth::requireTela('usuarios');
         $db = Database::getInstance();
 
         $stmt = $db->prepare(
             'SELECT id, nome, email, login, role, ativo, created_at, updated_at
-             FROM usuarios WHERE id = :id'
+             FROM usuarios WHERE tenant_id = :tid ORDER BY nome ASC'
         );
-        $stmt->execute([':id' => $id]);
+        $stmt->execute([':tid' => Tenant::id()]);
+        echo json_encode($stmt->fetchAll());
+    }
+
+    public static function show(int $id): void {
+        Auth::requireTela('usuarios');
+        $db = Database::getInstance();
+
+        $stmt = $db->prepare(
+            'SELECT id, nome, email, login, role, ativo, created_at, updated_at
+             FROM usuarios WHERE id = :id AND tenant_id = :tid'
+        );
+        $stmt->execute([':id' => $id, ':tid' => Tenant::id()]);
         $user = $stmt->fetch();
 
         if (!$user) {
@@ -37,7 +39,7 @@ class UsuarioController {
     }
 
     public static function store(): void {
-        $user = Auth::requireRole(['admin']);
+        $user = Auth::requireTela('usuarios');
         $input = json_decode(file_get_contents('php://input'), true);
         $db = Database::getInstance();
 
@@ -59,18 +61,20 @@ class UsuarioController {
             return;
         }
 
-        // Verificar email único
-        $stmt = $db->prepare('SELECT id FROM usuarios WHERE email = :email');
-        $stmt->execute([':email' => $email]);
+        $tenantId = Tenant::id();
+
+        // Verificar email único dentro do tenant
+        $stmt = $db->prepare('SELECT id FROM usuarios WHERE email = :email AND tenant_id = :tid');
+        $stmt->execute([':email' => $email, ':tid' => $tenantId]);
         if ($stmt->fetch()) {
             http_response_code(422);
             echo json_encode(['error' => 'Este email já está em uso']);
             return;
         }
 
-        // Verificar login único
-        $stmt = $db->prepare('SELECT id FROM usuarios WHERE login = :login');
-        $stmt->execute([':login' => $login]);
+        // Verificar login único dentro do tenant
+        $stmt = $db->prepare('SELECT id FROM usuarios WHERE login = :login AND tenant_id = :tid');
+        $stmt->execute([':login' => $login, ':tid' => $tenantId]);
         if ($stmt->fetch()) {
             http_response_code(422);
             echo json_encode(['error' => 'Este login já está em uso']);
@@ -80,10 +84,11 @@ class UsuarioController {
         $hash = password_hash($senha, PASSWORD_BCRYPT);
 
         $stmt = $db->prepare(
-            'INSERT INTO usuarios (nome, email, login, senha, role)
-             VALUES (:nome, :email, :login, :senha, :role)'
+            'INSERT INTO usuarios (tenant_id, nome, email, login, senha, role)
+             VALUES (:tid, :nome, :email, :login, :senha, :role)'
         );
         $stmt->execute([
+            ':tid' => $tenantId,
             ':nome' => $nome,
             ':email' => $email,
             ':login' => $login,
@@ -100,12 +105,14 @@ class UsuarioController {
     }
 
     public static function update(int $id): void {
-        $user = Auth::requireRole(['admin']);
+        $user = Auth::requireTela('usuarios');
         $input = json_decode(file_get_contents('php://input'), true);
         $db = Database::getInstance();
 
-        $stmt = $db->prepare('SELECT id FROM usuarios WHERE id = :id');
-        $stmt->execute([':id' => $id]);
+        $tenantId = Tenant::id();
+
+        $stmt = $db->prepare('SELECT id FROM usuarios WHERE id = :id AND tenant_id = :tid');
+        $stmt->execute([':id' => $id, ':tid' => $tenantId]);
         if (!$stmt->fetch()) {
             http_response_code(404);
             echo json_encode(['error' => 'Usuário não encontrado']);
@@ -123,18 +130,18 @@ class UsuarioController {
             return;
         }
 
-        // Verificar email único (excluindo o próprio)
-        $stmt = $db->prepare('SELECT id FROM usuarios WHERE email = :email AND id != :id');
-        $stmt->execute([':email' => $email, ':id' => $id]);
+        // Verificar email único (excluindo o próprio, dentro do tenant)
+        $stmt = $db->prepare('SELECT id FROM usuarios WHERE email = :email AND id != :id AND tenant_id = :tid');
+        $stmt->execute([':email' => $email, ':id' => $id, ':tid' => $tenantId]);
         if ($stmt->fetch()) {
             http_response_code(422);
             echo json_encode(['error' => 'Este email já está em uso']);
             return;
         }
 
-        // Verificar login único (excluindo o próprio)
-        $stmt = $db->prepare('SELECT id FROM usuarios WHERE login = :login AND id != :id');
-        $stmt->execute([':login' => $login, ':id' => $id]);
+        // Verificar login único (excluindo o próprio, dentro do tenant)
+        $stmt = $db->prepare('SELECT id FROM usuarios WHERE login = :login AND id != :id AND tenant_id = :tid');
+        $stmt->execute([':login' => $login, ':id' => $id, ':tid' => $tenantId]);
         if ($stmt->fetch()) {
             http_response_code(422);
             echo json_encode(['error' => 'Este login já está em uso']);
@@ -143,7 +150,7 @@ class UsuarioController {
 
         $stmt = $db->prepare(
             'UPDATE usuarios SET nome = :nome, email = :email, login = :login, role = :role, ativo = :ativo
-             WHERE id = :id'
+             WHERE id = :id AND tenant_id = :tid'
         );
         $stmt->execute([
             ':nome' => $nome,
@@ -152,6 +159,7 @@ class UsuarioController {
             ':role' => $role,
             ':ativo' => isset($input['ativo']) ? (int) $input['ativo'] : 1,
             ':id' => $id,
+            ':tid' => $tenantId,
         ]);
 
         // Atualizar senha se enviada
@@ -172,7 +180,7 @@ class UsuarioController {
     }
 
     public static function destroy(int $id): void {
-        $user = Auth::requireRole(['admin']);
+        $user = Auth::requireTela('usuarios');
 
         // Não pode excluir a si mesmo
         if ($user['sub'] === $id) {
@@ -182,17 +190,18 @@ class UsuarioController {
         }
 
         $db = Database::getInstance();
+        $tenantId = Tenant::id();
 
-        $stmt = $db->prepare('SELECT id FROM usuarios WHERE id = :id');
-        $stmt->execute([':id' => $id]);
+        $stmt = $db->prepare('SELECT id FROM usuarios WHERE id = :id AND tenant_id = :tid');
+        $stmt->execute([':id' => $id, ':tid' => $tenantId]);
         if (!$stmt->fetch()) {
             http_response_code(404);
             echo json_encode(['error' => 'Usuário não encontrado']);
             return;
         }
 
-        $stmt = $db->prepare('DELETE FROM usuarios WHERE id = :id');
-        $stmt->execute([':id' => $id]);
+        $stmt = $db->prepare('DELETE FROM usuarios WHERE id = :id AND tenant_id = :tid');
+        $stmt->execute([':id' => $id, ':tid' => $tenantId]);
 
         AuditLog::registrar('excluir', 'usuario', $id, 'Usuário excluído', $user);
 

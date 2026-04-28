@@ -1,5 +1,6 @@
 <?php
 require_once __DIR__ . '/../config/env.php';
+require_once __DIR__ . '/tenant.php';
 Env::load();
 
 /**
@@ -20,6 +21,7 @@ class Auth {
         $header = self::base64UrlEncode(json_encode(['typ' => 'JWT', 'alg' => 'HS256']));
         $payload = self::base64UrlEncode(json_encode([
             'sub' => $userData['id'],
+            'tenant_id' => (int)$userData['tenant_id'],
             'nome' => $userData['nome'],
             'login' => $userData['login'],
             'role' => $userData['role'],
@@ -77,20 +79,60 @@ class Auth {
             exit;
         }
 
+        // Definir contexto do tenant para a requisição
+        if (isset($userData['tenant_id'])) {
+            Tenant::set((int)$userData['tenant_id']);
+        }
+
         return $userData;
     }
 
     /**
-     * Middleware: verifica se o usuário tem uma das roles permitidas.
+     * Verifica se o usuário tem permissão de admin (role admin ou master).
+     * Uso interno — não expor diretamente aos controllers, usar hasTela().
      */
-    public static function requireRole(array $allowedRoles): array {
-        $user = self::requireAuth();
-        if (!in_array($user['role'], $allowedRoles, true)) {
-            http_response_code(403);
-            echo json_encode(['error' => 'Acesso negado. Role necessária: ' . implode(' ou ', $allowedRoles)]);
-            exit;
+    public static function isAdmin(array $user): bool {
+        return in_array($user['role'], ['admin', 'master'], true);
+    }
+
+    /**
+     * Verifica se o usuário tem acesso a uma tela específica.
+     * Consulta exclusivamente a tabela usuario_telas.
+     */
+    public static function hasTela(array $user, string $codigo): bool {
+        // admin e master têm acesso irrestrito
+        if (in_array($user['role'] ?? '', ['admin', 'master'], true)) {
+            return true;
         }
-        return $user;
+        try {
+            require_once __DIR__ . '/../config/database.php';
+            $pdo = Database::getInstance();
+            $stmt = $pdo->prepare(
+                'SELECT 1 FROM usuario_telas WHERE usuario_id = :uid AND tela_codigo = :codigo AND tenant_id = :tenant'
+            );
+            $stmt->execute([
+                ':uid'    => $user['sub'],
+                ':codigo' => $codigo,
+                ':tenant' => $user['tenant_id'],
+            ]);
+            return (bool) $stmt->fetchColumn();
+        } catch (\Throwable $e) {
+            return false;
+        }
+    }
+
+    /**
+     * Middleware: garante autenticação e permissão de tela.
+     * Retorna os dados do usuário ou envia 403 e encerra.
+     */
+    public static function requireTela(string $codigo): array {
+        $user = self::requireAuth();
+        if (self::hasTela($user, $codigo)) {
+            return $user;
+        }
+        http_response_code(403);
+        echo json_encode(['error' => 'Acesso negado. Permissão necessária: ' . $codigo]);
+        exit;
     }
 
     private static function getBearerToken(): ?string {

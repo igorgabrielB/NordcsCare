@@ -1,0 +1,253 @@
+/* ─── Wrapper (anchor for the popup) ────────────────────────── */
+.ios-dp-wrapper {
+  position: relative;
+  width: 100%;
+}
+
+/* ─── Trigger button ─────────────────────────────────────────── */
+.ios-date-trigger {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  background: var(--bg);
+  color: var(--text);
+  cursor: pointer;
+  font-size: 0.95rem;
+  min-height: 42px;
+  transition: border-color 0.2s;
+  user-select: none;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.ios-date-trigger:hover {
+  border-color: var(--primary, #007aff);
+}
+
+.ios-date-trigger:focus-visible {
+  outline: 2px solid var(--primary, #007aff);
+  outline-offset: 2px;
+}
+
+.ios-date-trigger.error {
+  border-color: #ff3b30;
+}
+
+.ios-date-trigger.empty span {
+  color: var(--text-muted, #aaa);
+}
+
+.ios-date-icon {
+  flex-shrink: 0;
+  color: var(--primary, #007aff);
+}
+
+/* ─── Floating popup ─────────────────────────────────────────── */
+.ios-picker-popup {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  right: 0;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.18), 0 2px 8px rgba(0, 0, 0, 0.1);
+  z-index: 1000;
+  overflow: hidden;
+  animation: ios-popup-in 0.18s cubic-bezier(0.32, 0.72, 0, 1);
+  min-width: 280px;
+}
+
+@keyframes ios-popup-in {
+  from {
+    opacity: 0;
+    transform: translateY(-6px) scale(0.97);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+/* ─── Header ─────────────────────────────────────────────────── */
+.ios-picker-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--border);
+}
+
+.ios-picker-header > span {
+  font-weight: 600;
+  font-size: 0.9rem;
+  color: var(--text);
+}
+
+.ios-picker-header > button {
+  background: none;
+  border: none;
+  font-size: 0.85rem;
+  color: var(--primary, #007aff);
+  cursor: pointer;
+  padding: 5px 8px;
+  border-radius: 7px;
+  font-family: inherit;
+  transition: background 0.15s;
+}
+
+.ios-picker-header > button:hover {
+  background: rgba(0, 122, 255, 0.1);
+}
+
+.ios-picker-header > button.confirm {
+  font-weight: 700;
+}
+
+/* ─── Text input row ─────────────────────────────────────────── */
+.ios-text-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 16px;
+  border-bottom: 1px solid var(--border);
+}
+
+.ios-text-input {
+  flex: 1;
+  padding: 8px 12px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--bg);
+  color: var(--text);
+  font-size: 1rem;
+  font-family: inherit;
+  letter-spacing: 0.05em;
+  outline: none;
+  transition: border-color 0.2s;
+}
+
+.ios-text-input:focus {
+  border-color: var(--primary, #007aff);
+}
+
+.ios-text-input.error {
+  border-color: #ff3b30;
+}
+
+.ios-text-error {
+  font-size: 0.78rem;
+  color: #ff3b30;
+  white-space: nowrap;
+}
+
+/* ─── Column labels ──────────────────────────────────────────── */
+.ios-col-labels {
+  display: flex;
+  padding: 6px 16px 0;
+}
+
+.ios-col-labels span {
+  font-size: 0.72rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-muted, #999);
+  text-align: center;
+}
+
+.ios-col-labels span:nth-child(1) { flex: 1; }
+.ios-col-labels span:nth-child(2) { flex: 1.9; }
+.ios-col-labels span:nth-child(3) { flex: 1; }
+
+/* ─── Wheels area ────────────────────────────────────────────── */
+.ios-picker-wheels {
+  display: flex;
+  height: 220px;
+  padding: 0 12px 8px;
+  overflow: hidden;
+  position: relative;
+}
+
+/* ─── Single column ──────────────────────────────────────────── */
+.ios-col {
+  flex: 1;
+  position: relative;
+  overflow: hidden;
+}
+
+.ios-col:nth-child(2) {
+  flex: 1.9;
+}
+
+/* ─── Scrollable list ────────────────────────────────────────── */
+.ios-col-scroll {
+  height: 220px;
+  overflow-y: scroll;
+  scroll-snap-type: y mandatory;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+}
+
+.ios-col-scroll::-webkit-scrollbar {
+  display: none;
+}
+
+/* ─── Item ───────────────────────────────────────────────────── */
+.ios-col-item {
+  height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.05rem;
+  scroll-snap-align: center;
+  color: var(--text);
+  user-select: none;
+}
+
+/* ─── Selection highlight bar ────────────────────────────────── */
+.ios-sel-bar {
+  position: absolute;
+  left: 4px;
+  right: 4px;
+  top: 88px;
+  height: 44px;
+  border-top: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+  background: rgba(120, 120, 128, 0.08);
+  border-radius: 8px;
+  pointer-events: none;
+  z-index: 2;
+}
+
+/* ─── Gradient fades ─────────────────────────────────────────── */
+.ios-fade {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 88px;
+  pointer-events: none;
+  z-index: 3;
+}
+
+.ios-fade-top {
+  top: 0;
+  background: linear-gradient(
+    to bottom,
+    var(--bg-card) 15%,
+    transparent 100%
+  );
+}
+
+.ios-fade-bot {
+  bottom: 0;
+  background: linear-gradient(
+    to top,
+    var(--bg-card) 15%,
+    transparent 100%
+  );
+}
+

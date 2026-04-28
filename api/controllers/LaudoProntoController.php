@@ -1,6 +1,7 @@
 <?php
 require_once __DIR__ . '/../config/database.php';
 require_once __DIR__ . '/../middleware/auth.php';
+require_once __DIR__ . '/../middleware/tenant.php';
 
 class LaudoProntoController
 {
@@ -9,13 +10,15 @@ class LaudoProntoController
         Auth::requireAuth();
         $db = Database::getInstance();
 
-        $stmt = $db->query(
+        $stmt = $db->prepare(
             'SELECT lp.id, lp.titulo, lp.diagnostico, lp.conduta, lp.observacoes, lp.especialidade, lp.ativo,
                     lp.usuario_id, u.nome AS autor_nome, lp.created_at, lp.updated_at
              FROM laudos_prontos lp
              JOIN usuarios u ON u.id = lp.usuario_id
+             WHERE lp.tenant_id = :tid
              ORDER BY lp.titulo ASC'
         );
+        $stmt->execute([':tid' => Tenant::id()]);
         echo json_encode($stmt->fetchAll());
     }
 
@@ -24,18 +27,19 @@ class LaudoProntoController
         Auth::requireAuth();
         $db = Database::getInstance();
 
-        $stmt = $db->query(
+        $stmt = $db->prepare(
             'SELECT id, titulo, diagnostico, conduta, observacoes, especialidade
              FROM laudos_prontos
-             WHERE ativo = 1
+             WHERE tenant_id = :tid AND ativo = 1
              ORDER BY titulo ASC'
         );
+        $stmt->execute([':tid' => Tenant::id()]);
         echo json_encode($stmt->fetchAll());
     }
 
     public static function store(): void
     {
-        $user = Auth::requireRole(['admin', 'medico']);
+        $user = Auth::requireTela('laudos_prontos');
         $input = json_decode(file_get_contents('php://input'), true);
         $db = Database::getInstance();
 
@@ -57,10 +61,11 @@ class LaudoProntoController
         }
 
         $stmt = $db->prepare(
-            'INSERT INTO laudos_prontos (titulo, diagnostico, conduta, observacoes, especialidade, usuario_id)
-             VALUES (:titulo, :diagnostico, :conduta, :observacoes, :especialidade, :uid)'
+            'INSERT INTO laudos_prontos (tenant_id, titulo, diagnostico, conduta, observacoes, especialidade, usuario_id)
+             VALUES (:tid, :titulo, :diagnostico, :conduta, :observacoes, :especialidade, :uid)'
         );
         $stmt->execute([
+            ':tid' => Tenant::id(),
             ':titulo' => $titulo,
             ':diagnostico' => $diagnostico,
             ':conduta' => $conduta,
@@ -76,12 +81,12 @@ class LaudoProntoController
 
     public static function update(int $id): void
     {
-        $user = Auth::requireRole(['admin', 'medico']);
+        $user = Auth::requireTela('laudos_prontos');
         $input = json_decode(file_get_contents('php://input'), true);
         $db = Database::getInstance();
 
-        $stmt = $db->prepare('SELECT id, usuario_id FROM laudos_prontos WHERE id = :id');
-        $stmt->execute([':id' => $id]);
+        $stmt = $db->prepare('SELECT id, usuario_id FROM laudos_prontos WHERE id = :id AND tenant_id = :tid');
+        $stmt->execute([':id' => $id, ':tid' => Tenant::id()]);
         $existing = $stmt->fetch();
 
         if (!$existing) {
@@ -90,7 +95,7 @@ class LaudoProntoController
             return;
         }
 
-        if ($user['role'] !== 'admin' && (int) $existing['usuario_id'] !== (int) $user['sub']) {
+        if (!Auth::hasTela($user, 'laudos_prontos') && (int) $existing['usuario_id'] !== (int) $user['sub']) {
             http_response_code(403);
             echo json_encode(['error' => 'Sem permissão para editar este laudo pronto']);
             return;
@@ -117,7 +122,7 @@ class LaudoProntoController
         $stmt = $db->prepare(
             'UPDATE laudos_prontos SET titulo = :titulo, diagnostico = :diagnostico,
                     conduta = :conduta, observacoes = :observacoes, especialidade = :especialidade, ativo = :ativo
-             WHERE id = :id'
+             WHERE id = :id AND tenant_id = :tid'
         );
         $stmt->execute([
             ':titulo' => $titulo,
@@ -127,6 +132,7 @@ class LaudoProntoController
             ':especialidade' => $especialidade,
             ':ativo' => $ativo,
             ':id' => $id,
+            ':tid' => Tenant::id(),
         ]);
 
         echo json_encode(['message' => 'Laudo pronto atualizado com sucesso']);
@@ -134,11 +140,11 @@ class LaudoProntoController
 
     public static function destroy(int $id): void
     {
-        $user = Auth::requireRole(['admin', 'medico']);
+        $user = Auth::requireTela('laudos_prontos');
         $db = Database::getInstance();
 
-        $stmt = $db->prepare('SELECT id, usuario_id FROM laudos_prontos WHERE id = :id');
-        $stmt->execute([':id' => $id]);
+        $stmt = $db->prepare('SELECT id, usuario_id FROM laudos_prontos WHERE id = :id AND tenant_id = :tid');
+        $stmt->execute([':id' => $id, ':tid' => Tenant::id()]);
         $existing = $stmt->fetch();
 
         if (!$existing) {
@@ -147,14 +153,14 @@ class LaudoProntoController
             return;
         }
 
-        if ($user['role'] !== 'admin' && (int) $existing['usuario_id'] !== (int) $user['sub']) {
+        if (!Auth::hasTela($user, 'laudos_prontos') && (int) $existing['usuario_id'] !== (int) $user['sub']) {
             http_response_code(403);
             echo json_encode(['error' => 'Sem permissão para excluir este laudo pronto']);
             return;
         }
 
-        $stmt = $db->prepare('DELETE FROM laudos_prontos WHERE id = :id');
-        $stmt->execute([':id' => $id]);
+        $stmt = $db->prepare('DELETE FROM laudos_prontos WHERE id = :id AND tenant_id = :tid');
+        $stmt->execute([':id' => $id, ':tid' => Tenant::id()]);
 
         echo json_encode(['message' => 'Laudo pronto excluído com sucesso']);
     }

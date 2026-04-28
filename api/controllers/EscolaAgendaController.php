@@ -1,6 +1,7 @@
 <?php
 require_once __DIR__ . '/../config/database.php';
 require_once __DIR__ . '/../middleware/auth.php';
+require_once __DIR__ . '/../middleware/tenant.php';
 
 class EscolaAgendaController {
 
@@ -8,23 +9,26 @@ class EscolaAgendaController {
     public static function index(): void {
         Auth::requireAuth();
         $db = Database::getInstance();
+        $tenantId = Tenant::id();
 
         $mes = $_GET['mes'] ?? null;
 
         if ($mes && preg_match('/^\d{4}-\d{2}$/', $mes)) {
             $stmt = $db->prepare(
-                "SELECT ea.*, (SELECT COUNT(*) FROM pacientes p WHERE p.escola = ea.escola) as total_alunos
+                "SELECT ea.*, (SELECT COUNT(*) FROM pacientes p WHERE p.escola = ea.escola AND p.tenant_id = ea.tenant_id) as total_alunos
                  FROM escola_agenda ea
-                 WHERE DATE_FORMAT(ea.data_atendimento, '%Y-%m') = :mes
+                 WHERE ea.tenant_id = :tid AND DATE_FORMAT(ea.data_atendimento, '%Y-%m') = :mes
                  ORDER BY ea.data_atendimento ASC, ea.escola ASC"
             );
-            $stmt->execute([':mes' => $mes]);
+            $stmt->execute([':tid' => $tenantId, ':mes' => $mes]);
         } else {
-            $stmt = $db->query(
-                "SELECT ea.*, (SELECT COUNT(*) FROM pacientes p WHERE p.escola = ea.escola) as total_alunos
+            $stmt = $db->prepare(
+                "SELECT ea.*, (SELECT COUNT(*) FROM pacientes p WHERE p.escola = ea.escola AND p.tenant_id = ea.tenant_id) as total_alunos
                  FROM escola_agenda ea
+                 WHERE ea.tenant_id = :tid
                  ORDER BY ea.data_atendimento ASC, ea.escola ASC"
             );
+            $stmt->execute([':tid' => $tenantId]);
         }
 
         echo json_encode($stmt->fetchAll());
@@ -39,19 +43,19 @@ class EscolaAgendaController {
         $stmt = $db->prepare(
             "SELECT ea.escola, COUNT(p.id) as total_alunos
              FROM escola_agenda ea
-             LEFT JOIN pacientes p ON p.escola = ea.escola
-             WHERE ea.data_atendimento = :hoje
+             LEFT JOIN pacientes p ON p.escola = ea.escola AND p.tenant_id = ea.tenant_id
+             WHERE ea.tenant_id = :tid AND ea.data_atendimento = :hoje
              GROUP BY ea.escola
              ORDER BY ea.escola ASC"
         );
-        $stmt->execute([':hoje' => $hoje]);
+        $stmt->execute([':tid' => Tenant::id(), ':hoje' => $hoje]);
 
         echo json_encode($stmt->fetchAll());
     }
 
     /** POST /api/escola-agenda  — adicionar datas para uma escola */
     public static function store(): void {
-        Auth::requireRole(['admin']);
+        Auth::requireTela('agenda_escola');
         $db = Database::getInstance();
 
         $body = json_decode(file_get_contents('php://input'), true);
@@ -72,12 +76,12 @@ class EscolaAgendaController {
 
         $inseridos = 0;
         $stmt = $db->prepare(
-            "INSERT IGNORE INTO escola_agenda (escola, data_atendimento) VALUES (:escola, :data)"
+            "INSERT IGNORE INTO escola_agenda (tenant_id, escola, data_atendimento) VALUES (:tid, :escola, :data)"
         );
 
         foreach ($datas as $data) {
             if (preg_match('/^\d{4}-\d{2}-\d{2}$/', $data)) {
-                $stmt->execute([':escola' => $escola, ':data' => $data]);
+                $stmt->execute([':tid' => Tenant::id(), ':escola' => $escola, ':data' => $data]);
                 $inseridos += $stmt->rowCount();
             }
         }
@@ -87,18 +91,18 @@ class EscolaAgendaController {
 
     /** DELETE /api/escola-agenda/{id}  — remover uma data específica */
     public static function destroy(int $id): void {
-        Auth::requireRole(['admin']);
+        Auth::requireTela('agenda_escola');
         $db = Database::getInstance();
 
-        $stmt = $db->prepare("DELETE FROM escola_agenda WHERE id = :id");
-        $stmt->execute([':id' => $id]);
+        $stmt = $db->prepare("DELETE FROM escola_agenda WHERE id = :id AND tenant_id = :tid");
+        $stmt->execute([':id' => $id, ':tid' => Tenant::id()]);
 
         echo json_encode(['ok' => true]);
     }
 
     /** DELETE /api/escola-agenda  — remover por escola+data (via query params) */
     public static function destroyByEscolaData(): void {
-        Auth::requireRole(['admin']);
+        Auth::requireTela('agenda_escola');
         $db = Database::getInstance();
 
         $body = json_decode(file_get_contents('php://input'), true);
@@ -111,8 +115,8 @@ class EscolaAgendaController {
             return;
         }
 
-        $stmt = $db->prepare("DELETE FROM escola_agenda WHERE escola = :escola AND data_atendimento = :data");
-        $stmt->execute([':escola' => $escola, ':data' => $data]);
+        $stmt = $db->prepare("DELETE FROM escola_agenda WHERE escola = :escola AND data_atendimento = :data AND tenant_id = :tid");
+        $stmt->execute([':escola' => $escola, ':data' => $data, ':tid' => Tenant::id()]);
 
         echo json_encode(['ok' => true, 'removed' => $stmt->rowCount()]);
     }

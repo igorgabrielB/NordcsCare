@@ -1,10 +1,12 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useMemo } from 'react'
 import { Link } from 'react-router-dom'
 import { useAuth } from '../../contexts/AuthContext.tsx'
-import { useSchool } from '../../contexts/SchoolContext.tsx'
 import api from '../../services/api.ts'
-import { Users, ClipboardList, Stethoscope, TrendingUp, Tag, Hash, School, CalendarDays, Calendar, Filter, ArrowRightLeft, CheckCircle, Eye, Glasses } from 'lucide-react'
+import { Users, ClipboardList, Stethoscope, Tag, Hash, CalendarDays, Filter, ArrowRightLeft, CheckCircle, Eye, Glasses, Settings } from 'lucide-react'
 import './Dashboard.css'
+import { MetricWidget, SchoolsWidget, QueueWidget, ChartWidget } from '../../components/widgets'
+import TimeWheelPicker from '../../components/TimeWheelPicker/TimeWheelPicker'
+import DatePicker from '../../components/DatePicker/DatePicker'
 
 interface Metricas {
   total_matriculados: number
@@ -16,9 +18,10 @@ interface Metricas {
   total_prescricoes: number
   total_laudos: number
   total_altas: number
-  condutas_iniciais: Record<string, number>
-  condutas_finais: Record<string, number>
-  atendimentos_por_dia: { dia: string; total: number }[]
+  condutas_iniciais: { name: string; value: number }[]
+  condutas_finais: { name: string; value: number }[]
+  atendimentos_por_dia: { name: string; value: number }[]
+  encaminhamentos_tipo: { name: string; value: number }[]
   fila_por_estacao: { estacao: string; status: string; total: number }[]
   escolas_agendadas: { escola: string; data_atendimento: string; total_alunos: number }[]
   total_encaminhamentos: number
@@ -50,8 +53,6 @@ const CONDUTA_COLORS: Record<string, string> = {
 }
 
 export default function Dashboard() {
-  const { user } = useAuth()
-  const { selectedSchool } = useSchool()
   const [metricas, setMetricas] = useState<Metricas | null>(null)
   const [loading, setLoading] = useState(true)
 
@@ -67,11 +68,10 @@ export default function Dashboard() {
       const params: Record<string, string> = { data_inicio: di, data_fim: df }
       if (hi) params.hora_inicio = hi
       if (hf) params.hora_fim = hf
-      if (selectedSchool) params.escola = selectedSchool
       const { data } = await api.get('/dashboard/metricas', { params })
       setMetricas(data)
     } catch { /* interceptor */ } finally { setLoading(false) }
-  }, [selectedSchool])
+  }, [])
 
   useEffect(() => {
     loadMetricas(dataInicio, dataFim, horaInicio, horaFim)
@@ -93,72 +93,104 @@ export default function Dashboard() {
     loadMetricas(hoje, hoje)
   }
 
-  function diaSemana(dateStr: string) {
-    const d = new Date(dateStr + 'T00:00:00')
-    return d.toLocaleDateString('pt-BR', { weekday: 'short' })
-  }
+  // ── Layout customizado ─────────────────────────────────────
+  const [customWidgets, setCustomWidgets] = useState<{i:string;x:number;y:number;w:number;h:number;type:string;config:Record<string,unknown>}[]>([])
+  useEffect(() => {
+    api.get('/dashboard-config').then(res => {
+      setCustomWidgets(res.data?.layout?.widgets ?? [])
+    }).catch(() => {})
+  }, [])
 
-  const hora = new Date().getHours()
-  const saudacao = hora < 12 ? 'Bom dia' : hora < 18 ? 'Boa tarde' : 'Boa noite'
+  const widgetMetricas = useMemo(() => {
+    if (!metricas) return null
+    return {
+      ...metricas,
+      escolas_hoje: metricas.escolas_hoje.map(e => ({ escola: e.escola, hora: `${e.total} alunos` })),
+      proximos_atendimentos: (metricas.escolas_agendadas ?? []).map(e => ({
+        escola: e.escola,
+        hora: new Date(e.data_atendimento + 'T00:00:00').toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' }),
+      })),
+      fila_por_estacao: (metricas.fila_por_estacao as {estacao:string;total:number}[]).reduce((acc, f) => {
+        const ex = acc.find(a => a.estacao === f.estacao)
+        if (ex) ex.quantidade += f.total
+        else acc.push({ estacao: f.estacao, quantidade: f.total })
+        return acc
+      }, [] as {estacao:string;quantidade:number}[]),
+      condutas_iniciais: metricas.condutas_iniciais ?? [],
+      atendimentos_por_dia: metricas.atendimentos_por_dia ?? [],
+      encaminhamentos_tipo: metricas.encaminhamentos_tipo ?? [],
+      total_laudos: 0,
+    }
+  }, [metricas])
+
+  function renderCustomWidget(widget: {i:string;type:string;config:Record<string,unknown>}) {
+    if (!widgetMetricas) return null
+    const cfg = widget.config
+    const wm = widgetMetricas as Record<string, unknown>
+    switch (widget.type) {
+      case 'metric': {
+        const val = wm[cfg.metric as string]
+        return <MetricWidget title={cfg.title as string} value={typeof val === 'number' ? val : '--'} icon={cfg.icon as string} color={cfg.color as string} />
+      }
+      case 'schools-today':
+        return <SchoolsWidget title={cfg.title as string} data={widgetMetricas.escolas_hoje} />
+      case 'schools-scheduled':
+        return <SchoolsWidget title={cfg.title as string} data={widgetMetricas.proximos_atendimentos} />
+      case 'queue-stations':
+        return <QueueWidget title={cfg.title as string} data={widgetMetricas.fila_por_estacao} />
+      case 'chart-line':
+      case 'chart-bar': {
+        const data = (wm[cfg.dataKey as string] ?? []) as {name?:string;value?:number}[]
+        return <ChartWidget title={cfg.title as string} data={data} type={widget.type === 'chart-line' ? 'line' : 'bar'} />
+      }
+      case 'chart-pie': {
+        const data = (wm[cfg.dataKey as string] ?? []) as {name?:string;value?:number}[]
+        return <ChartWidget title={cfg.title as string} data={data} type="pie" />
+      }
+      default: return null
+    }
+  }
+  // ─────────────────────────────────────────────────────────────
 
   return (
     <div className="dashboard">
-      <div className="dashboard-hero">
-        <div className="dashboard-hero-bg" />
-        <div className="dashboard-hero-content">
-          <div className="dashboard-hero-left">
-            <div className="dashboard-hero-icon">
-              <TrendingUp size={26} />
-            </div>
-            <div className="dashboard-hero-text">
-              <p className="dashboard-hero-greeting">{saudacao},</p>
-              <h1 className="dashboard-hero-name">{user?.nome?.split(' ')[0]}!</h1>
-            </div>
-          </div>
-          <div className="dashboard-hero-right">
-            {selectedSchool ? (
-              <div className="dashboard-escola-ativa">
-                <span className="escola-ativa-dot" />
-                <School size={14} />
-                <span>{selectedSchool}</span>
-              </div>
-            ) : (
-              <div className="dashboard-escola-todas">
-                <School size={14} />
-                <span>Todas as escolas</span>
-              </div>
-            )}
-            <div className="dashboard-hero-date">
-              <Calendar size={15} />
-              <span>
-                {new Date().toLocaleDateString('pt-BR', {
-                  weekday: 'long',
-                  day: 'numeric',
-                  month: 'long',
-                  year: 'numeric',
-                })}
-              </span>
-            </div>
-          </div>
-        </div>
-      </div>
 
-      <div className="dashboard-filter-bar">
-        <Filter size={16} />
-        <span className="filter-label">De</span>
-        <input type="date" className="filter-input" value={dataInicio} onChange={e => setDataInicio(e.target.value)} />
-        <input type="time" className="filter-input filter-time" value={horaInicio} onChange={e => setHoraInicio(e.target.value)} />
-        <span className="filter-label">Até</span>
-        <input type="date" className="filter-input" value={dataFim} onChange={e => setDataFim(e.target.value)} />
-        <input type="time" className="filter-input filter-time" value={horaFim} onChange={e => setHoraFim(e.target.value)} />
-        <button className="btn-filter-apply" onClick={handleFilterApply}>Filtrar</button>
-        {(dataInicio !== hoje || dataFim !== hoje || horaInicio || horaFim) && (
-          <button className="btn-filter-today" onClick={handleFilterToday}>Hoje</button>
-        )}
+      <div className="dashboard-filter-row">
+        <div className="dashboard-filter-bar">
+          <Filter size={16} />
+          <span className="filter-label">De</span>
+          <DatePicker value={dataInicio} onChange={setDataInicio} />
+          <TimeWheelPicker value={horaInicio} onChange={setHoraInicio} placeholder="--:--" />
+          <span className="filter-label">Até</span>
+          <DatePicker value={dataFim} onChange={setDataFim} />
+          <TimeWheelPicker value={horaFim} onChange={setHoraFim} placeholder="--:--" />
+          <button className="btn-filter-apply" onClick={handleFilterApply}>Filtrar</button>
+          {(dataInicio !== hoje || dataFim !== hoje || horaInicio || horaFim) && (
+            <button className="btn-filter-today" onClick={handleFilterToday}>Hoje</button>
+          )}
+        </div>
+        <Link to="/admin/dashboard-builder" className="dashboard-customize-btn">
+          <Settings size={16} />
+          <span>Personalizar</span>
+        </Link>
       </div>
 
       {loading ? (
         <div className="loading">Carregando métricas...</div>
+      ) : metricas && customWidgets.length > 0 ? (
+        <div className="dashboard-custom-grid">
+          {customWidgets.map(widget => (
+            <div
+              key={widget.i}
+              style={{
+                gridColumn: `${widget.x + 1} / span ${widget.w}`,
+                gridRow: `${widget.y + 1} / span ${widget.h}`,
+              }}
+            >
+              {renderCustomWidget(widget)}
+            </div>
+          ))}
+        </div>
       ) : metricas ? (
         <>
           {/* === Cards principais === */}
@@ -300,16 +332,13 @@ export default function Dashboard() {
                   </div>
                   <div className="chart-bars">
                     {metricas.atendimentos_por_dia.map(d => {
-                      const max = Math.max(...metricas.atendimentos_por_dia.map(x => x.total), 1)
-                      const pct = (d.total / max) * 100
-                      const isHoje = d.dia === hoje
-                      const dataFmt = new Date(d.dia + 'T00:00:00').toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })
+                      const max = Math.max(...metricas.atendimentos_por_dia.map(x => x.value), 1)
+                      const pct = (d.value / max) * 100
                       return (
-                        <div key={d.dia} className={`chart-bar-col ${isHoje ? 'chart-bar-hoje' : ''}`}>
-                          <span className="chart-bar-value">{d.total}</span>
+                        <div key={d.name} className="chart-bar-col">
+                          <span className="chart-bar-value">{d.value}</span>
                           <div className="chart-bar" style={{ height: `${pct}%` }} />
-                          <span className="chart-bar-label">{diaSemana(d.dia)}</span>
-                          <span className="chart-bar-date">{dataFmt}</span>
+                          <span className="chart-bar-date">{d.name}</span>
                         </div>
                       )
                     })}
@@ -323,17 +352,13 @@ export default function Dashboard() {
               <h3><Tag size={18} style={{verticalAlign:'middle',marginRight:6}} />Condutas</h3>
               {(() => {
                 const merged: Record<string, number> = {}
-                if (metricas.condutas_iniciais) {
-                  for (const [k, v] of Object.entries(metricas.condutas_iniciais)) {
-                    const key = k === 'onibus_encaminhamento' ? 'encaminhamento' : k
-                    merged[key] = (merged[key] ?? 0) + v
-                  }
+                for (const item of (metricas.condutas_iniciais ?? [])) {
+                  const key = item.name === 'onibus_encaminhamento' ? 'encaminhamento' : item.name
+                  merged[key] = (merged[key] ?? 0) + item.value
                 }
-                if (metricas.condutas_finais) {
-                  for (const [k, v] of Object.entries(metricas.condutas_finais)) {
-                    const key = k === 'onibus_encaminhamento' ? 'encaminhamento' : k
-                    merged[key] = (merged[key] ?? 0) + v
-                  }
+                for (const item of (metricas.condutas_finais ?? [])) {
+                  const key = item.name === 'onibus_encaminhamento' ? 'encaminhamento' : item.name
+                  merged[key] = (merged[key] ?? 0) + item.value
                 }
                 const entries = Object.entries(merged)
                 if (entries.length === 0) return <p className="dash-empty">Sem dados</p>

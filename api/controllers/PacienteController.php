@@ -17,6 +17,8 @@ class PacienteController {
         $limit = min(100, max(1, (int)($_GET['limit'] ?? 20)));
         $offset = ($page - 1) * $limit;
 
+        $tenantId = Tenant::id();
+
         // Build escola filter conditions
         $escolaCondition = '';
         $escolaBinds = [];
@@ -24,40 +26,48 @@ class PacienteController {
             $escolaCondition = ' AND escola = :escola_filter';
             $escolaBinds[':escola_filter'] = $escolaParam;
         } elseif ($escolaDia) {
-            $escolaCondition = ' AND escola IN (SELECT escola FROM escola_agenda WHERE data_atendimento = CURDATE())';
+            $escolaCondition = ' AND escola IN (SELECT escola FROM escola_agenda WHERE data_atendimento = CURDATE() AND tenant_id = :tid2)';
         }
 
         if ($search !== '') {
             $searchClean = preg_replace('/[\.\-\/]/', '', $search);
             $stmt = $db->prepare(
-                'SELECT * FROM pacientes WHERE (nome_completo LIKE :search OR REPLACE(REPLACE(cpf, ".", ""), "-", "") LIKE :search2 OR codigo LIKE :search3)' . $escolaCondition .
+                'SELECT * FROM pacientes WHERE tenant_id = :tid AND (nome_completo LIKE :search OR REPLACE(REPLACE(cpf, ".", ""), "-", "") LIKE :search2 OR codigo LIKE :search3)' . $escolaCondition .
                 ' ORDER BY nome_completo ASC LIMIT :limit OFFSET :offset'
             );
             $searchTerm = "%$search%";
             $searchTermClean = "%$searchClean%";
+            $stmt->bindValue(':tid', $tenantId, PDO::PARAM_INT);
             $stmt->bindValue(':search', $searchTerm, PDO::PARAM_STR);
             $stmt->bindValue(':search2', $searchTermClean, PDO::PARAM_STR);
             $stmt->bindValue(':search3', $searchTerm, PDO::PARAM_STR);
             foreach ($escolaBinds as $k => $v) $stmt->bindValue($k, $v, PDO::PARAM_STR);
+            if ($escolaDia) $stmt->bindValue(':tid2', $tenantId, PDO::PARAM_INT);
             $stmt->bindValue(':limit', $limit, PDO::PARAM_INT);
             $stmt->bindValue(':offset', $offset, PDO::PARAM_INT);
             $stmt->execute();
 
             $countStmt = $db->prepare(
-                'SELECT COUNT(*) FROM pacientes WHERE (nome_completo LIKE :search OR REPLACE(REPLACE(cpf, ".", ""), "-", "") LIKE :search2 OR codigo LIKE :search3)' . $escolaCondition
+                'SELECT COUNT(*) FROM pacientes WHERE tenant_id = :tid AND (nome_completo LIKE :search OR REPLACE(REPLACE(cpf, ".", ""), "-", "") LIKE :search2 OR codigo LIKE :search3)' . $escolaCondition
             );
-            $countStmt->execute(array_merge([':search' => $searchTerm, ':search2' => $searchTermClean, ':search3' => $searchTerm], $escolaBinds));
+            $countBinds = array_merge([':tid' => $tenantId, ':search' => $searchTerm, ':search2' => $searchTermClean, ':search3' => $searchTerm], $escolaBinds);
+            if ($escolaDia) $countBinds[':tid2'] = $tenantId;
+            $countStmt->execute($countBinds);
         } else {
             $stmt = $db->prepare(
-                'SELECT * FROM pacientes WHERE 1=1' . $escolaCondition . ' ORDER BY nome_completo ASC LIMIT :limit OFFSET :offset'
+                'SELECT * FROM pacientes WHERE tenant_id = :tid' . $escolaCondition . ' ORDER BY nome_completo ASC LIMIT :limit OFFSET :offset'
             );
+            $stmt->bindValue(':tid', $tenantId, PDO::PARAM_INT);
             foreach ($escolaBinds as $k => $v) $stmt->bindValue($k, $v, PDO::PARAM_STR);
+            if ($escolaDia) $stmt->bindValue(':tid2', $tenantId, PDO::PARAM_INT);
             $stmt->bindValue(':limit', $limit, PDO::PARAM_INT);
             $stmt->bindValue(':offset', $offset, PDO::PARAM_INT);
             $stmt->execute();
 
-            $countStmt = $db->prepare('SELECT COUNT(*) FROM pacientes WHERE 1=1' . $escolaCondition);
-            $countStmt->execute($escolaBinds ?: []);
+            $countBinds = array_merge([':tid' => $tenantId], $escolaBinds);
+            if ($escolaDia) $countBinds[':tid2'] = $tenantId;
+            $countStmt = $db->prepare('SELECT COUNT(*) FROM pacientes WHERE tenant_id = :tid' . $escolaCondition);
+            $countStmt->execute($countBinds);
         }
 
         $pacientes = $stmt->fetchAll();
@@ -78,8 +88,8 @@ class PacienteController {
         Auth::requireAuth();
 
         $db = Database::getInstance();
-        $stmt = $db->prepare('SELECT * FROM pacientes WHERE id = :id');
-        $stmt->execute([':id' => $id]);
+        $stmt = $db->prepare('SELECT * FROM pacientes WHERE id = :id AND tenant_id = :tid');
+        $stmt->execute([':id' => $id, ':tid' => Tenant::id()]);
         $paciente = $stmt->fetch();
 
         if (!$paciente) {
@@ -97,21 +107,23 @@ class PacienteController {
     public static function escolas(): void {
         Auth::requireAuth();
         $db = Database::getInstance();
-        $stmt = $db->query('SELECT DISTINCT escola FROM pacientes WHERE escola IS NOT NULL AND escola != "" ORDER BY escola ASC');
+        $stmt = $db->prepare('SELECT DISTINCT escola FROM pacientes WHERE tenant_id = :tid AND escola IS NOT NULL AND escola != "" ORDER BY escola ASC');
+        $stmt->execute([':tid' => Tenant::id()]);
         $escolas = $stmt->fetchAll(PDO::FETCH_COLUMN);
         echo json_encode($escolas);
     }
 
     public static function escolasContagem(): void {
-        Auth::requireRole(['admin']);
+        Auth::requireTela('pacientes');
         $db = Database::getInstance();
-        $stmt = $db->query('SELECT escola, COUNT(*) as total FROM pacientes WHERE escola IS NOT NULL AND escola != "" GROUP BY escola ORDER BY escola ASC');
+        $stmt = $db->prepare('SELECT escola, COUNT(*) as total FROM pacientes WHERE tenant_id = :tid AND escola IS NOT NULL AND escola != "" GROUP BY escola ORDER BY escola ASC');
+        $stmt->execute([':tid' => Tenant::id()]);
         $rows = $stmt->fetchAll();
         echo json_encode($rows);
     }
 
     public static function store(): void {
-        $user = Auth::requireRole(['admin', 'medico', 'administrativo']);
+        $user = Auth::requireTela('pacientes');
 
         $input = json_decode(file_get_contents('php://input'), true);
 
@@ -123,15 +135,18 @@ class PacienteController {
 
         $db = Database::getInstance();
 
-        // Gerar código sequencial de 6 dígitos (mínimo 280000)
-        $stmt = $db->query('SELECT MAX(CAST(codigo AS UNSIGNED)) FROM pacientes');
+        $tenantId = Tenant::id();
+
+        // Gerar código sequencial de 6 dígitos (mínimo 280000) dentro do tenant
+        $stmt = $db->prepare('SELECT MAX(CAST(codigo AS UNSIGNED)) FROM pacientes WHERE tenant_id = :tid');
+        $stmt->execute([':tid' => $tenantId]);
         $maxCode = max((int)$stmt->fetchColumn(), 279999);
         $novoCodigo = str_pad($maxCode + 1, 6, '0', STR_PAD_LEFT);
 
-        // Verificar CPF duplicado se fornecido
+        // Verificar CPF duplicado se fornecido (dentro do tenant)
         if (!empty($input['cpf'])) {
-            $stmt = $db->prepare('SELECT COUNT(*) FROM pacientes WHERE cpf = :cpf');
-            $stmt->execute([':cpf' => $input['cpf']]);
+            $stmt = $db->prepare('SELECT COUNT(*) FROM pacientes WHERE cpf = :cpf AND tenant_id = :tid');
+            $stmt->execute([':cpf' => $input['cpf'], ':tid' => $tenantId]);
             if ($stmt->fetchColumn() > 0) {
                 http_response_code(409);
                 echo json_encode(['error' => 'CPF já cadastrado']);
@@ -140,11 +155,12 @@ class PacienteController {
         }
 
         $stmt = $db->prepare(
-            'INSERT INTO pacientes (codigo, nome_completo, cpf, data_nascimento, sexo, nacionalidade, naturalidade, telefone, email, cep, rua, numero, complemento, bairro, cidade, estado, convenio, escola, responsavel, observacoes)
-             VALUES (:codigo, :nome_completo, :cpf, :data_nascimento, :sexo, :nacionalidade, :naturalidade, :telefone, :email, :cep, :rua, :numero, :complemento, :bairro, :cidade, :estado, :convenio, :escola, :responsavel, :observacoes)'
+            'INSERT INTO pacientes (tenant_id, codigo, nome_completo, cpf, data_nascimento, sexo, nacionalidade, naturalidade, telefone, email, cep, rua, numero, complemento, bairro, cidade, estado, convenio, escola, responsavel, observacoes)
+             VALUES (:tid, :codigo, :nome_completo, :cpf, :data_nascimento, :sexo, :nacionalidade, :naturalidade, :telefone, :email, :cep, :rua, :numero, :complemento, :bairro, :cidade, :estado, :convenio, :escola, :responsavel, :observacoes)'
         );
 
         $stmt->execute([
+            ':tid' => $tenantId,
             ':codigo' => $novoCodigo,
             ':nome_completo' => $input['nome_completo'],
             ':cpf' => $input['cpf'] ?? null,
@@ -176,25 +192,27 @@ class PacienteController {
     }
 
     public static function update(int $id): void {
-        $user = Auth::requireRole(['admin', 'medico', 'administrativo']);
+        $user = Auth::requireTela('pacientes');
 
         $input = json_decode(file_get_contents('php://input'), true);
 
         $db = Database::getInstance();
 
-        // Verificar se paciente existe
-        $stmt = $db->prepare('SELECT id FROM pacientes WHERE id = :id');
-        $stmt->execute([':id' => $id]);
+        $tenantId = Tenant::id();
+
+        // Verificar se paciente existe no tenant
+        $stmt = $db->prepare('SELECT id FROM pacientes WHERE id = :id AND tenant_id = :tid');
+        $stmt->execute([':id' => $id, ':tid' => $tenantId]);
         if (!$stmt->fetch()) {
             http_response_code(404);
             echo json_encode(['error' => 'Paciente não encontrado']);
             return;
         }
 
-        // Verificar CPF duplicado se mudou
+        // Verificar CPF duplicado se mudou (dentro do tenant)
         if (!empty($input['cpf'])) {
-            $stmt = $db->prepare('SELECT COUNT(*) FROM pacientes WHERE cpf = :cpf AND id != :id');
-            $stmt->execute([':cpf' => $input['cpf'], ':id' => $id]);
+            $stmt = $db->prepare('SELECT COUNT(*) FROM pacientes WHERE cpf = :cpf AND id != :id AND tenant_id = :tid');
+            $stmt->execute([':cpf' => $input['cpf'], ':id' => $id, ':tid' => $tenantId]);
             if ($stmt->fetchColumn() > 0) {
                 http_response_code(409);
                 echo json_encode(['error' => 'CPF já cadastrado para outro paciente']);
@@ -208,11 +226,12 @@ class PacienteController {
              telefone = :telefone, email = :email, cep = :cep, rua = :rua, numero = :numero,
              complemento = :complemento, bairro = :bairro, cidade = :cidade, estado = :estado,
              convenio = :convenio, escola = :escola, responsavel = :responsavel, observacoes = :observacoes
-             WHERE id = :id'
+             WHERE id = :id AND tenant_id = :tid'
         );
 
         $stmt->execute([
             ':id' => $id,
+            ':tid' => $tenantId,
             ':nome_completo' => $input['nome_completo'] ?? null,
             ':cpf' => $input['cpf'] ?? null,
             ':data_nascimento' => $input['data_nascimento'] ?? null,
@@ -240,19 +259,20 @@ class PacienteController {
     }
 
     public static function destroy(int $id): void {
-        $user = Auth::requireRole(['admin']);
+        $user = Auth::requireTela('pacientes');
+        $tenantId = Tenant::id();
 
         $db = Database::getInstance();
-        $stmt = $db->prepare('SELECT id FROM pacientes WHERE id = :id');
-        $stmt->execute([':id' => $id]);
+        $stmt = $db->prepare('SELECT id FROM pacientes WHERE id = :id AND tenant_id = :tid');
+        $stmt->execute([':id' => $id, ':tid' => $tenantId]);
         if (!$stmt->fetch()) {
             http_response_code(404);
             echo json_encode(['error' => 'Paciente não encontrado']);
             return;
         }
 
-        $stmt = $db->prepare('DELETE FROM pacientes WHERE id = :id');
-        $stmt->execute([':id' => $id]);
+        $stmt = $db->prepare('DELETE FROM pacientes WHERE id = :id AND tenant_id = :tid');
+        $stmt->execute([':id' => $id, ':tid' => $tenantId]);
 
         AuditLog::registrar('excluir', 'paciente', $id, 'Paciente excluído', $user);
 
@@ -263,7 +283,7 @@ class PacienteController {
      * DELETE /api/pacientes/escola/{escola} — Exclusão em lote por escola
      */
     public static function destroyByEscola(): void {
-        $user = Auth::requireRole(['admin']);
+        $user = Auth::requireTela('pacientes');
 
         $input = json_decode(file_get_contents('php://input'), true);
         $escola = trim($input['escola'] ?? '');
@@ -276,8 +296,9 @@ class PacienteController {
 
         $db = Database::getInstance();
 
-        $countStmt = $db->prepare('SELECT COUNT(*) FROM pacientes WHERE escola = :escola');
-        $countStmt->execute([':escola' => $escola]);
+        $tenantId = Tenant::id();
+        $countStmt = $db->prepare('SELECT COUNT(*) FROM pacientes WHERE escola = :escola AND tenant_id = :tid');
+        $countStmt->execute([':escola' => $escola, ':tid' => $tenantId]);
         $total = (int)$countStmt->fetchColumn();
 
         if ($total === 0) {
@@ -286,8 +307,8 @@ class PacienteController {
             return;
         }
 
-        $stmt = $db->prepare('DELETE FROM pacientes WHERE escola = :escola');
-        $stmt->execute([':escola' => $escola]);
+        $stmt = $db->prepare('DELETE FROM pacientes WHERE escola = :escola AND tenant_id = :tid');
+        $stmt->execute([':escola' => $escola, ':tid' => $tenantId]);
 
         AuditLog::registrar('excluir_lote', 'paciente', null, "Excluído {$total} pacientes da escola '{$escola}'", $user);
 
@@ -301,7 +322,7 @@ class PacienteController {
      * POST /api/pacientes/importar — Importação em lote via CSV
      */
     public static function importar(): void {
-        $user = Auth::requireRole(['admin']);
+        $user = Auth::requireTela('pacientes');
 
         $input = json_decode(file_get_contents('php://input'), true);
         $pacientes = $input['pacientes'] ?? [];
@@ -316,16 +337,19 @@ class PacienteController {
         $importados = 0;
         $erros = [];
 
-        // Obter próximo código (mínimo 280000)
-        $stmt = $db->query('SELECT MAX(CAST(codigo AS UNSIGNED)) FROM pacientes');
+        $tenantId = Tenant::id();
+
+        // Obter próximo código (mínimo 280000) dentro do tenant
+        $stmt = $db->prepare('SELECT MAX(CAST(codigo AS UNSIGNED)) FROM pacientes WHERE tenant_id = :tid');
+        $stmt->execute([':tid' => $tenantId]);
         $nextCode = max((int)$stmt->fetchColumn(), 279999) + 1;
 
         $insertStmt = $db->prepare(
-            'INSERT INTO pacientes (codigo, nome_completo, cpf, data_nascimento, sexo, telefone, email, cep, rua, numero, complemento, bairro, cidade, estado, convenio, escola, responsavel, numero_convenio, observacoes)
-             VALUES (:codigo, :nome_completo, :cpf, :data_nascimento, :sexo, :telefone, :email, :cep, :rua, :numero, :complemento, :bairro, :cidade, :estado, :convenio, :escola, :responsavel, :numero_convenio, :observacoes)'
+            'INSERT INTO pacientes (tenant_id, codigo, nome_completo, cpf, data_nascimento, sexo, telefone, email, cep, rua, numero, complemento, bairro, cidade, estado, convenio, escola, responsavel, numero_convenio, observacoes)
+             VALUES (:tid, :codigo, :nome_completo, :cpf, :data_nascimento, :sexo, :telefone, :email, :cep, :rua, :numero, :complemento, :bairro, :cidade, :estado, :convenio, :escola, :responsavel, :numero_convenio, :observacoes)'
         );
 
-        $cpfCheckStmt = $db->prepare('SELECT COUNT(*) FROM pacientes WHERE cpf = :cpf');
+        $cpfCheckStmt = $db->prepare('SELECT COUNT(*) FROM pacientes WHERE cpf = :cpf AND tenant_id = :tid');
 
         foreach ($pacientes as $i => $p) {
             $linha = $i + 1;
@@ -339,7 +363,7 @@ class PacienteController {
 
             // Verificar CPF duplicado no banco
             if ($cpf) {
-                $cpfCheckStmt->execute([':cpf' => $cpf]);
+                $cpfCheckStmt->execute([':cpf' => $cpf, ':tid' => $tenantId]);
                 if ($cpfCheckStmt->fetchColumn() > 0) {
                     $erros[] = "Linha {$linha}: CPF {$cpf} já cadastrado ({$nome})";
                     continue;
@@ -350,6 +374,7 @@ class PacienteController {
 
             try {
                 $insertStmt->execute([
+                    ':tid' => $tenantId,
                     ':codigo' => $codigo,
                     ':nome_completo' => $nome,
                     ':cpf' => $cpf,

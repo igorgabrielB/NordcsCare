@@ -315,6 +315,11 @@
   color: #ecc94b;
 }
 
+.usr-badge-master {
+  background: rgba(237, 137, 54, 0.15);
+  color: #ed8936;
+}
+
 /* Status badges */
 .usr-status-badge {
   display: inline-flex;
@@ -377,6 +382,112 @@
 .usr-action-danger:hover {
   background: #e53e3e;
   color: #fff;
+}
+
+.usr-action-perms {
+  background: rgba(99, 102, 241, 0.10);
+  color: #818cf8;
+}
+
+.usr-action-perms:hover {
+  background: #6366f1;
+  color: #fff;
+}
+
+/* ── Permissões modal ── */
+.usr-modal-perms {
+  max-width: 640px;
+  width: 95vw;
+}
+
+.usr-perms-loading {
+  padding: 2rem;
+  text-align: center;
+  color: var(--text-secondary);
+}
+
+.usr-perms-body {
+  max-height: 60vh;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+  padding-right: 0.25rem;
+}
+
+.usr-perms-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.usr-perms-group-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-bottom: 0.35rem;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.usr-perms-group-label {
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-secondary);
+}
+
+.usr-perms-toggle-all {
+  font-size: 0.72rem;
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--primary);
+  padding: 0;
+}
+
+.usr-perms-toggle-all:hover {
+  text-decoration: underline;
+}
+
+.usr-perms-checks {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 0.35rem;
+}
+
+.usr-perm-check {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  cursor: pointer;
+  padding: 0.35rem 0.5rem;
+  border-radius: 6px;
+  transition: background 0.15s;
+}
+
+.usr-perm-check:hover {
+  background: var(--hover-bg, rgba(99, 102, 241, 0.07));
+}
+
+.usr-perm-check input[type="checkbox"] {
+  accent-color: var(--primary);
+  width: 15px;
+  height: 15px;
+  flex-shrink: 0;
+}
+
+.usr-perm-check-nome {
+  font-size: 0.83rem;
+  color: var(--text-primary);
+  flex: 1;
+}
+
+.usr-perm-check-code {
+  font-size: 0.65rem;
+  font-family: monospace;
+  color: var(--text-secondary);
+  opacity: 0.5;
 }
 
 /* ── Modal ── */

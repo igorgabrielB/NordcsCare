@@ -1,29 +1,31 @@
 <?php
 require_once __DIR__ . '/../config/database.php';
 require_once __DIR__ . '/../middleware/auth.php';
+require_once __DIR__ . '/../middleware/tenant.php';
 
 class MedicoController {
 
     public static function index(): void {
-        Auth::requireRole(['admin']);
-        $db = Database::getInstance();
-
-        $stmt = $db->query(
-            'SELECT id, nome, crm, uf, especialidade, telefone, email, ativo, created_at, updated_at
-             FROM medicos ORDER BY nome ASC'
-        );
-        echo json_encode($stmt->fetchAll());
-    }
-
-    public static function show(int $id): void {
-        Auth::requireRole(['admin']);
+        Auth::requireTela('medicos');
         $db = Database::getInstance();
 
         $stmt = $db->prepare(
             'SELECT id, nome, crm, uf, especialidade, telefone, email, ativo, created_at, updated_at
-             FROM medicos WHERE id = :id'
+             FROM medicos WHERE tenant_id = :tid ORDER BY nome ASC'
         );
-        $stmt->execute([':id' => $id]);
+        $stmt->execute([':tid' => Tenant::id()]);
+        echo json_encode($stmt->fetchAll());
+    }
+
+    public static function show(int $id): void {
+        Auth::requireTela('medicos');
+        $db = Database::getInstance();
+
+        $stmt = $db->prepare(
+            'SELECT id, nome, crm, uf, especialidade, telefone, email, ativo, created_at, updated_at
+             FROM medicos WHERE id = :id AND tenant_id = :tid'
+        );
+        $stmt->execute([':id' => $id, ':tid' => Tenant::id()]);
         $medico = $stmt->fetch();
 
         if (!$medico) {
@@ -36,7 +38,7 @@ class MedicoController {
     }
 
     public static function store(): void {
-        Auth::requireRole(['admin']);
+        Auth::requireTela('medicos');
         $input = json_decode(file_get_contents('php://input'), true);
         $db = Database::getInstance();
 
@@ -65,27 +67,27 @@ class MedicoController {
             return;
         }
 
-        // Verificar CRM único
-        $stmt = $db->prepare('SELECT id FROM medicos WHERE crm = :crm');
-        $stmt->execute([':crm' => $crm]);
+        // Verificar CRM único dentro do tenant
+        $stmt = $db->prepare('SELECT id FROM medicos WHERE crm = :crm AND tenant_id = :tid');
+        $stmt->execute([':crm' => $crm, ':tid' => Tenant::id()]);
         if ($stmt->fetch()) {
             http_response_code(422);
             echo json_encode(['error' => 'Este CRM já está cadastrado']);
             return;
         }
 
-        // Verificar email único na tabela usuarios
-        $stmt = $db->prepare('SELECT id FROM usuarios WHERE email = :email');
-        $stmt->execute([':email' => $email]);
+        // Verificar email único na tabela usuarios dentro do tenant
+        $stmt = $db->prepare('SELECT id FROM usuarios WHERE email = :email AND tenant_id = :tid');
+        $stmt->execute([':email' => $email, ':tid' => Tenant::id()]);
         if ($stmt->fetch()) {
             http_response_code(422);
             echo json_encode(['error' => 'Este email já está em uso']);
             return;
         }
 
-        // Verificar login único
-        $stmt = $db->prepare('SELECT id FROM usuarios WHERE login = :login');
-        $stmt->execute([':login' => $login]);
+        // Verificar login único dentro do tenant
+        $stmt = $db->prepare('SELECT id FROM usuarios WHERE login = :login AND tenant_id = :tid');
+        $stmt->execute([':login' => $login, ':tid' => Tenant::id()]);
         if ($stmt->fetch()) {
             http_response_code(422);
             echo json_encode(['error' => 'Este login já está em uso']);
@@ -97,10 +99,11 @@ class MedicoController {
         try {
             $hash = password_hash($senha, PASSWORD_BCRYPT);
             $stmt = $db->prepare(
-                'INSERT INTO usuarios (nome, login, senha, role, email)
-                 VALUES (:nome, :login, :senha, :role, :email)'
+                'INSERT INTO usuarios (tenant_id, nome, login, senha, role, email)
+                 VALUES (:tid, :nome, :login, :senha, :role, :email)'
             );
             $stmt->execute([
+                ':tid' => Tenant::id(),
                 ':nome' => $nome,
                 ':login' => $login,
                 ':senha' => $hash,
@@ -110,10 +113,11 @@ class MedicoController {
             $usuarioId = (int)$db->lastInsertId();
 
             $stmt = $db->prepare(
-                'INSERT INTO medicos (usuario_id, nome, crm, uf, especialidade, telefone, email)
-                 VALUES (:uid, :nome, :crm, :uf, :especialidade, :telefone, :email)'
+                'INSERT INTO medicos (tenant_id, usuario_id, nome, crm, uf, especialidade, telefone, email)
+                 VALUES (:tid, :uid, :nome, :crm, :uf, :especialidade, :telefone, :email)'
             );
             $stmt->execute([
+                ':tid' => Tenant::id(),
                 ':uid' => $usuarioId,
                 ':nome' => $nome,
                 ':crm' => $crm,
@@ -134,12 +138,12 @@ class MedicoController {
     }
 
     public static function update(int $id): void {
-        Auth::requireRole(['admin']);
+        Auth::requireTela('medicos');
         $input = json_decode(file_get_contents('php://input'), true);
         $db = Database::getInstance();
 
-        $stmt = $db->prepare('SELECT id FROM medicos WHERE id = :id');
-        $stmt->execute([':id' => $id]);
+        $stmt = $db->prepare('SELECT id FROM medicos WHERE id = :id AND tenant_id = :tid');
+        $stmt->execute([':id' => $id, ':tid' => Tenant::id()]);
         if (!$stmt->fetch()) {
             http_response_code(404);
             echo json_encode(['error' => 'Médico não encontrado']);
@@ -155,9 +159,9 @@ class MedicoController {
             return;
         }
 
-        // Verificar CRM único (excluindo o próprio)
-        $stmt = $db->prepare('SELECT id FROM medicos WHERE crm = :crm AND id != :id');
-        $stmt->execute([':crm' => $crm, ':id' => $id]);
+        // Verificar CRM único (excluindo o próprio, dentro do tenant)
+        $stmt = $db->prepare('SELECT id FROM medicos WHERE crm = :crm AND id != :id AND tenant_id = :tid');
+        $stmt->execute([':crm' => $crm, ':id' => $id, ':tid' => Tenant::id()]);
         if ($stmt->fetch()) {
             http_response_code(422);
             echo json_encode(['error' => 'Este CRM já está cadastrado']);
@@ -167,7 +171,7 @@ class MedicoController {
         $stmt = $db->prepare(
             'UPDATE medicos SET nome = :nome, crm = :crm, uf = :uf, especialidade = :especialidade,
              telefone = :telefone, email = :email, ativo = :ativo
-             WHERE id = :id'
+             WHERE id = :id AND tenant_id = :tid'
         );
         $stmt->execute([
             ':nome' => $nome,
@@ -178,25 +182,26 @@ class MedicoController {
             ':email' => $input['email'] ?? null,
             ':ativo' => isset($input['ativo']) ? (int) $input['ativo'] : 1,
             ':id' => $id,
+            ':tid' => Tenant::id(),
         ]);
 
         echo json_encode(['message' => 'Médico atualizado com sucesso']);
     }
 
     public static function destroy(int $id): void {
-        Auth::requireRole(['admin']);
+        Auth::requireTela('medicos');
         $db = Database::getInstance();
 
-        $stmt = $db->prepare('SELECT id FROM medicos WHERE id = :id');
-        $stmt->execute([':id' => $id]);
+        $stmt = $db->prepare('SELECT id FROM medicos WHERE id = :id AND tenant_id = :tid');
+        $stmt->execute([':id' => $id, ':tid' => Tenant::id()]);
         if (!$stmt->fetch()) {
             http_response_code(404);
             echo json_encode(['error' => 'Médico não encontrado']);
             return;
         }
 
-        $stmt = $db->prepare('DELETE FROM medicos WHERE id = :id');
-        $stmt->execute([':id' => $id]);
+        $stmt = $db->prepare('DELETE FROM medicos WHERE id = :id AND tenant_id = :tid');
+        $stmt->execute([':id' => $id, ':tid' => Tenant::id()]);
 
         echo json_encode(['message' => 'Médico excluído com sucesso']);
     }
@@ -206,9 +211,9 @@ class MedicoController {
         $db = Database::getInstance();
 
         $stmt = $db->prepare(
-            'SELECT nome, crm, uf, especialidade FROM medicos WHERE usuario_id = :uid LIMIT 1'
+            'SELECT nome, crm, uf, especialidade FROM medicos WHERE usuario_id = :uid AND tenant_id = :tid LIMIT 1'
         );
-        $stmt->execute([':uid' => $user['sub']]);
+        $stmt->execute([':uid' => $user['sub'], ':tid' => Tenant::id()]);
         $medico = $stmt->fetch();
 
         echo json_encode($medico ?: ['nome' => $user['nome'], 'crm' => null, 'uf' => null, 'especialidade' => null]);

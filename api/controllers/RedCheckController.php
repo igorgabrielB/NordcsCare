@@ -2,6 +2,7 @@
 require_once __DIR__ . '/../config/database.php';
 require_once __DIR__ . '/../config/redcheck.php';
 require_once __DIR__ . '/../middleware/auth.php';
+require_once __DIR__ . '/../middleware/tenant.php';
 
 /**
  * RedCheckController — Consulta de exames na API RedCheck (somente leitura)
@@ -32,8 +33,8 @@ class RedCheckController {
         }
 
         // Buscar CPF do paciente local
-        $stmt = $db->prepare('SELECT cpf, nome_completo FROM pacientes WHERE id = :id');
-        $stmt->execute([':id' => $pacienteId]);
+        $stmt = $db->prepare('SELECT cpf, nome_completo FROM pacientes WHERE id = :id AND tenant_id = :tid');
+        $stmt->execute([':id' => $pacienteId, ':tid' => Tenant::id()]);
         $paciente = $stmt->fetch(PDO::FETCH_ASSOC);
 
         if (!$paciente) {

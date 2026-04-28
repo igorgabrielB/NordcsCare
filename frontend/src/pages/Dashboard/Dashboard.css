@@ -1,4 +1,21 @@
 /* ===== Dashboard Hero ===== */
+
+/* Custom grid layout (DashboardBuilder) */
+.dashboard-custom-grid {
+  display: grid;
+  grid-template-columns: repeat(12, 1fr);
+  grid-auto-rows: 60px;
+  gap: 20px;
+}
+
+.dashboard-custom-grid > div {
+  min-height: 0;
+}
+
+.dashboard-custom-grid > div > * {
+  height: 100%;
+}
+
 .dashboard-hero {
   position: relative;
   border-radius: 16px;
@@ -76,6 +93,28 @@
   gap: 10px;
 }
 
+.dashboard-customize-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.45rem 0.85rem;
+  background: rgba(255, 255, 255, 0.15);
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  border-radius: 8px;
+  color: rgba(255, 255, 255, 0.9);
+  font-size: 0.85rem;
+  font-weight: 500;
+  text-decoration: none;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.dashboard-customize-btn:hover {
+  background: rgba(255, 255, 255, 0.25);
+  color: #fff;
+  transform: translateY(-1px);
+}
+
 .dashboard-hero-date {
   display: flex;
   align-items: center;
@@ -150,6 +189,16 @@
   }
 }
 
+/* ===== Filter Row (filter bar + customize btn) ===== */
+.dashboard-filter-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-bottom: 24px;
+  flex-wrap: wrap;
+}
+
 /* ===== Filter Bar ===== */
 .dashboard-filter-bar {
   display: flex;
@@ -159,11 +208,9 @@
   background: var(--bg-card);
   border: 1px solid var(--border);
   border-radius: var(--radius);
-  margin-bottom: 24px;
-  margin-left: auto;
-  width: fit-content;
   font-size: 0.82rem;
   color: var(--text-secondary);
+  flex-wrap: wrap;
 }
 
 .filter-label {

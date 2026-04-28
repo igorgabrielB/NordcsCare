@@ -1,0 +1,480 @@
+.clinicas-page {
+  padding: 2rem;
+  max-width: 960px;
+  margin: 0 auto;
+}
+
+/* Header */
+.clinicas-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 1.75rem;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+.clinicas-header-left {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.clinicas-header-left h1 {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--text);
+  margin: 0;
+}
+
+.clinicas-back {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  color: var(--text-secondary);
+  text-decoration: none;
+  transition: all 0.2s;
+}
+
+.clinicas-back:hover {
+  border-color: var(--primary);
+  color: var(--primary);
+}
+
+.clinicas-btn-add {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.6rem 1.25rem;
+  background: var(--primary);
+  color: #fff;
+  border: none;
+  border-radius: 10px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.clinicas-btn-add:hover {
+  opacity: 0.9;
+  transform: translateY(-1px);
+}
+
+/* Stats */
+.clinicas-stats {
+  display: flex;
+  gap: 0.75rem;
+  margin-bottom: 1.5rem;
+  flex-wrap: wrap;
+}
+
+.clinicas-stat {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.6rem 1rem;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  font-size: 0.82rem;
+  color: var(--text-secondary);
+}
+
+.clinicas-stat strong {
+  color: var(--text);
+  font-weight: 700;
+}
+
+/* List */
+.clinicas-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.clinicas-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1rem 1.25rem;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  transition: all 0.2s;
+}
+
+.clinicas-card:hover {
+  border-color: var(--primary);
+  box-shadow: 0 2px 12px rgba(115, 69, 214, 0.08);
+}
+
+.clinicas-card-info {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  min-width: 0;
+  flex: 1;
+}
+
+.clinicas-card-icon {
+  width: 44px;
+  height: 44px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  background: rgba(49, 130, 206, 0.12);
+  color: #3182ce;
+}
+
+.clinicas-card-text {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  min-width: 0;
+}
+
+.clinicas-card-nome {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.clinicas-card-slug {
+  font-size: 0.78rem;
+  color: var(--text-muted);
+  font-family: monospace;
+}
+
+.clinicas-card-meta {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  flex-shrink: 0;
+}
+
+.clinicas-badge {
+  font-size: 0.7rem;
+  font-weight: 600;
+  padding: 3px 10px;
+  border-radius: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.clinicas-badge.ativo {
+  background: rgba(56, 161, 105, 0.15);
+  color: #68d391;
+}
+
+.clinicas-badge.inativo {
+  background: rgba(229, 62, 62, 0.15);
+  color: #fc8181;
+}
+
+.clinicas-card-count {
+  font-size: 0.78rem;
+  color: var(--text-secondary);
+  white-space: nowrap;
+}
+
+.clinicas-card-actions {
+  display: flex;
+  gap: 0.35rem;
+}
+
+.clinicas-card-actions button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--bg-card);
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.clinicas-card-actions button:hover {
+  border-color: var(--primary);
+  color: var(--primary);
+}
+
+.clinicas-card-actions button.delete:hover {
+  border-color: #e53e3e;
+  color: #e53e3e;
+}
+
+/* Empty */
+.clinicas-empty {
+  text-align: center;
+  color: var(--text-muted);
+  padding: 3rem 1rem;
+  font-size: 0.9rem;
+}
+
+/* Modal overlay */
+.clinicas-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 1rem;
+}
+
+.clinicas-modal {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  width: 100%;
+  max-width: 520px;
+  max-height: 90vh;
+  overflow-y: auto;
+  padding: 2rem;
+}
+
+.clinicas-modal h2 {
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: var(--text);
+  margin: 0 0 1.5rem;
+}
+
+.clinicas-form-group {
+  margin-bottom: 1rem;
+}
+
+.clinicas-form-group label {
+  display: block;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  margin-bottom: 0.35rem;
+}
+
+.clinicas-form-group input,
+.clinicas-form-group select {
+  width: 100%;
+  padding: 0.6rem 0.85rem;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  color: var(--text);
+  font-size: 0.88rem;
+  outline: none;
+  transition: border-color 0.2s;
+  box-sizing: border-box;
+}
+
+.clinicas-form-group input:focus,
+.clinicas-form-group select:focus {
+  border-color: var(--primary);
+}
+
+.clinicas-form-hint {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  margin-top: 0.25rem;
+}
+
+.clinicas-form-section {
+  margin-top: 1.5rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--border);
+}
+
+.clinicas-form-section h3 {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--text-secondary);
+  margin: 0 0 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.clinicas-modal-actions {
+  display: flex;
+  gap: 0.75rem;
+  justify-content: flex-end;
+  margin-top: 1.5rem;
+}
+
+.clinicas-modal-actions button {
+  padding: 0.6rem 1.25rem;
+  border-radius: 8px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  border: 1px solid var(--border);
+}
+
+.clinicas-btn-cancel {
+  background: var(--bg);
+  color: var(--text-secondary);
+}
+
+.clinicas-btn-cancel:hover {
+  border-color: var(--text-secondary);
+}
+
+.clinicas-btn-save {
+  background: var(--primary);
+  color: #fff;
+  border-color: var(--primary) !important;
+}
+
+.clinicas-btn-save:hover {
+  opacity: 0.9;
+}
+
+.clinicas-btn-save:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Error */
+.clinicas-error {
+  background: rgba(229, 62, 62, 0.12);
+  color: #fc8181;
+  padding: 0.75rem 1rem;
+  border-radius: 8px;
+  font-size: 0.85rem;
+  margin-bottom: 1rem;
+}
+
+/* Loading */
+.clinicas-loading {
+  text-align: center;
+  color: var(--text-muted);
+  padding: 3rem;
+}
+
+@media (max-width: 640px) {
+  .clinicas-page {
+    padding: 1.25rem;
+  }
+
+  .clinicas-header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .clinicas-card {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.75rem;
+  }
+
+  .clinicas-card-meta {
+    width: 100%;
+    justify-content: space-between;
+  }
+}
+
+/* Users panel */
+.clinicas-modal-wide {
+  max-width: 720px;
+  width: 95%;
+}
+
+.clinicas-btn-close {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--text-secondary);
+  padding: 4px;
+  border-radius: 6px;
+}
+
+.clinicas-btn-close:hover {
+  background: var(--bg-hover);
+}
+
+.clinicas-add-user-row {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+.clinicas-add-user-row select {
+  flex: 1;
+  padding: 0.5rem 0.75rem;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--bg);
+  color: var(--text-primary);
+  font-size: 0.85rem;
+}
+
+.clinicas-btn-add-user {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 0.5rem 1rem;
+  border-radius: 8px;
+  background: var(--primary);
+  color: #fff;
+  border: none;
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.clinicas-btn-add-user:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.clinicas-users-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.85rem;
+}
+
+.clinicas-users-table th {
+  text-align: left;
+  padding: 0.5rem 0.75rem;
+  border-bottom: 2px solid var(--border);
+  font-weight: 700;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+}
+
+.clinicas-users-table td {
+  padding: 0.5rem 0.75rem;
+  border-bottom: 1px solid var(--border);
+}
+
+.clinicas-badge.convidado {
+  background: rgba(66, 153, 225, 0.15);
+  color: #3182ce;
+}
+
+.clinicas-btn-remove-user {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--text-muted);
+  padding: 4px;
+  border-radius: 4px;
+}
+
+.clinicas-btn-remove-user:hover {
+  color: #e53e3e;
+  background: rgba(229, 62, 62, 0.08);
+}

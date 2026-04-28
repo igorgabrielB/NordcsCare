@@ -322,6 +322,18 @@ body.light-mode .kanban-title {
   animation: priorityPulse 2s ease-in-out infinite;
 }
 
+.card-senha {
+  font-size: 0.72rem;
+  font-weight: 700;
+  font-family: monospace;
+  letter-spacing: 0.05em;
+  background: var(--card-accent, var(--primary));
+  color: #fff;
+  padding: 2px 7px;
+  border-radius: 6px;
+  flex-shrink: 0;
+}
+
 @keyframes priorityPulse {
   0%, 100% { transform: scale(1); }
   50% { transform: scale(1.15); }
@@ -441,6 +453,15 @@ body.light-mode .kanban-title {
   display: flex;
   align-items: center;
   justify-content: center;
+}
+
+.btn-chamar {
+  background: linear-gradient(135deg, #f59e0b, #d97706);
+  color: #fff;
+}
+
+.btn-chamar:hover {
+  background: linear-gradient(135deg, #fbbf24, #f59e0b);
 }
 
 .btn-remover:hover {

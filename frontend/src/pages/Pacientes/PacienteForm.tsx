@@ -1,8 +1,8 @@
 import { useState, useEffect, useRef, type FormEvent } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import api from '../../services/api.ts'
-import { useSchool } from '../../contexts/SchoolContext.tsx'
 import { User, Heart, Phone, MapPin, FileText } from 'lucide-react'
+import IOSDatePicker from '../../components/IOSDatePicker/IOSDatePicker.tsx'
 import './Pacientes.css'
 
 interface PacienteForm {
@@ -94,7 +94,6 @@ const emptyForm: PacienteForm = {
 export default function PacienteForm() {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
-  const { selectedSchool } = useSchool()
   const isEditing = !!id
 
   const formTopRef = useRef<HTMLDivElement>(null)
@@ -125,13 +124,6 @@ export default function PacienteForm() {
   useEffect(() => {
     api.get('/pacientes/escolas').then(res => setEscolas(res.data)).catch(() => {})
   }, [])
-
-  useEffect(() => {
-    if (!isEditing && selectedSchool) {
-      setForm(prev => ({ ...prev, escola: selectedSchool }))
-      setEscolaSearch(selectedSchool)
-    }
-  }, [isEditing, selectedSchool])
 
   useEffect(() => {
     if (isEditing) {
@@ -293,13 +285,14 @@ export default function PacienteForm() {
             </div>
 
             <div className={`form-group${fieldErrors.has('data_nascimento') ? ' field-error' : ''}`}>
-              <label htmlFor="data_nascimento">Data de Nascimento <span className="required-asterisk">*</span></label>
-              <input
-                id="data_nascimento"
-                name="data_nascimento"
-                type="date"
+              <label>Data de Nascimento <span className="required-asterisk">*</span></label>
+              <IOSDatePicker
                 value={form.data_nascimento}
-                onChange={handleChange}
+                onChange={val => {
+                  setForm(prev => ({ ...prev, data_nascimento: val }))
+                  setFieldErrors(prev => { const n = new Set(prev); n.delete('data_nascimento'); return n })
+                }}
+                error={fieldErrors.has('data_nascimento')}
               />
             </div>
 

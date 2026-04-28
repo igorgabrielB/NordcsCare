@@ -2,6 +2,7 @@
 require_once __DIR__ . '/../config/database.php';
 require_once __DIR__ . '/../config/s3.php';
 require_once __DIR__ . '/../middleware/auth.php';
+require_once __DIR__ . '/../middleware/tenant.php';
 
 class SpotVisionController {
 
@@ -16,8 +17,8 @@ class SpotVisionController {
         $db = Database::getInstance();
 
         // Buscar código do paciente
-        $stmt = $db->prepare('SELECT codigo FROM pacientes WHERE id = :id');
-        $stmt->execute([':id' => $pacienteId]);
+        $stmt = $db->prepare('SELECT codigo FROM pacientes WHERE id = :id AND tenant_id = :tid');
+        $stmt->execute([':id' => $pacienteId, ':tid' => Tenant::id()]);
         $paciente = $stmt->fetch();
 
         if (!$paciente || empty($paciente['codigo'])) {
@@ -32,13 +33,13 @@ class SpotVisionController {
         $prefix = 'ACUIDADE/SPOTVISION/';
 
         // Buscar mapeamentos corrigidos para este código
-        $stmtMap = $db->prepare('SELECT s3_key FROM spotvision_mapeamento WHERE codigo_correto = :codigo');
-        $stmtMap->execute([':codigo' => $codigo]);
+        $stmtMap = $db->prepare('SELECT s3_key FROM spotvision_mapeamento WHERE tenant_id = :tid AND codigo_correto = :codigo');
+        $stmtMap->execute([':tid' => Tenant::id(), ':codigo' => $codigo]);
         $mappedKeys = array_column($stmtMap->fetchAll(), 's3_key');
 
         // Buscar keys que foram remapeados para OUTRO paciente (excluir do resultado original)
-        $stmtExcl = $db->prepare('SELECT s3_key FROM spotvision_mapeamento WHERE codigo_original = :codigo AND codigo_correto != :codigo2');
-        $stmtExcl->execute([':codigo' => $codigo, ':codigo2' => $codigo]);
+        $stmtExcl = $db->prepare('SELECT s3_key FROM spotvision_mapeamento WHERE tenant_id = :tid AND codigo_original = :codigo AND codigo_correto != :codigo2');
+        $stmtExcl->execute([':tid' => Tenant::id(), ':codigo' => $codigo, ':codigo2' => $codigo]);
         $excludedKeys = array_column($stmtExcl->fetchAll(), 's3_key');
 
         try {
@@ -199,7 +200,7 @@ class SpotVisionController {
      */
     public static function listarTodos(): void {
         $user = Auth::requireAuth();
-        if ($user['role'] !== 'admin') {
+        if (!Auth::hasTela($user, 'spotvision')) {
             http_response_code(403);
             echo json_encode(['error' => 'Acesso negado']);
             return;
@@ -219,14 +220,16 @@ class SpotVisionController {
             $contents = $result['Contents'] ?? [];
 
             // Buscar todos os mapeamentos existentes
-            $stmtMap = $db->query('SELECT s3_key, codigo_original, codigo_correto FROM spotvision_mapeamento');
+            $stmtMap = $db->prepare('SELECT s3_key, codigo_original, codigo_correto FROM spotvision_mapeamento WHERE tenant_id = :tid');
+            $stmtMap->execute([':tid' => Tenant::id()]);
             $mapeamentos = [];
             foreach ($stmtMap->fetchAll() as $m) {
                 $mapeamentos[$m['s3_key']] = $m;
             }
 
             // Buscar todos os pacientes (codigo -> nome) para exibição
-            $stmtPac = $db->query('SELECT codigo, nome_completo FROM pacientes WHERE codigo IS NOT NULL AND codigo != ""');
+            $stmtPac = $db->prepare('SELECT codigo, nome_completo FROM pacientes WHERE tenant_id = :tid AND codigo IS NOT NULL AND codigo != ""');
+            $stmtPac->execute([':tid' => Tenant::id()]);
             $pacientes = [];
             foreach ($stmtPac->fetchAll() as $p) {
                 $pacientes[$p['codigo']] = $p['nome_completo'];
@@ -283,7 +286,7 @@ class SpotVisionController {
      */
     public static function mapear(): void {
         $user = Auth::requireAuth();
-        if ($user['role'] !== 'admin') {
+        if (!Auth::hasTela($user, 'spotvision')) {
             http_response_code(403);
             echo json_encode(['error' => 'Acesso negado']);
             return;
@@ -312,8 +315,8 @@ class SpotVisionController {
 
         // Verificar se o código correto pertence a algum paciente
         $db = Database::getInstance();
-        $stmt = $db->prepare('SELECT id, nome_completo FROM pacientes WHERE codigo = :codigo LIMIT 1');
-        $stmt->execute([':codigo' => $codigoCorreto]);
+        $stmt = $db->prepare('SELECT id, nome_completo FROM pacientes WHERE codigo = :codigo AND tenant_id = :tid LIMIT 1');
+        $stmt->execute([':codigo' => $codigoCorreto, ':tid' => Tenant::id()]);
         $paciente = $stmt->fetch();
 
         if (!$paciente) {
@@ -323,10 +326,11 @@ class SpotVisionController {
         }
 
         // Inserir ou atualizar mapeamento
-        $stmt = $db->prepare('INSERT INTO spotvision_mapeamento (s3_key, codigo_original, codigo_correto, atualizado_por)
-            VALUES (:key, :orig, :correto, :user_id)
+        $stmt = $db->prepare('INSERT INTO spotvision_mapeamento (tenant_id, s3_key, codigo_original, codigo_correto, atualizado_por)
+            VALUES (:tid, :key, :orig, :correto, :user_id)
             ON DUPLICATE KEY UPDATE codigo_correto = :correto2, atualizado_por = :user_id2, updated_at = NOW()');
         $stmt->execute([
+            ':tid'       => Tenant::id(),
             ':key'       => $key,
             ':orig'      => $codigoOriginal,
             ':correto'   => $codigoCorreto,
@@ -348,7 +352,7 @@ class SpotVisionController {
      */
     public static function removerMapeamento(): void {
         $user = Auth::requireAuth();
-        if ($user['role'] !== 'admin') {
+        if (!Auth::hasTela($user, 'spotvision')) {
             http_response_code(403);
             echo json_encode(['error' => 'Acesso negado']);
             return;
@@ -362,8 +366,8 @@ class SpotVisionController {
         }
 
         $db = Database::getInstance();
-        $stmt = $db->prepare('DELETE FROM spotvision_mapeamento WHERE s3_key = :key');
-        $stmt->execute([':key' => $key]);
+        $stmt = $db->prepare('DELETE FROM spotvision_mapeamento WHERE s3_key = :key AND tenant_id = :tid');
+        $stmt->execute([':key' => $key, ':tid' => Tenant::id()]);
 
         echo json_encode(['success' => true]);
     }
@@ -375,7 +379,7 @@ class SpotVisionController {
      */
     public static function ocrBatch(): void {
         $user = Auth::requireAuth();
-        if ($user['role'] !== 'admin') {
+        if (!Auth::hasTela($user, 'spotvision')) {
             http_response_code(403);
             echo json_encode(['error' => 'Acesso negado']);
             return;
@@ -528,7 +532,7 @@ class SpotVisionController {
      */
     public static function ocrExtrair(): void {
         $user = Auth::requireAuth();
-        if ($user['role'] !== 'admin') {
+        if (!Auth::hasTela($user, 'spotvision')) {
             http_response_code(403);
             echo json_encode(['error' => 'Acesso negado']);
             return;

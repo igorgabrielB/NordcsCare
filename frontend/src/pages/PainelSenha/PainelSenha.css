@@ -1,0 +1,299 @@
+/* ═══════════════════════════════════════════════════════════
+   Painel de Senha — NordcsCare
+   Usa as mesmas variáveis CSS do sistema (--primary, --bg, etc.)
+   mas com overrides fullscreen para uso em TV/monitor externo.
+═══════════════════════════════════════════════════════════ */
+
+/* ─── Root ─────────────────────────────────────────────────── */
+.painel-root {
+  min-height: 100dvh;
+  background: #16161e;           /* var(--bg) */
+  display: flex;
+  flex-direction: column;
+  font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+  color: #e2e0ec;                /* var(--text) */
+  overflow: hidden;
+}
+
+/* ─── Header ───────────────────────────────────────────────── */
+.painel-header {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  padding: 14px 36px;
+  background: #1e1e2a;           /* var(--bg-card) */
+  border-bottom: 2px solid #7345d6; /* --primary */
+}
+
+.painel-header-brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.painel-brand-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: #7345d6;
+  box-shadow: 0 0 12px #7345d6aa;
+  animation: dot-pulse 2.5s ease-in-out infinite;
+}
+
+@keyframes dot-pulse {
+  0%, 100% { box-shadow: 0 0 8px #7345d6aa; }
+  50%       { box-shadow: 0 0 20px #7345d6; }
+}
+
+.painel-brand-name {
+  font-size: 1.15rem;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  color: #e2e0ec;
+}
+
+.painel-brand-sep {
+  color: #33334d;
+  font-size: 1.2rem;
+}
+
+.painel-brand-sub {
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: #7b7994;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.painel-header-center {
+  text-align: center;
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: #b0adc4;
+  letter-spacing: 0.03em;
+  text-transform: capitalize;
+}
+
+.painel-header-clock {
+  text-align: right;
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #e2e0ec;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.04em;
+}
+
+/* ─── Body (split layout) ──────────────────────────────────── */
+.painel-body {
+  flex: 1;
+  display: grid;
+  grid-template-columns: 1fr 380px;
+  min-height: 0;
+}
+
+/* ─── Main call panel (left) ───────────────────────────────── */
+.painel-main {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 40px;
+  border-right: 1px solid #33334d;
+  position: relative;
+  overflow: hidden;
+}
+
+.painel-main::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(ellipse 60% 60% at 50% 50%, rgba(115,69,214,0.06) 0%, transparent 70%);
+  pointer-events: none;
+}
+
+/* ─── Current call (animated entry) ───────────────────────── */
+.painel-current {
+  text-align: center;
+  z-index: 1;
+  animation: painel-pop 0.5s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+@keyframes painel-pop {
+  from { opacity: 0; transform: scale(0.85) translateY(30px); }
+  to   { opacity: 1; transform: scale(1)    translateY(0);    }
+}
+
+.painel-calling-label {
+  font-size: 0.8rem;
+  font-weight: 700;
+  letter-spacing: 0.25em;
+  text-transform: uppercase;
+  color: #7345d6;
+  margin-bottom: 28px;
+}
+
+.painel-senha-box {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px 48px;
+  border: 3px solid;
+  border-radius: 20px;
+  background: #1e1e2a;
+  margin-bottom: 32px;
+  transition: box-shadow 0.4s ease;
+}
+
+.painel-senha-number {
+  font-size: clamp(4.5rem, 14vw, 10rem);
+  font-weight: 900;
+  line-height: 1;
+  letter-spacing: 0.04em;
+  font-family: 'Segoe UI', monospace, sans-serif;
+}
+
+.painel-nome {
+  font-size: clamp(1.6rem, 3.5vw, 2.8rem);
+  font-weight: 700;
+  color: #e2e0ec;
+  margin-bottom: 20px;
+  letter-spacing: 0.01em;
+  line-height: 1.2;
+}
+
+.painel-estacao-badge {
+  display: inline-block;
+  padding: 8px 32px;
+  border-radius: 100px;
+  font-size: 1rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: #fff;
+}
+
+/* ─── Empty state ──────────────────────────────────────────── */
+.painel-empty {
+  text-align: center;
+  z-index: 1;
+}
+
+.painel-empty-icon {
+  font-size: 4rem;
+  color: #33334d;
+  margin-bottom: 16px;
+  animation: spin-slow 6s linear infinite;
+}
+
+@keyframes spin-slow {
+  to { transform: rotate(360deg); }
+}
+
+.painel-empty p {
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: #33334d;
+  letter-spacing: 0.05em;
+}
+
+/* ─── Sidebar (right — history) ────────────────────────────── */
+.painel-sidebar {
+  background: #1e1e2a;
+  display: flex;
+  flex-direction: column;
+  padding: 28px 24px;
+  overflow-y: auto;
+}
+
+.painel-sidebar-title {
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: #7b7994;
+  margin-bottom: 16px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid #33334d;
+}
+
+/* ─── History list ─────────────────────────────────────────── */
+.painel-history-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.painel-history-empty {
+  font-size: 0.85rem;
+  color: #484866;
+  text-align: center;
+  padding: 24px 0;
+}
+
+.painel-history-item {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+  background: #282838;
+  border-radius: 10px;
+  border-left: 3px solid var(--sc, #7345d6);
+  transition: opacity 0.3s;
+}
+
+.painel-hist-senha {
+  font-size: 1.25rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  font-family: monospace;
+  min-width: 58px;
+}
+
+.painel-hist-nome {
+  font-size: 0.92rem;
+  font-weight: 600;
+  color: #b0adc4;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.painel-hist-badge {
+  font-size: 0.65rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  padding: 3px 10px;
+  border-radius: 100px;
+  white-space: nowrap;
+}
+
+/* ─── Footer ───────────────────────────────────────────────── */
+.painel-footer {
+  padding: 10px 36px;
+  background: #1e1e2a;
+  border-top: 1px solid #33334d;
+  text-align: center;
+  font-size: 0.78rem;
+  color: #484866;
+  letter-spacing: 0.04em;
+}
+
+/* ─── Responsive (portrait / small screens) ───────────────── */
+@media (max-width: 700px) {
+  .painel-body {
+    grid-template-columns: 1fr;
+    grid-template-rows: 1fr auto;
+  }
+  .painel-main {
+    border-right: none;
+    border-bottom: 1px solid #33334d;
+  }
+  .painel-header {
+    grid-template-columns: 1fr 1fr;
+    padding: 12px 20px;
+  }
+  .painel-header-center { display: none; }
+  .painel-header-clock { font-size: 1.1rem; }
+  .painel-sidebar { max-height: 280px; }
+}
