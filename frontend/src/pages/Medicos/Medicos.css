@@ -509,8 +509,7 @@
   margin-bottom: 5px;
 }
 
-.med-modal-body .form-group input,
-.med-modal-body .form-group select {
+.med-modal-body .form-group input {
   width: 100%;
   padding: 9px 12px;
   background: var(--bg);
@@ -520,9 +519,9 @@
   font-size: 0.88rem;
   transition: border-color 0.2s;
 }
+.med-modal-body .form-group select { width: 100%; }
 
-.med-modal-body .form-group input:focus,
-.med-modal-body .form-group select:focus {
+.med-modal-body .form-group input:focus {
   outline: none;
   border-color: var(--primary);
 }

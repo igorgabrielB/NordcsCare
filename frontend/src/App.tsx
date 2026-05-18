@@ -1,4 +1,4 @@
-import { MemoryRouter, Routes, Route, Navigate, useNavigate } from 'react-router-dom'
+import { HashRouter, Routes, Route, Navigate, useNavigate } from 'react-router-dom'
 import { AuthProvider, useAuth } from './contexts/AuthContext.tsx'
 import { SchoolProvider } from './contexts/SchoolContext.tsx'
 import { useEffect } from 'react'
@@ -26,9 +26,13 @@ import LaudosProntos from './pages/LaudosProntos/LaudosProntos.tsx'
 import GerenciamentoRoles from './pages/GerenciamentoRoles/GerenciamentoRoles.tsx'
 import SpotVisionAdmin from './pages/SpotVisionAdmin/SpotVisionAdmin.tsx'
 import Clinicas from './pages/Clinicas/Clinicas.tsx'
+import Especialidades from './pages/Especialidades/Especialidades.tsx'
+import EspecialidadeConfigurar from './pages/Especialidades/EspecialidadeConfigurar.tsx'
+import Agendamentos from './pages/Agendamentos/Agendamentos.tsx'
 import Home from './pages/Home/Home.tsx'
 import DashboardBuilder from './pages/DashboardBuilder/DashboardBuilder.tsx'
 import PainelSenha from './pages/PainelSenha/PainelSenha.tsx'
+import Perfil from './pages/Perfil/Perfil.tsx'
 
 function AuthLogoutListener() {
   const navigate = useNavigate()
@@ -46,7 +50,7 @@ function AuthLogoutListener() {
 
 export default function App() {
   return (
-    <MemoryRouter initialEntries={['/login']}>
+    <HashRouter>
       <AuthProvider>
         <SchoolProvider>
           <AuthLogoutListener />
@@ -64,6 +68,7 @@ export default function App() {
           <Route element={<Layout />}>
             <Route path="/menu" element={<Menu />} />
             <Route path="/home" element={<Home />} />
+            <Route path="/perfil" element={<Perfil />} />
             <Route path="/pacientes" element={<PermissionRoute tela="pacientes"><PacientesList /></PermissionRoute>} />
             <Route path="/pacientes/novo" element={<PermissionRoute tela="pacientes"><PacienteForm /></PermissionRoute>} />
             <Route path="/pacientes/:id/editar" element={<PermissionRoute tela="pacientes"><PacienteForm /></PermissionRoute>} />
@@ -88,14 +93,18 @@ export default function App() {
             <Route path="/admin/perfis" element={<PermissionRoute tela="perfis"><GerenciamentoRoles /></PermissionRoute>} />
             <Route path="/admin/spotvision" element={<PermissionRoute tela="spotvision"><SpotVisionAdmin /></PermissionRoute>} />
             <Route path="/admin/clinicas" element={<PermissionRoute tela="clinicas"><Clinicas /></PermissionRoute>} />
+            <Route path="/admin/especialidades" element={<PermissionRoute tela="especialidades"><Especialidades /></PermissionRoute>} />
+            <Route path="/admin/especialidades/:id/configurar" element={<PermissionRoute tela="especialidades"><EspecialidadeConfigurar /></PermissionRoute>} />
+            <Route path="/agendamentos" element={<PermissionRoute tela="agendamentos"><Agendamentos /></PermissionRoute>} />
             <Route path="/admin/dashboard-builder" element={<PermissionRoute tela="dashboard_builder"><DashboardBuilder /></PermissionRoute>} />
           </Route>
 
           {/* Default redirect */}
+          <Route path="/" element={<Navigate to="/login" replace />} />
           <Route path="*" element={<Navigate to="/menu" replace />} />
         </Routes>
           </SchoolProvider>
       </AuthProvider>
-    </MemoryRouter>
+    </HashRouter>
   )
 }

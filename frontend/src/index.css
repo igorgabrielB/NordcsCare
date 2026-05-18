@@ -52,6 +52,29 @@ body {
   transition: background 0.2s, color 0.2s;
 }
 
+/* ===== Global Scrollbar ===== */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--border) transparent;
+}
+*::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+*::-webkit-scrollbar-track {
+  background: transparent;
+}
+*::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: 99px;
+}
+*::-webkit-scrollbar-thumb:hover {
+  background: var(--primary);
+}
+*::-webkit-scrollbar-corner {
+  background: transparent;
+}
+
 body.light-mode {
   --bg: #f0eef5;
   --bg-card: #f8f7fb;
@@ -121,10 +144,81 @@ button:active {
   100% { transform: scale(1); }
 }
 
+/* ─── Voltar button (shared across pages) ─────────────────── */
+.btn-voltar {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 14px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--text-secondary);
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s, border-color 0.15s;
+  flex-shrink: 0;
+}
+
+.btn-voltar:hover {
+  background: var(--bg-hover);
+  color: var(--text);
+  border-color: var(--primary);
+}
+
+/* ─── page-header-left: groups back button + title ────────── */
+.page-header-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
 input, select, textarea {
   font-family: inherit;
-  font-size: 0.95rem;
+  font-size: 0.875rem;
   background: var(--bg-card);
   color: var(--text);
   border: 1px solid var(--border);
+}
+
+/* ===== Custom Select ===== */
+select {
+  appearance: none;
+  -webkit-appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%237b7994' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E") !important;
+  background-repeat: no-repeat !important;
+  background-position: right 10px center !important;
+  padding: 9px 34px 9px 12px !important;
+  border-radius: 10px !important;
+  border: 1px solid var(--border) !important;
+  background-color: var(--bg-elevated) !important;
+  color: var(--text) !important;
+  font-size: 0.875rem !important;
+  font-weight: 500;
+  cursor: pointer;
+  transition: border-color 0.15s, box-shadow 0.15s, background 0.15s;
+  min-height: 38px;
+  line-height: 1.4;
+}
+select:hover {
+  border-color: var(--primary) !important;
+  background-color: var(--bg-hover) !important;
+}
+select:focus {
+  outline: none;
+  border-color: var(--primary) !important;
+  box-shadow: 0 0 0 3px rgba(115, 69, 214, 0.18) !important;
+  background-color: var(--bg-elevated) !important;
+}
+select option {
+  background: var(--bg-elevated);
+  color: var(--text);
+  padding: 8px 12px;
+  font-size: 0.875rem;
+}
+body.light-mode select {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%238a87a0' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E") !important;
+  background-repeat: no-repeat !important;
+  background-position: right 10px center !important;
 }

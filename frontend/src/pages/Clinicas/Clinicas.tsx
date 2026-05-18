@@ -72,7 +72,7 @@ export default function Clinicas() {
       const res = await api.get('/clinicas')
       setItems(res.data)
     } catch {
-      setError('Erro ao carregar clÃ­nicas')
+      setError('Erro ao carregar clínicas')
     } finally {
       setLoading(false)
     }
@@ -109,7 +109,7 @@ export default function Clinicas() {
 
   const handleSave = async () => {
     if (!form.nome.trim()) {
-      setError('Nome Ã© obrigatÃ³rio')
+      setError('Nome é obrigatório')
       return
     }
 
@@ -141,7 +141,7 @@ export default function Clinicas() {
 
   const handleDelete = async (c: Clinica) => {
     if (c.id === 1) return
-    if (!confirm(`Remover a clÃ­nica "${c.nome}"? Esta aÃ§Ã£o nÃ£o pode ser desfeita.`)) return
+    if (!confirm(`Remover a Clínica "${c.nome}"? Esta ação não pode ser desfeita.`)) return
 
     try {
       await api.delete(`/clinicas/${c.id}`)
@@ -165,7 +165,7 @@ export default function Clinicas() {
       setClinicUsers(usersRes.data)
       setAllUsers(allRes.data)
     } catch {
-      setUsersError('Erro ao carregar usuÃ¡rios')
+      setUsersError('Erro ao carregar usuários')
     } finally {
       setUsersLoading(false)
     }
@@ -193,14 +193,14 @@ export default function Clinicas() {
 
   const handleRemoveUser = async (userId: number) => {
     if (!usersClinicId) return
-    if (!confirm('Remover vÃ­nculo deste usuÃ¡rio com esta clÃ­nica?')) return
+    if (!confirm('Remover vínculo deste usuário com esta Clínica?')) return
     try {
       await api.delete(`/clinicas/${usersClinicId}/usuarios`, { data: { usuario_id: userId } })
       const res = await api.get(`/clinicas/${usersClinicId}/usuarios`)
       setClinicUsers(res.data)
       fetchItems()
     } catch (err: any) {
-      alert(err.response?.data?.error || 'Erro ao remover vÃ­nculo')
+      alert(err.response?.data?.error || 'Erro ao remover vínculo')
     }
   }
 
@@ -215,11 +215,11 @@ export default function Clinicas() {
           <Link to="/admin" className="clinicas-back">
             <ArrowLeft size={18} />
           </Link>
-          <h1>ClÃ­nicas</h1>
+          <h1>clínicas</h1>
         </div>
         {hasTela('clinicas') && (
           <button className="clinicas-btn-add" onClick={openNew}>
-            <Plus size={16} /> Nova ClÃ­nica
+            <Plus size={16} /> Nova Clínica
           </button>
         )}
       </div>
@@ -234,7 +234,7 @@ export default function Clinicas() {
       </div>
 
       {items.length === 0 ? (
-        <div className="clinicas-empty">Nenhuma clÃ­nica cadastrada</div>
+        <div className="clinicas-empty">Nenhuma Clínica cadastrada</div>
       ) : (
         <div className="clinicas-list">
           {items.map(c => (
@@ -254,10 +254,10 @@ export default function Clinicas() {
                 </span>
                 <span className="clinicas-card-count">
                   <Users size={13} style={{ marginRight: 4, verticalAlign: 'middle' }} />
-                  {c.total_usuarios} usuÃ¡rio{c.total_usuarios !== 1 ? 's' : ''}
+                  {c.total_usuarios} usuário{c.total_usuarios !== 1 ? 's' : ''}
                 </span>
                 <div className="clinicas-card-actions">
-                  <button onClick={() => openUsersPanel(c)} title="Gerenciar UsuÃ¡rios">
+                  <button onClick={() => openUsersPanel(c)} title="Gerenciar usuários">
                     <UserPlus size={14} />
                   </button>
                   {hasTela('clinicas') && (
@@ -280,16 +280,16 @@ export default function Clinicas() {
       {showModal && (
         <div className="clinicas-modal-overlay" onClick={closeModal}>
           <div className="clinicas-modal" onClick={e => e.stopPropagation()}>
-            <h2>{editId ? 'Editar ClÃ­nica' : 'Nova ClÃ­nica'}</h2>
+            <h2>{editId ? 'Editar Clínica' : 'Nova Clínica'}</h2>
 
             {error && <div className="clinicas-error">{error}</div>}
 
             <div className="clinicas-form-group">
-              <label>Nome da ClÃ­nica *</label>
+              <label>Nome da Clínica *</label>
               <input
                 value={form.nome}
                 onChange={e => setForm({ ...form, nome: e.target.value })}
-                placeholder="Ex: ClÃ­nica SÃ£o Lucas"
+                placeholder="Ex: Clínica São Lucas"
                 autoFocus
               />
             </div>
@@ -303,7 +303,7 @@ export default function Clinicas() {
                   placeholder="auto-gerado se vazio"
                 />
                 <div className="clinicas-form-hint">
-                  Identificador Ãºnico, apenas letras minÃºsculas, nÃºmeros e hÃ­fens
+                  Identificador único, apenas letras minúsculas, números e hífens
                 </div>
               </div>
             )}
@@ -323,7 +323,7 @@ export default function Clinicas() {
 
             {!editId && (
               <div className="clinicas-form-section">
-                <h3>UsuÃ¡rio Admin (opcional)</h3>
+                <h3>usuário Admin (opcional)</h3>
                 <div className="clinicas-form-group">
                   <label>Nome do Admin</label>
                   <input
@@ -350,7 +350,7 @@ export default function Clinicas() {
                   />
                 </div>
                 <div className="clinicas-form-hint">
-                  Se preenchido, um usuÃ¡rio admin serÃ¡ criado automaticamente para a nova clÃ­nica
+                  Se preenchido, um usuário admin será criado automaticamente para a nova Clínica
                 </div>
               </div>
             )}
@@ -358,7 +358,7 @@ export default function Clinicas() {
             <div className="clinicas-modal-actions">
               <button className="clinicas-btn-cancel" onClick={closeModal}>Cancelar</button>
               <button className="clinicas-btn-save" onClick={handleSave} disabled={saving}>
-                {saving ? 'Salvando...' : editId ? 'Salvar' : 'Criar ClÃ­nica'}
+                {saving ? 'Salvando...' : editId ? 'Salvar' : 'Criar Clínica'}
               </button>
             </div>
           </div>
@@ -369,7 +369,7 @@ export default function Clinicas() {
         <div className="clinicas-modal-overlay" onClick={closeUsersPanel}>
           <div className="clinicas-modal clinicas-modal-wide" onClick={e => e.stopPropagation()}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <h2><Users size={18} style={{ verticalAlign: 'middle', marginRight: 8 }} />UsuÃ¡rios â€” {usersClinicNome}</h2>
+              <h2><Users size={18} style={{ verticalAlign: 'middle', marginRight: 8 }} />Usuários — {usersClinicNome}</h2>
               <button onClick={closeUsersPanel} className="clinicas-btn-close"><X size={18}/></button>
             </div>
 
@@ -385,11 +385,11 @@ export default function Clinicas() {
                     value={addUserId}
                     onChange={e => setAddUserId(e.target.value ? parseInt(e.target.value) : '')}
                   >
-                    <option value="">Selecione um usuÃ¡rio para vincular...</option>
+                    <option value="">Selecione um usuário para vincular...</option>
                     {allUsers
                       .filter(u => !clinicUsers.some(cu => cu.id === u.id))
                       .map(u => (
-                        <option key={u.id} value={u.id}>{u.nome} ({u.login}) â€” {u.role}</option>
+                        <option key={u.id} value={u.id}>{u.nome} ({u.login}) — {u.role}</option>
                       ))}
                   </select>
                   <button className="clinicas-btn-add-user" onClick={handleAddUser} disabled={!addUserId}>
@@ -399,7 +399,7 @@ export default function Clinicas() {
                 )}
 
                 {clinicUsers.length === 0 ? (
-                  <p className="clinicas-empty">Nenhum usuÃ¡rio vinculado</p>
+                  <p className="clinicas-empty">Nenhum usuário vinculado</p>
                 ) : (
                   <table className="clinicas-users-table">
                     <thead>
@@ -426,7 +426,7 @@ export default function Clinicas() {
                           </td>
                           <td>
                             {hasTela('clinicas') && u.home_tenant_id !== usersClinicId && (
-                              <button className="clinicas-btn-remove-user" onClick={() => handleRemoveUser(u.id)} title="Remover vÃ­nculo">
+                              <button className="clinicas-btn-remove-user" onClick={() => handleRemoveUser(u.id)} title="Remover vínculo">
                                 <Trash2 size={13}/>
                               </button>
                             )}

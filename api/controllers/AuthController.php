@@ -15,7 +15,7 @@ class AuthController {
         }
 
         $db = Database::getInstance();
-        $stmt = $db->prepare('SELECT id, tenant_id, nome, email, login, senha, role, ativo FROM usuarios WHERE email = :email');
+        $stmt = $db->prepare('SELECT id, tenant_id, nome, nome_social, foto_perfil, tema, email, login, senha, role, ativo FROM usuarios WHERE email = :email');
         $stmt->execute([':email' => $input['email']]);
         $user = $stmt->fetch();
 
@@ -51,6 +51,9 @@ class AuthController {
                 'id' => (int)$user['id'],
                 'tenant_id' => (int)$user['tenant_id'],
                 'nome' => $user['nome'],
+                'nome_social' => $user['nome_social'],
+                'foto_perfil' => $user['foto_perfil'],
+                'tema' => $user['tema'] ?? 'dark',
                 'email' => $user['email'],
                 'login' => $user['login'],
                 'role' => $user['role'],
@@ -128,7 +131,7 @@ class AuthController {
     public static function me(): void {
         $user = Auth::requireAuth();
         $db = Database::getInstance();
-        $stmt = $db->prepare('SELECT id, tenant_id, nome, email, login, role, created_at FROM usuarios WHERE id = :id');
+        $stmt = $db->prepare('SELECT id, tenant_id, nome, nome_social, foto_perfil, tema, email, login, role, created_at FROM usuarios WHERE id = :id');
         $stmt->execute([':id' => $user['sub']]);
         $userData = $stmt->fetch();
 
@@ -166,7 +169,7 @@ class AuthController {
         $db = Database::getInstance();
 
         // Buscar dados reais do usuário (do banco, não do JWT)
-        $stmt = $db->prepare('SELECT id, tenant_id, nome, email, login, role FROM usuarios WHERE id = :id');
+        $stmt = $db->prepare('SELECT id, tenant_id, nome, email, login, role, nome_social, foto_perfil, tema FROM usuarios WHERE id = :id');
         $stmt->execute([':id' => $user['sub']]);
         $realUser = $stmt->fetch();
 
@@ -225,6 +228,9 @@ class AuthController {
                 'email' => $realUser['email'],
                 'login' => $realUser['login'],
                 'role' => $realUser['role'],
+                'nome_social' => $realUser['nome_social'] ?? null,
+                'foto_perfil' => $realUser['foto_perfil'] ?? null,
+                'tema' => $realUser['tema'] ?? 'dark',
             ]
         ]);
     }

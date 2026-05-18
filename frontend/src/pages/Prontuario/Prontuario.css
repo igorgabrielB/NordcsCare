@@ -67,7 +67,6 @@
   color: var(--text-secondary);
 }
 .clinical-form .form-group input,
-.clinical-form .form-group select,
 .clinical-form .form-group textarea {
   padding: 8px 12px;
   border: 1px solid var(--border);
@@ -78,8 +77,8 @@
   font-family: inherit;
   transition: border-color 0.2s, box-shadow 0.2s;
 }
+.clinical-form .form-group select { width: 100%; }
 .clinical-form .form-group input:focus,
-.clinical-form .form-group select:focus,
 .clinical-form .form-group textarea:focus {
   outline: none;
   border-color: var(--primary);
@@ -869,17 +868,7 @@
   margin-bottom: 0.3rem;
   color: var(--text-secondary);
 }
-.modelo-selector .form-group select {
-  width: 100%;
-  padding: 0.5rem 0.8rem;
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  font-size: 0.9rem;
-  font-family: inherit;
-  background: var(--bg, #2d2d2d);
-  color: var(--text);
-  transition: border-color 0.2s, box-shadow 0.2s;
-}
+.modelo-selector .form-group select { width: 100%; }
 .modelo-selector .form-group select:focus {
   outline: none;
   border-color: var(--primary);
@@ -1672,8 +1661,7 @@ body.light-mode .conduta-btn-onibus_encaminhamento.active {
   letter-spacing: 0.3px;
 }
 
-.rx-extra-item input,
-.rx-extra-item select {
+.rx-extra-item input {
   padding: 0.5rem 0.8rem;
   border: 1px solid var(--border, #594747);
   border-radius: 8px;
@@ -1683,16 +1671,7 @@ body.light-mode .conduta-btn-onibus_encaminhamento.active {
   font-family: inherit;
   transition: border-color 0.2s, box-shadow 0.2s;
 }
-
-.rx-extra-item select {
-  appearance: none;
-  -webkit-appearance: none;
-  padding-right: 2rem;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%239ca3af' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
-  background-repeat: no-repeat;
-  background-position: right 0.6rem center;
-  cursor: pointer;
-}
+.rx-extra-item select { width: 100%; }
 
 .rx-extra-item input:focus,
 .rx-extra-item select:focus {

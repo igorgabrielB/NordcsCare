@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom'
-import { Users, Stethoscope, GraduationCap, FileText, School, Trash2, CalendarDays, ClipboardList, BookOpen, ShieldCheck, Settings, ChevronRight, Eye, Building2 } from 'lucide-react'
+import { Users, Stethoscope, GraduationCap, FileText, School, Trash2, CalendarDays, ClipboardList, BookOpen, ShieldCheck, Settings, ChevronRight, Eye, Building2, ActivitySquare } from 'lucide-react'
 import './Admin.css'
 
 const adminSections = [
@@ -64,6 +64,13 @@ const adminSections = [
         desc: 'Gerenciar clínicas e acessos multi-tenant',
         icon: <Building2 size={22} />,
         color: '#3182ce',
+      },
+      {
+        to: '/admin/especialidades',
+        label: 'Especialidades',
+        desc: 'Configurar especialidades, estações da fila e formulários dinâmicos',
+        icon: <ActivitySquare size={22} />,
+        color: '#805ad5',
       },
       {
         to: '/admin/agenda-escola',

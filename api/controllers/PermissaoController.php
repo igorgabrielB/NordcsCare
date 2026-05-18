@@ -56,6 +56,16 @@ class PermissaoController {
         $db = Database::getInstance();
         $tenantId = (int)($user['tenant_id'] ?? 0);
         $userId   = (int)($user['sub'] ?? 0);
+        $role     = $user['role'] ?? '';
+
+        // Master e admin têm acesso total — retorna todas as telas ativas do catálogo
+        if (in_array($role, ['master', 'admin'])) {
+            $stmt = $db->prepare('SELECT codigo FROM telas WHERE ativo = 1');
+            $stmt->execute();
+            $telas = array_column($stmt->fetchAll(PDO::FETCH_ASSOC), 'codigo');
+            echo json_encode(['telas' => $telas]);
+            return;
+        }
 
         $stmt = $db->prepare(
             'SELECT tela_codigo FROM usuario_telas

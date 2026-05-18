@@ -597,7 +597,6 @@
 }
 
 .lp-modal-body .form-group input,
-.lp-modal-body .form-group select,
 .lp-modal-body .form-group textarea {
   width: 100%;
   padding: 9px 12px;
@@ -609,9 +608,9 @@
   transition: border-color 0.2s;
   font-family: inherit;
 }
+.lp-modal-body .form-group select { width: 100%; }
 
 .lp-modal-body .form-group input:focus,
-.lp-modal-body .form-group select:focus,
 .lp-modal-body .form-group textarea:focus {
   outline: none;
   border-color: var(--primary);

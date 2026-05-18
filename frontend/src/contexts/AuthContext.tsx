@@ -7,6 +7,9 @@ const ACTIVITY_EVENTS: (keyof WindowEventMap)[] = ['mousedown', 'keydown', 'scro
 interface User {
   id: number
   nome: string
+  nome_social: string | null
+  foto_perfil: string | null
+  tema: 'light' | 'dark'
   login: string
   role: 'master' | 'admin' | 'medico' | 'administrativo'
   tenant_id: number
@@ -32,6 +35,7 @@ interface AuthContextType {
   hasTela: (codigo: string) => boolean
   telasLoaded: boolean
   refreshTelas: () => Promise<void>
+  updatePerfil: (data: Partial<Pick<User, 'nome_social' | 'foto_perfil' | 'tema'>>) => void
 }
 
 const AuthContext = createContext<AuthContextType | null>(null)
@@ -116,6 +120,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           const userData: User = {
             id: res.data.id,
             nome: res.data.nome,
+            nome_social: res.data.nome_social ?? null,
+            foto_perfil: res.data.foto_perfil ?? null,
+            tema: (res.data.tema === 'light' ? 'light' : 'dark') as 'light' | 'dark',
             login: res.data.login,
             role: res.data.role,
             tenant_id: res.data.tenant_id,
@@ -158,11 +165,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     } catch { /* ignore */ }
   }, [isAuthenticated])
 
+  const updatePerfil = (data: Partial<Pick<User, 'nome_social' | 'foto_perfil' | 'tema'>>) => {
+    setUser(prev => {
+      if (!prev) return prev
+      const updated = { ...prev, ...data }
+      localStorage.setItem('user', JSON.stringify(updated))
+      return updated
+    })
+  }
+
   const login = async (email: string, senha: string): Promise<User> => {
     const res = await api.post('/auth/login', { email, senha })
     const { token: newToken, user: userData } = res.data
     setToken(newToken)
-    setUser(userData)
+    setUser({ ...userData, nome_social: userData.nome_social ?? null, foto_perfil: userData.foto_perfil ?? null, tema: (userData.tema === 'light' ? 'light' : 'dark') as 'light' | 'dark' })
     setActiveTenant(null)
     localStorage.setItem('token', newToken)
     localStorage.setItem('user', JSON.stringify(userData))
@@ -173,7 +189,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const switchTenant = async (tenantId: number): Promise<void> => {
     const res = await api.post('/auth/switch-tenant', { tenant_id: tenantId })
-    const { token: newToken, tenant, user: userData } = res.data
+    const { token: newToken, tenant, user: raw } = res.data
+    const userData: User = {
+      id: raw.id,
+      nome: raw.nome,
+      nome_social: raw.nome_social ?? null,
+      foto_perfil: raw.foto_perfil ?? null,
+      tema: (raw.tema === 'light' ? 'light' : 'dark') as 'light' | 'dark',
+      login: raw.login,
+      role: raw.role,
+      tenant_id: raw.tenant_id,
+    }
     setToken(newToken)
     setUser(userData)
     setActiveTenant(tenant)
@@ -183,7 +209,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   return (
-    <AuthContext.Provider value={{ user, token, login, logout, isAuthenticated, isAdmin, activeTenant, switchTenant, isImpersonating, telas, hasTela, telasLoaded, refreshTelas }}>
+    <AuthContext.Provider value={{ user, token, login, logout, isAuthenticated, isAdmin, activeTenant, switchTenant, isImpersonating, telas, hasTela, telasLoaded, refreshTelas, updatePerfil }}>
       {children}
     </AuthContext.Provider>
   )

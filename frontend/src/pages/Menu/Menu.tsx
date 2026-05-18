@@ -8,6 +8,7 @@ import {
   LayoutTemplate, ShieldCheck, Hospital, Eye,
   Search, Sheet, X, ArrowRight,
   Activity, BookMarked, Layers, MonitorPlay,
+  Sun, Sunset, Moon, Sparkles, Bell,
 } from 'lucide-react'
 import './Menu.css'
 
@@ -24,7 +25,7 @@ const ICON_MAP: Record<string, React.ElementType> = {
   ListChecks, Users, ClipboardList, BarChart2, FileText,
   CalendarDays, GraduationCap, Upload, Trash2, Stethoscope,
   BookOpen, FileEdit, UserCog, ScrollText, Settings,
-  LayoutTemplate, ShieldCheck, Hospital, Eye, Sheet, MonitorPlay,
+  LayoutTemplate, ShieldCheck, Hospital, Eye, Sheet, MonitorPlay, Bell,
 }
 
 const CATEGORIAS: Record<string, { label: string; color: string; bg: string; icon: React.ElementType }> = {
@@ -42,12 +43,13 @@ const CATEGORIA_ORDER = ['operacional', 'gestao', 'academico', 'clinico', 'siste
 const ADMIN_TELAS = new Set([
   'usuarios', 'perfis', 'medicos', 'alunos', 'import_escola', 'exclusao_escola',
   'clinicas', 'agenda_escola', 'modelos_docs', 'laudos_prontos', 'spotvision',
-  'logs', 'admin', 'dashboard_builder', 'prontuario',
+  'logs', 'dashboard_builder', 'prontuario',
 ])
 
 const ALL_TELAS: TelaItem[] = [
   { codigo: 'fila',                    nome: 'Fila de Atendimento',    descricao: 'Gerencia a fila de pacientes por estação',       icone: 'ListChecks',     categoria: 'operacional', rota: '/fila' },
   { codigo: 'painel_senha',            nome: 'Painel de Senha',        descricao: 'Display de chamada de pacientes',                 icone: 'MonitorPlay',    categoria: 'operacional', rota: '/painel' },
+  { codigo: 'agendamentos',            nome: 'Agendamentos',           descricao: 'Agendar consultas, retornos e exames por especialidade', icone: 'CalendarDays', categoria: 'operacional', rota: '/agendamentos' },
   { codigo: 'pacientes',               nome: 'Pacientes',              descricao: 'Cadastro e edição de pacientes',                  icone: 'Users',          categoria: 'operacional', rota: '/pacientes' },
   { codigo: 'prontuario',              nome: 'Prontuário',             descricao: 'Atendimento clínico e prontuário',                icone: 'ClipboardList',  categoria: 'operacional', rota: '/pacientes' },
   { codigo: 'dashboard',               nome: 'Dashboard',              descricao: 'Métricas e indicadores em tempo real',            icone: 'BarChart2',      categoria: 'gestao',      rota: '/dashboard' },
@@ -103,8 +105,19 @@ export default function Menu() {
 
   const saudacao = (() => {
     const h = new Date().getHours()
-    return h < 12 ? 'Bom dia' : h < 18 ? 'Boa tarde' : 'Boa noite'
+    if (h < 12) return { texto: 'Bom dia', Icon: Sun, cor: '#f59e0b' }
+    if (h < 18) return { texto: 'Boa tarde', Icon: Sunset, cor: '#f97316' }
+    return { texto: 'Boa noite', Icon: Moon, cor: '#818cf8' }
   })()
+
+  const roleLabel: Record<string, string> = {
+    master: 'Master',
+    admin: 'Administrador',
+    medico: 'Médico',
+    administrativo: 'Administrativo',
+  }
+
+  const nomeAbrev = (user?.nome_social || user?.nome)?.split(' ').slice(0, 2).join(' ') ?? ''
 
   const categoriasVisiveis = CATEGORIA_ORDER.filter(cat => grouped[cat]?.length)
 
@@ -114,8 +127,22 @@ export default function Menu() {
       {/* ── Hero ── */}
       <div className="menu-hero">
         <div className="menu-hero-left">
-          <h1 className="menu-hero-title">{saudacao}, {user?.nome.split(' ')[0]}</h1>
-            <p className="menu-hero-subtitle">Encontre rapidamente a funcionalidade que você precisa</p>
+          <div className="menu-hero-greeting">
+            <div className="menu-hero-icon" style={{ '--greeting-color': saudacao.cor } as React.CSSProperties}>
+              <saudacao.Icon size={22} />
+            </div>
+            <div>
+              <h1 className="menu-hero-title">
+                {saudacao.texto}, <span className="menu-hero-name">{nomeAbrev}</span>
+                <Sparkles size={18} className="menu-hero-sparkle" />
+              </h1>
+              <p className="menu-hero-subtitle">
+                <span className="menu-hero-role">{roleLabel[user?.role ?? ''] ?? user?.role}</span>
+                &nbsp;·&nbsp;
+                {visibleTelas.length} módulo{visibleTelas.length !== 1 ? 's' : ''} disponíve{visibleTelas.length !== 1 ? 'is' : 'l'}
+              </p>
+            </div>
+          </div>
         </div>
 
         {/* Category badges */}
@@ -186,7 +213,7 @@ export default function Menu() {
                       <button
                         key={tela.codigo}
                         className="menu-card"
-                        onClick={() => navigate(tela.rota)}
+                        onClick={() => tela.codigo === 'painel_senha' ? window.open('/#' + tela.rota, '_blank') : navigate(tela.rota)}
                         style={{ '--card-color': info.color, '--card-bg': info.bg } as React.CSSProperties}
                       >
                         <div className="menu-card-icon-wrap">

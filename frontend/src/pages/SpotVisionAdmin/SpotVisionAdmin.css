@@ -68,11 +68,7 @@
 }
 
 .sv-toolbar select {
-  padding: 8px 12px;
   border-radius: 8px;
-  border: 1px solid var(--border-color, #444);
-  background: var(--bg-card, #2a2a2a);
-  color: var(--text);
   font-size: 0.85rem;
 }
 

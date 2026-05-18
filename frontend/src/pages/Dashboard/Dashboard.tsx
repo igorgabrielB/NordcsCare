@@ -1,8 +1,8 @@
 import { useState, useEffect, useCallback, useMemo } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '../../contexts/AuthContext.tsx'
 import api from '../../services/api.ts'
-import { Users, ClipboardList, Stethoscope, Tag, Hash, CalendarDays, Filter, ArrowRightLeft, CheckCircle, Eye, Glasses, Settings } from 'lucide-react'
+import { Users, ClipboardList, Stethoscope, Tag, Hash, CalendarDays, Filter, ArrowRightLeft, CheckCircle, Eye, Glasses, Settings, ArrowLeft } from 'lucide-react'
 import './Dashboard.css'
 import { MetricWidget, SchoolsWidget, QueueWidget, ChartWidget } from '../../components/widgets'
 import TimeWheelPicker from '../../components/TimeWheelPicker/TimeWheelPicker'
@@ -53,6 +53,7 @@ const CONDUTA_COLORS: Record<string, string> = {
 }
 
 export default function Dashboard() {
+  const navigate = useNavigate()
   const [metricas, setMetricas] = useState<Metricas | null>(null)
   const [loading, setLoading] = useState(true)
 
@@ -156,6 +157,9 @@ export default function Dashboard() {
     <div className="dashboard">
 
       <div className="dashboard-filter-row">
+        <button className="btn-voltar" onClick={() => navigate('/menu')}>
+          <ArrowLeft size={16} />Voltar
+        </button>
         <div className="dashboard-filter-bar">
           <Filter size={16} />
           <span className="filter-label">De</span>

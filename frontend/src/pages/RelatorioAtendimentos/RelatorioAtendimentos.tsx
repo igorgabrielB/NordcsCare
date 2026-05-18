@@ -1,10 +1,175 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { Link } from 'react-router-dom'
 import jsPDF from 'jspdf'
 import html2canvas from 'html2canvas'
 import api from '../../services/api.ts'
-import { BarChart3, Download, FileSpreadsheet, Search, Filter, Calendar, Building2, Activity, Users, Clock, ChevronLeft, ChevronRight, ArrowLeft, FileText } from 'lucide-react'
+import { BarChart3, Download, FileSpreadsheet, Search, Filter, Calendar, Building2, Activity, Users, Clock, ChevronLeft, ChevronRight, ArrowLeft, FileText, TrendingUp, Stethoscope, GraduationCap, ChevronDown, X, Check } from 'lucide-react'
+import DatePicker from '../../components/DatePicker/DatePicker'
 import './RelatorioAtendimentos.css'
+
+/* ── Custom Dropdown: Resultado ── */
+const RESULTADO_OPTIONS = [
+  { value: 'alta',                 label: 'Alta',                  color: '#48bb78' },
+  { value: 'encaminhamento',       label: 'Encaminhamento',         color: '#ed8936' },
+  { value: 'oculos',               label: 'Óculos (Alta)',          color: '#4299e1' },
+  { value: 'oculos_encaminhamento',label: 'Óculos (Encaminhamento)',color: '#ed64a6' },
+]
+
+function ResultadoSelect({ value, onChange }: { value: string; onChange: (v: string) => void }) {
+  const [open, setOpen] = useState(false)
+  const ref = useRef<HTMLDivElement>(null)
+  const selected = RESULTADO_OPTIONS.find(o => o.value === value)
+
+  useEffect(() => {
+    if (!open) return
+    const handler = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false)
+    }
+    document.addEventListener('mousedown', handler)
+    return () => document.removeEventListener('mousedown', handler)
+  }, [open])
+
+  return (
+    <div className="rela-custom-select" ref={ref}>
+      <button
+        className={`rela-custom-select-trigger${open ? ' open' : ''}${value ? ' has-value' : ''}`}
+        onClick={() => setOpen(p => !p)}
+        type="button"
+      >
+        {selected ? (
+          <span className="rela-custom-select-val">
+            <span className="rela-custom-dot" style={{ background: selected.color }} />
+            {selected.label}
+          </span>
+        ) : (
+          <span className="rela-custom-select-placeholder">Todos os resultados</span>
+        )}
+        <span className="rela-custom-select-icons">
+          {value && (
+            <span className="rela-custom-clear" onMouseDown={e => { e.stopPropagation(); onChange('') }}>
+              <X size={11} />
+            </span>
+          )}
+          <ChevronDown size={13} className={`rela-custom-chevron${open ? ' rotated' : ''}`} />
+        </span>
+      </button>
+      {open && (
+        <div className="rela-custom-dropdown">
+          <button
+            className={`rela-custom-option${!value ? ' selected' : ''}`}
+            onClick={() => { onChange(''); setOpen(false) }}
+            type="button"
+          >
+            <span style={{ width: 10 }} />
+            <span>Todos os resultados</span>
+            {!value && <Check size={12} className="rela-custom-check" />}
+          </button>
+          {RESULTADO_OPTIONS.map(opt => (
+            <button
+              key={opt.value}
+              className={`rela-custom-option${value === opt.value ? ' selected' : ''}`}
+              onClick={() => { onChange(opt.value); setOpen(false) }}
+              type="button"
+            >
+              <span className="rela-custom-dot" style={{ background: opt.color }} />
+              <span>{opt.label}</span>
+              {value === opt.value && <Check size={12} className="rela-custom-check" />}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}
+
+/* ── Custom Dropdown: Escola ── */
+function EscolaSelect({ value, onChange, escolas }: { value: string; onChange: (v: string) => void; escolas: string[] }) {
+  const [open, setOpen] = useState(false)
+  const [search, setSearch] = useState('')
+  const ref = useRef<HTMLDivElement>(null)
+  const inputRef = useRef<HTMLInputElement>(null)
+
+  useEffect(() => {
+    if (!open) return
+    setTimeout(() => inputRef.current?.focus(), 50)
+    const handler = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) { setOpen(false); setSearch('') }
+    }
+    document.addEventListener('mousedown', handler)
+    return () => document.removeEventListener('mousedown', handler)
+  }, [open])
+
+  const filtered = escolas.filter(e => e.toLowerCase().includes(search.toLowerCase()))
+
+  return (
+    <div className="rela-custom-select" ref={ref}>
+      <button
+        className={`rela-custom-select-trigger${open ? ' open' : ''}${value ? ' has-value' : ''}`}
+        onClick={() => setOpen(p => !p)}
+        type="button"
+      >
+        {value ? (
+          <span className="rela-custom-select-val">
+            <Building2 size={12} style={{ flexShrink: 0, opacity: 0.7 }} />
+            <span className="rela-custom-select-text">{value}</span>
+          </span>
+        ) : (
+          <span className="rela-custom-select-placeholder">Todas as escolas</span>
+        )}
+        <span className="rela-custom-select-icons">
+          {value && (
+            <span className="rela-custom-clear" onMouseDown={e => { e.stopPropagation(); onChange('') }}>
+              <X size={11} />
+            </span>
+          )}
+          <ChevronDown size={13} className={`rela-custom-chevron${open ? ' rotated' : ''}`} />
+        </span>
+      </button>
+      {open && (
+        <div className="rela-custom-dropdown">
+          <div className="rela-custom-search">
+            <Search size={12} />
+            <input
+              ref={inputRef}
+              type="text"
+              placeholder="Buscar escola..."
+              value={search}
+              onChange={e => setSearch(e.target.value)}
+            />
+            {search && <button className="rela-custom-clear" onMouseDown={() => setSearch('')}><X size={11} /></button>}
+          </div>
+          <div className="rela-custom-options-list">
+            {!search && (
+              <button
+                className={`rela-custom-option${!value ? ' selected' : ''}`}
+                onClick={() => { onChange(''); setOpen(false); setSearch('') }}
+                type="button"
+              >
+                <span>Todas as escolas</span>
+                {!value && <Check size={12} className="rela-custom-check" />}
+              </button>
+            )}
+            {filtered.length === 0 ? (
+              <span className="rela-custom-empty">Nenhuma escola encontrada</span>
+            ) : (
+              filtered.map(e => (
+                <button
+                  key={e}
+                  className={`rela-custom-option${value === e ? ' selected' : ''}`}
+                  onClick={() => { onChange(e); setOpen(false); setSearch('') }}
+                  type="button"
+                >
+                  <span>{e}</span>
+                  {value === e && <Check size={12} className="rela-custom-check" />}
+                </button>
+              ))
+            )}
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
 
 interface Resumo {
   total_atendimentos: number
@@ -414,7 +579,7 @@ export default function RelatorioAtendimentos() {
               <Activity size={16} />
             </div>
             <div className="rela-hero-stat-info">
-              <span className="rela-hero-stat-value">{resumo?.total_atendimentos ?? '—'}</span>
+              <span className="rela-hero-stat-value">{resumo?.total_atendimentos?.toLocaleString('pt-BR') ?? '—'}</span>
               <span className="rela-hero-stat-label">Atendimentos</span>
             </div>
           </div>
@@ -441,38 +606,44 @@ export default function RelatorioAtendimentos() {
 
       {/* Filtros */}
       <div className="rela-filters">
+        <div className="rela-filters-title">
+          <div className="rela-filters-title-left">
+            <Filter size={13} />
+            <span>Filtros</span>
+          </div>
+          <div className="rela-filters-exports">
+            <button className="rela-btn-export" onClick={exportarCSV}>
+              <Download size={14} />
+              Exportar CSV
+            </button>
+            <button className="rela-btn-export rela-btn-pdf" onClick={exportarPDF}>
+              <FileText size={14} />
+              Exportar PDF
+            </button>
+          </div>
+        </div>
         <div className="rela-filters-row">
-          <div className="rela-filter-group">
-            <Calendar size={14} />
-            <input type="date" value={dataInicio} onChange={e => setDataInicio(e.target.value)} />
-            <span className="rela-filter-sep">até</span>
-            <input type="date" value={dataFim} onChange={e => setDataFim(e.target.value)} />
+          {/* Período */}
+          <div className="rela-filter-block">
+            <span className="rela-filter-label"><Calendar size={12} /> Período</span>
+            <div className="rela-filter-date-range">
+              <DatePicker value={dataInicio} onChange={setDataInicio} />
+              <span className="rela-filter-sep">até</span>
+              <DatePicker value={dataFim} onChange={setDataFim} />
+            </div>
           </div>
-          <div className="rela-filter-group">
-            <Building2 size={14} />
-            <select value={escola} onChange={e => setEscola(e.target.value)}>
-              <option value="">Todas as escolas</option>
-              {escolas.map(e => <option key={e} value={e}>{e}</option>)}
-            </select>
+
+          {/* Escola */}
+          <div className="rela-filter-block">
+            <span className="rela-filter-label"><Building2 size={12} /> Escola</span>
+            <EscolaSelect value={escola} onChange={setEscola} escolas={escolas} />
           </div>
-          <div className="rela-filter-group">
-            <Filter size={14} />
-            <select value={resultado} onChange={e => setResultado(e.target.value)}>
-              <option value="">Todos os resultados</option>
-              <option value="alta">Alta</option>
-              <option value="encaminhamento">Encaminhamento</option>
-              <option value="oculos">Óculos (Alta)</option>
-              <option value="oculos_encaminhamento">Óculos (Encaminhamento)</option>
-            </select>
+
+          {/* Resultado */}
+          <div className="rela-filter-block">
+            <span className="rela-filter-label"><Filter size={12} /> Resultado</span>
+            <ResultadoSelect value={resultado} onChange={setResultado} />
           </div>
-          <button className="rela-btn-export" onClick={exportarCSV}>
-            <Download size={14} />
-            Exportar CSV
-          </button>
-          <button className="rela-btn-export rela-btn-pdf" onClick={exportarPDF}>
-            <FileText size={14} />
-            Exportar PDF
-          </button>
         </div>
       </div>
 
@@ -493,7 +664,10 @@ export default function RelatorioAtendimentos() {
         <div className="rela-resumo">
           {/* Resultado Distribution */}
           <div className="rela-card">
-            <h3>Distribuição por Resultado</h3>
+            <div className="rela-card-header">
+              <Activity size={15} />
+              <h3>Distribuição por Resultado</h3>
+            </div>
             {resumo.por_resultado.length === 0 ? (
               <p className="rela-empty">Nenhum dado no período</p>
             ) : (
@@ -520,7 +694,10 @@ export default function RelatorioAtendimentos() {
 
           {/* Por Escola */}
           <div className="rela-card">
-            <h3>Atendimentos por Escola</h3>
+            <div className="rela-card-header">
+              <GraduationCap size={15} />
+              <h3>Atendimentos por Escola</h3>
+            </div>
             {resumo.por_escola.length === 0 ? (
               <p className="rela-empty">Nenhum dado no período</p>
             ) : (
@@ -541,7 +718,10 @@ export default function RelatorioAtendimentos() {
           {/* Evolução por Dia */}
           {resumo.por_dia.length > 0 && (
             <div className="rela-card rela-card-full">
-              <h3>Evolução Diária</h3>
+              <div className="rela-card-header">
+                <TrendingUp size={15} />
+                <h3>Evolução Diária</h3>
+              </div>
               <div className="rela-chart-bars">
                 {resumo.por_dia.map(d => (
                   <div key={d.data_atendimento} className="rela-chart-col">
@@ -557,7 +737,10 @@ export default function RelatorioAtendimentos() {
           {/* Por Médico */}
           {resumo.por_medico.length > 0 && (
             <div className="rela-card">
-              <h3>Atendimentos por Médico</h3>
+              <div className="rela-card-header">
+                <Stethoscope size={15} />
+                <h3>Atendimentos por Médico</h3>
+              </div>
               <div className="rela-escola-list">
                 {resumo.por_medico.map(m => {
                   const maxMedico = Math.max(...resumo.por_medico.map(x => x.total))
@@ -580,14 +763,20 @@ export default function RelatorioAtendimentos() {
       {/* Lista Tab */}
       {tab === 'lista' && !loading && historico && (
         <div className="rela-lista">
-          <div className="rela-lista-search">
-            <Search size={14} />
-            <input
-              type="text"
-              placeholder="Filtrar por nome do paciente..."
-              value={searchPaciente}
-              onChange={e => setSearchPaciente(e.target.value)}
-            />
+          <div className="rela-lista-top">
+            <div className="rela-lista-search">
+              <Search size={14} />
+              <input
+                type="text"
+                placeholder="Filtrar por nome do paciente..."
+                value={searchPaciente}
+                onChange={e => setSearchPaciente(e.target.value)}
+              />
+            </div>
+            <span className="rela-lista-count">
+              <Users size={13} />
+              {historico.total.toLocaleString('pt-BR')} registros
+            </span>
           </div>
 
           <div className="rela-table-wrap">

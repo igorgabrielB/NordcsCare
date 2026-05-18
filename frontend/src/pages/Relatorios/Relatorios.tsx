@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom'
-import { BarChart3, FileBarChart, PieChart, TrendingUp, Clock, Wrench, Layers, FileSpreadsheet, Download, ArrowRight } from 'lucide-react'
+import { BarChart3, FileBarChart, PieChart, TrendingUp, Clock, Wrench, Layers, FileSpreadsheet, Download, ArrowRight, ArrowLeft } from 'lucide-react'
 import './Relatorios.css'
 
 const AVAILABLE_REPORTS = [
@@ -18,6 +18,11 @@ export default function Relatorios() {
       {/* Hero */}
       <div className="rel-hero">
         <div className="rel-hero-bg-deco" />
+        <div className="rel-hero-top">
+          <Link to="/menu" className="rel-btn-back">
+            <ArrowLeft size={16} /> Menu
+          </Link>
+        </div>
         <div className="rel-hero-content">
           <div className="rel-hero-icon">
             <BarChart3 size={28} />

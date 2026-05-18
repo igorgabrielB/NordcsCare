@@ -1,16 +1,23 @@
 import { useAuth } from '../../contexts/AuthContext.tsx'
 import { useNavigate, Link } from 'react-router-dom'
-import { Settings, ChevronDown, X, Building2 } from 'lucide-react'
-import { useState, useRef, useEffect } from 'react'
+import { ChevronDown, X, Building2, LogOut, LayoutGrid } from 'lucide-react'
+import { useState, useRef, useEffect, type ReactNode } from 'react'
 import api from '../../services/api.ts'
 
 const roleLabels: Record<string, string> = {
   admin: 'Administrador',
   medico: 'Médico',
   administrativo: 'Administrativo',
+  master: 'Master',
 }
 
-import type { ReactNode } from 'react';
+const roleColors: Record<string, string> = {
+  master:         'linear-gradient(135deg, #f59e0b, #d97706)',
+  admin:          'linear-gradient(135deg, #7345d6, #5b2fc9)',
+  medico:         'linear-gradient(135deg, #14b8a6, #0d9488)',
+  administrativo: 'linear-gradient(135deg, #3b82f6, #2563eb)',
+}
+
 interface HeaderProps {
   onToggleSidebar: () => void
   sidebarOpen: boolean
@@ -66,8 +73,13 @@ export default function Header({ onToggleSidebar, sidebarOpen, hideSidebarToggle
         {hideSidebarToggle && (
           <img src="/imagens/logo-escrita.png" alt="NordcsCare" className="header-logo" />
         )}
+        {!hideSidebarToggle && (
+          <Link to="/" className="header-home-btn" title="Menu principal">
+            <LayoutGrid size={17} />
+          </Link>
+        )}
       </div>
-      <div className="header-right" style={{display:'flex',alignItems:'center',gap:12}}>
+      <div className="header-right" style={{display:'flex',alignItems:'center',gap:10}}>
         {canSwitchTenant && (
           <div className="school-dropdown" ref={clinicDropdownRef}>
             <button
@@ -107,20 +119,29 @@ export default function Header({ onToggleSidebar, sidebarOpen, hideSidebarToggle
           </div>
         )}
 
-        {hasTela('admin') && (
-          <Link to="/admin" className="header-icon-link" title="Administração">
-            <Settings size={16} />
+        {user && (
+          <Link to="/perfil" className="header-user-chip" title="Meu perfil">
+            <div
+              className="header-avatar"
+              style={user.foto_perfil ? {} : { background: roleColors[user.role] ?? 'linear-gradient(135deg, #7345d6, #5b2fc9)' }}
+            >
+              {user.foto_perfil ? (
+                <img src={`${(import.meta.env.VITE_API_BASE ?? '').replace('/api', '')}${user.foto_perfil}`} alt="avatar" className="header-avatar-img" />
+              ) : (
+                (user.nome_social || user.nome).split(' ').slice(0, 2).map(p => p[0]).join('').toUpperCase()
+              )}
+            </div>
+            <div className="header-user-info">
+              <span className="header-user-name">{(user.nome_social || user.nome).split(' ')[0]}</span>
+            </div>
           </Link>
         )}
-        {user && (
-          <div className="header-user">
-            <span className="header-user-name">{user.nome}</span>
-            <span className="header-user-role">{roleLabels[user.role] || user.role}</span>
-          </div>
-        )}
+
         {children}
-        <button className="btn-logout" onClick={handleLogout}>
-          Sair
+
+        <button className="btn-logout" onClick={handleLogout} title="Sair do sistema">
+          <LogOut size={15} />
+          <span>Sair</span>
         </button>
       </div>
     </header>

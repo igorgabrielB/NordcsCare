@@ -264,8 +264,7 @@
   margin-bottom: 0.35rem;
 }
 
-.clinicas-form-group input,
-.clinicas-form-group select {
+.clinicas-form-group input {
   width: 100%;
   padding: 0.6rem 0.85rem;
   background: var(--bg);
@@ -277,9 +276,9 @@
   transition: border-color 0.2s;
   box-sizing: border-box;
 }
+.clinicas-form-group select { width: 100%; }
 
-.clinicas-form-group input:focus,
-.clinicas-form-group select:focus {
+.clinicas-form-group input:focus {
   border-color: var(--primary);
 }
 

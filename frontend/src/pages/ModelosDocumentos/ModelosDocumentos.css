@@ -528,7 +528,6 @@
 }
 
 .md-modal-body .form-group input,
-.md-modal-body .form-group select,
 .md-modal-body .form-group textarea {
   width: 100%;
   padding: 9px 12px;
@@ -540,9 +539,9 @@
   transition: border-color 0.2s;
   font-family: inherit;
 }
+.md-modal-body .form-group select { width: 100%; }
 
 .md-modal-body .form-group input:focus,
-.md-modal-body .form-group select:focus,
 .md-modal-body .form-group textarea:focus {
   outline: none;
   border-color: var(--primary);

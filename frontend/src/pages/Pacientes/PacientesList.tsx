@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react'
-import { Link, useSearchParams } from 'react-router-dom'
+import { Link, useSearchParams, useNavigate } from 'react-router-dom'
 import api from '../../services/api.ts'
-import { Search, ClipboardList, Pencil, Trash2, MapPin, Users, Zap, School } from 'lucide-react'
+import { Search, ClipboardList, Pencil, Trash2, MapPin, Users, Zap, School, ArrowLeft, X, CalendarDays, LogIn } from 'lucide-react'
 import './Pacientes.css'
 
 interface FilaCheck {
@@ -42,6 +42,7 @@ interface FilaInfo {
 
 export default function PacientesList() {
   const [searchParams] = useSearchParams()
+  const navigate = useNavigate()
   const [pacientes, setPacientes] = useState<Paciente[]>([])
   const [pagination, setPagination] = useState<PaginationData>({ page: 1, limit: 20, total: 0, totalPages: 0 })
   const [search, setSearch] = useState('')
@@ -53,6 +54,23 @@ export default function PacientesList() {
   const [searched, setSearched] = useState(false)
   const [escolaDia, setEscolaDia] = useState(false)
   const [escolasHoje, setEscolasHoje] = useState<{ escola: string; total: number }[]>([])
+
+  // Check-in modal
+  interface AgendamentoHoje {
+    id: number; data_hora: string; tipo: string; especialidade_nome: string
+    especialidade_cor: string; medico_nome: string | null; fila_id: number | null
+  }
+  interface Especialidade { id: number; nome: string; cor: string }
+  const [checkInModal, setCheckInModal] = useState<{ open: boolean; pacienteId: number; pacienteNome: string } | null>(null)
+  const [checkInAgs, setCheckInAgs]     = useState<AgendamentoHoje[]>([])
+  const [checkInEspId, setCheckInEspId] = useState('')
+  const [checkInLoading, setCheckInLoading] = useState(false)
+  const [especialidades, setEspecialidades] = useState<Especialidade[]>([])
+
+  // Buscar especialidades ao montar
+  useEffect(() => {
+    api.get('/especialidades').then(r => setEspecialidades(r.data)).catch(() => {})
+  }, [])
 
   const fetchPacientes = useCallback(async (page = 1, searchTerm = '', filterEscolaDia = escolaDia) => {
     setLoading(true)
@@ -175,6 +193,50 @@ export default function PacientesList() {
     }
   }
 
+  const openCheckInModal = async (pacienteId: number, pacienteNome: string) => {
+    setCheckInModal({ open: true, pacienteId, pacienteNome })
+    setCheckInEspId('')
+    setCheckInAgs([])
+    setCheckInLoading(true)
+    try {
+      const res = await api.get('/agendamentos', { params: { paciente_id: pacienteId, hoje: '1' } })
+      setCheckInAgs(res.data)
+      if (res.data.length === 0 && especialidades.length === 1) {
+        setCheckInEspId(String(especialidades[0].id))
+      }
+    } catch { /* ignore */ }
+    finally { setCheckInLoading(false) }
+  }
+
+  const doCheckInFromAgendamento = async (agId: number) => {
+    setCheckingIn(checkInModal!.pacienteId)
+    try {
+      const res = await api.post(`/agendamentos/${agId}/checkin`)
+      const msg = res.data.senha ? `Check-in realizado! Senha: ${res.data.senha}` : 'Check-in realizado!'
+      alert(msg)
+      setNaFila(prev => ({ ...prev, [checkInModal!.pacienteId]: true }))
+      checkFilaStatus()
+      setCheckInModal(null)
+    } catch (err: unknown) {
+      const msg = (err as { response?: { data?: { error?: string } } })?.response?.data?.error || 'Erro no check-in'
+      alert(msg)
+    } finally { setCheckingIn(null) }
+  }
+
+  const doCheckInManual = async (prioridade = 0) => {
+    if (!checkInEspId) { alert('Selecione a especialidade'); return }
+    setCheckingIn(checkInModal!.pacienteId)
+    try {
+      await api.post('/fila', { paciente_id: checkInModal!.pacienteId, especialidade_id: Number(checkInEspId), prioridade })
+      setNaFila(prev => ({ ...prev, [checkInModal!.pacienteId]: true }))
+      checkFilaStatus()
+      setCheckInModal(null)
+    } catch (err: unknown) {
+      const msg = (err as { response?: { data?: { error?: string } } })?.response?.data?.error || 'Erro no check-in'
+      alert(msg)
+    } finally { setCheckingIn(null) }
+  }
+
   const handleTogglePrioridade = async (pacienteId: number) => {
     const info = filaInfo[pacienteId]
     if (!info) {
@@ -190,11 +252,17 @@ export default function PacientesList() {
   }
 
   return (
+    <>
     <div className="pacientes-page">
       <div className="page-header">
-        <Link to="/pacientes/novo" className="btn btn-primary">
-          + Novo Paciente
-        </Link>
+        <div className="page-header-left">
+          <button className="btn-voltar" onClick={() => navigate('/menu')}>
+            <ArrowLeft size={16} />Voltar
+          </button>
+          <Link to="/pacientes/novo" className="btn btn-primary">
+            + Novo Paciente
+          </Link>
+        </div>
       </div>
 
       <div className="search-bar">
@@ -264,7 +332,7 @@ export default function PacientesList() {
                         </button>
                         <button
                           className="btn btn-sm btn-checkin"
-                          onClick={(e) => { e.stopPropagation(); handleCheckIn(p.id) }}
+                          onClick={(e) => { e.stopPropagation(); openCheckInModal(p.id, p.nome_completo) }}
                           disabled={!!naFila[p.id] || checkingIn === p.id}
                           title={naFila[p.id] ? 'Já está na fila' : 'Marcar presença'}
                         >
@@ -349,6 +417,88 @@ export default function PacientesList() {
           )}
         </>
       )}
-    </div>
+      </div>
+
+    {/* ── Check-in Modal ── */}
+    {checkInModal?.open && (
+      <div className="modal-overlay" onClick={e => e.target === e.currentTarget && setCheckInModal(null)}>
+        <div className="checkin-modal">
+          <div className="checkin-modal-header">
+            <div>
+              <h3 className="checkin-modal-title">Check-in</h3>
+              <p className="checkin-modal-sub">{checkInModal.pacienteNome}</p>
+            </div>
+            <button className="checkin-modal-close" onClick={() => setCheckInModal(null)}><X size={18} /></button>
+          </div>
+
+          <div className="checkin-modal-body">
+            {checkInLoading ? (
+              <p className="checkin-loading">Buscando agendamentos de hoje...</p>
+            ) : checkInAgs.length > 0 ? (
+              <>
+                <p className="checkin-section-label"><CalendarDays size={14} /> Agendamentos de hoje</p>
+                {checkInAgs.filter(a => !a.fila_id).map(ag => (
+                  <div key={ag.id} className="checkin-ag-card">
+                    <div className="checkin-ag-esp" style={{ background: ag.especialidade_cor }} />
+                    <div className="checkin-ag-info">
+                      <span className="checkin-ag-esp-nome" style={{ color: ag.especialidade_cor }}>{ag.especialidade_nome}</span>
+                      <span className="checkin-ag-hora">{new Date(ag.data_hora.replace(' ', 'T')).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}</span>
+                      {ag.medico_nome && <span className="checkin-ag-medico">Dr(a). {ag.medico_nome}</span>}
+                      <span className="checkin-ag-tipo">{ag.tipo}</span>
+                    </div>
+                    <button
+                      className="btn btn-primary checkin-ag-btn"
+                      onClick={() => doCheckInFromAgendamento(ag.id)}
+                      disabled={checkingIn === checkInModal.pacienteId}
+                    >
+                      <LogIn size={14} /> Check-in
+                    </button>
+                  </div>
+                ))}
+                {checkInAgs.every(a => a.fila_id) && (
+                  <p className="checkin-info-msg">✓ Todos os agendamentos de hoje já realizaram check-in.</p>
+                )}
+                <hr className="checkin-divider" />
+                <p className="checkin-section-label">Ou entrar sem agendamento:</p>
+              </>
+            ) : (
+              <p className="checkin-info-msg">Nenhum agendamento encontrado para hoje.</p>
+            )}
+
+            {/* Manual check-in */}
+            {!checkInLoading && (
+              <div className="checkin-manual">
+                <select
+                  value={checkInEspId}
+                  onChange={e => setCheckInEspId(e.target.value)}
+                  className="checkin-esp-select"
+                >
+                  <option value="">Selecione a especialidade...</option>
+                  {especialidades.map(e => <option key={e.id} value={e.id}>{e.nome}</option>)}
+                </select>
+                <div className="checkin-manual-btns">
+                  <button
+                    className="btn btn-primary"
+                    onClick={() => doCheckInManual(0)}
+                    disabled={!checkInEspId || checkingIn === checkInModal.pacienteId}
+                  >
+                    <LogIn size={14} /> Entrar na fila
+                  </button>
+                  <button
+                    className="btn btn-priority"
+                    onClick={() => doCheckInManual(1)}
+                    disabled={!checkInEspId || checkingIn === checkInModal.pacienteId}
+                    title="Marcar como prioritário"
+                  >
+                    <Zap size={14} /> Prioritário
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+    )}
+    </>
   )
 }

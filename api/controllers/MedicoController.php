@@ -7,13 +7,32 @@ class MedicoController {
 
     public static function index(): void {
         Auth::requireTela('medicos');
-        $db = Database::getInstance();
+        $db  = Database::getInstance();
+        $tid = Tenant::id();
 
-        $stmt = $db->prepare(
-            'SELECT id, nome, crm, uf, especialidade, telefone, email, ativo, created_at, updated_at
-             FROM medicos WHERE tenant_id = :tid ORDER BY nome ASC'
-        );
-        $stmt->execute([':tid' => Tenant::id()]);
+        // Filtro opcional por especialidade_id (para autocomplete em agendamentos)
+        if (!empty($_GET['especialidade_id'])) {
+            $espId = (int)$_GET['especialidade_id'];
+            $stmt  = $db->prepare('SELECT nome FROM especialidades WHERE id = :id AND tenant_id = :tid');
+            $stmt->execute([':id' => $espId, ':tid' => $tid]);
+            $espNome = $stmt->fetchColumn() ?: '';
+
+            $stmt = $db->prepare("
+                SELECT DISTINCT m.id, m.nome, m.crm, m.uf, m.especialidade, m.telefone, m.email, m.ativo
+                FROM medicos m
+                LEFT JOIN medico_especialidades me ON me.medico_id = m.id AND me.especialidade_id = :eid
+                WHERE m.tenant_id = :tid AND m.ativo = 1
+                  AND (me.medico_id IS NOT NULL OR m.especialidade LIKE :espNome)
+                ORDER BY m.nome ASC
+            ");
+            $stmt->execute([':tid' => $tid, ':eid' => $espId, ':espNome' => '%' . $espNome . '%']);
+        } else {
+            $stmt = $db->prepare(
+                'SELECT id, nome, crm, uf, especialidade, telefone, email, ativo, created_at, updated_at
+                 FROM medicos WHERE tenant_id = :tid ORDER BY nome ASC'
+            );
+            $stmt->execute([':tid' => $tid]);
+        }
         echo json_encode($stmt->fetchAll());
     }
 

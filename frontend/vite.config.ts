@@ -10,6 +10,10 @@ export default defineConfig(({ mode }) => ({
         target: 'http://localhost/NordcsCare',
         changeOrigin: true,
       },
+      '/uploads': {
+        target: 'http://localhost/NordcsCare',
+        changeOrigin: true,
+      },
     },
   },
   build: {

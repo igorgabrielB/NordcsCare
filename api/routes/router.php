@@ -1,5 +1,8 @@
 <?php
 require_once __DIR__ . '/../controllers/AuthController.php';
+require_once __DIR__ . '/../controllers/EspecialidadeController.php';
+require_once __DIR__ . '/../controllers/FormularioController.php';
+require_once __DIR__ . '/../controllers/ProntuarioDinamicoController.php';
 require_once __DIR__ . '/../controllers/PacienteController.php';
 require_once __DIR__ . '/../controllers/FilaController.php';
 require_once __DIR__ . '/../controllers/ProntuarioController.php';
@@ -17,6 +20,8 @@ require_once __DIR__ . '/../controllers/SpotVisionController.php';
 require_once __DIR__ . '/../controllers/TenantController.php';
 require_once __DIR__ . '/../controllers/PermissaoController.php';
 require_once __DIR__ . '/../controllers/PainelController.php';
+require_once __DIR__ . '/../controllers/PerfilController.php';
+require_once __DIR__ . '/../controllers/AgendamentoController.php';
 
 class Router {
     private array $routes = [];
@@ -62,6 +67,14 @@ $router->add('POST', '/api/auth/register', [AuthController::class, 'register']);
 $router->add('POST', '/api/auth/switch-tenant', [AuthController::class, 'switchTenant']);
 $router->add('GET', '/api/auth/my-tenants', [AuthController::class, 'myTenants']);
 $router->add('GET', '/api/auth/me', [AuthController::class, 'me']);
+
+// Perfil do usuário logado
+$router->add('GET',    '/api/perfil',       [PerfilController::class, 'get']);
+$router->add('PUT',    '/api/perfil',       [PerfilController::class, 'update']);
+$router->add('POST',   '/api/perfil/foto',  [PerfilController::class, 'uploadFoto']);
+$router->add('DELETE', '/api/perfil/foto',  [PerfilController::class, 'deleteFoto']);
+$router->add('PUT',    '/api/perfil/tema',  [PerfilController::class, 'updateTema']);
+$router->add('PUT',    '/api/perfil/senha', [PerfilController::class, 'alterarSenha']);
 
 // Pacientes
 $router->add('GET', '/api/pacientes', [PacienteController::class, 'index']);
@@ -141,12 +154,24 @@ $router->add('DELETE', '/api/usuarios/{id}', [UsuarioController::class, 'destroy
 
 
 // Médicos
-$router->add('GET', '/api/medicos/perfil', [MedicoController::class, 'perfil']);
-$router->add('GET', '/api/medicos', [MedicoController::class, 'index']);
-$router->add('GET', '/api/medicos/{id}', [MedicoController::class, 'show']);
-$router->add('POST', '/api/medicos', [MedicoController::class, 'store']);
-$router->add('PUT', '/api/medicos/{id}', [MedicoController::class, 'update']);
-$router->add('DELETE', '/api/medicos/{id}', [MedicoController::class, 'destroy']);
+$router->add('GET',    '/api/medicos/perfil',              [MedicoController::class, 'perfil']);
+$router->add('GET',    '/api/medicos',                     [MedicoController::class, 'index']);
+$router->add('GET',    '/api/medicos/{id}',                [MedicoController::class, 'show']);
+$router->add('POST',   '/api/medicos',                     [MedicoController::class, 'store']);
+$router->add('PUT',    '/api/medicos/{id}',                [MedicoController::class, 'update']);
+$router->add('DELETE', '/api/medicos/{id}',                [MedicoController::class, 'destroy']);
+$router->add('GET',    '/api/medicos/{id}/especialidades', [AgendamentoController::class, 'medicoEspecialidades']);
+$router->add('PUT',    '/api/medicos/{id}/especialidades', [AgendamentoController::class, 'setMedicoEspecialidades']);
+
+// Agendamentos
+$router->add('GET',    '/api/agendamentos',                [AgendamentoController::class, 'index']);
+$router->add('GET',    '/api/agendamentos/{id}',           [AgendamentoController::class, 'show']);
+$router->add('POST',   '/api/agendamentos',                [AgendamentoController::class, 'store']);
+$router->add('PUT',    '/api/agendamentos/{id}',           [AgendamentoController::class, 'update']);
+$router->add('DELETE', '/api/agendamentos/{id}',           [AgendamentoController::class, 'destroy']);
+$router->add('POST',   '/api/agendamentos/{id}/confirmar', [AgendamentoController::class, 'confirmar']);
+$router->add('POST',   '/api/agendamentos/{id}/notificar', [AgendamentoController::class, 'notificar']);
+$router->add('POST',   '/api/agendamentos/{id}/checkin',   [AgendamentoController::class, 'checkIn']);
 
 // Escola Agenda
 $router->add('GET', '/api/escola-agenda', [EscolaAgendaController::class, 'index']);
@@ -171,7 +196,8 @@ $router->add('GET',  '/api/permissoes/me',                 [PermissaoController:
 $router->add('GET',  '/api/permissoes/usuario/{id}',       [PermissaoController::class, 'getUsuario']);
 $router->add('PUT',  '/api/permissoes/usuario/{id}',       [PermissaoController::class, 'setUsuario']);
 
-// Clínicas (Tenants)$router->add('GET', '/api/clinicas', [TenantController::class, 'index']);
+// Clínicas (Tenants)
+$router->add('GET', '/api/clinicas', [TenantController::class, 'index']);
 $router->add('GET', '/api/clinicas/{id}', [TenantController::class, 'show']);
 $router->add('POST', '/api/clinicas', [TenantController::class, 'store']);
 $router->add('PUT', '/api/clinicas/{id}', [TenantController::class, 'update']);
@@ -192,6 +218,35 @@ $router->add('GET', '/api/historico', [HistoricoController::class, 'index']);
 $router->add('GET', '/api/historico/resumo', [HistoricoController::class, 'resumo']);
 $router->add('GET', '/api/historico/escolas', [HistoricoController::class, 'escolas']);
 $router->add('GET', '/api/historico/exportar', [HistoricoController::class, 'exportar']);
+
+// Especialidades + Estações
+$router->add('GET',    '/api/especialidades',                          [EspecialidadeController::class, 'index']);
+$router->add('GET',    '/api/especialidades/{id}',                     [EspecialidadeController::class, 'show']);
+$router->add('POST',   '/api/especialidades',                          [EspecialidadeController::class, 'store']);
+$router->add('PUT',    '/api/especialidades/{id}',                     [EspecialidadeController::class, 'update']);
+$router->add('DELETE', '/api/especialidades/{id}',                     [EspecialidadeController::class, 'destroy']);
+$router->add('GET',    '/api/especialidades/{id}/estacoes',            [EspecialidadeController::class, 'estacoes']);
+$router->add('POST',   '/api/especialidades/{id}/estacoes',            [EspecialidadeController::class, 'storeEstacao']);
+$router->add('PUT',    '/api/especialidades/{id}/estacoes/reordenar',  [EspecialidadeController::class, 'reordenarEstacoes']);
+$router->add('PUT',    '/api/especialidades/estacoes/{id}',            [EspecialidadeController::class, 'updateEstacao']);
+$router->add('DELETE', '/api/especialidades/estacoes/{id}',            [EspecialidadeController::class, 'destroyEstacao']);
+
+// Formulários dinâmicos
+$router->add('GET',    '/api/formularios/{id}',                         [FormularioController::class, 'definicao']);
+$router->add('GET',    '/api/formularios/{id}/admin',                   [FormularioController::class, 'todasSecoes']);
+$router->add('POST',   '/api/formularios/secoes',                       [FormularioController::class, 'storeSecao']);
+$router->add('PUT',    '/api/formularios/secoes/{id}',                  [FormularioController::class, 'updateSecao']);
+$router->add('DELETE', '/api/formularios/secoes/{id}',                  [FormularioController::class, 'destroySecao']);
+$router->add('PUT',    '/api/formularios/secoes/reordenar',             [FormularioController::class, 'reordenarSecoes']);
+$router->add('POST',   '/api/formularios/campos',                       [FormularioController::class, 'storeCampo']);
+$router->add('PUT',    '/api/formularios/campos/{id}',                  [FormularioController::class, 'updateCampo']);
+$router->add('DELETE', '/api/formularios/campos/{id}',                  [FormularioController::class, 'destroyCampo']);
+$router->add('PUT',    '/api/formularios/campos/reordenar',             [FormularioController::class, 'reordenarCampos']);
+
+// Prontuário Dinâmico
+$router->add('GET',  '/api/prontuario-dinamico/{id}',           [ProntuarioDinamicoController::class, 'completo']);
+$router->add('POST', '/api/prontuario-dinamico/{id}',           [ProntuarioDinamicoController::class, 'salvar']);
+$router->add('GET',  '/api/prontuario-dinamico/{id}/historico', [ProntuarioDinamicoController::class, 'historico']);
 
 // Logs (apenas admin)
 $router->add('GET', '/api/logs/fila', function() {

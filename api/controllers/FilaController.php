@@ -5,9 +5,10 @@ require_once __DIR__ . '/../utils/AuditLog.php';
 
 class FilaController {
 
-    private static array $estacoesOrdem = ['acuidade', 'laudos', 'oculos', 'altas', 'encaminhamentos'];
+    // Arrays estáticos mantidos para retrocompatibilidade (fila sem especialidade_id)
+    private static array $estacoesOrdemFallback = ['acuidade', 'laudos', 'oculos', 'altas', 'encaminhamentos'];
 
-    private static array $senhaPrefix = [
+    private static array $senhaPrefixFallback = [
         'acuidade'        => 'AC',
         'exames'          => 'EX',
         'laudos'          => 'LA',
@@ -17,11 +18,41 @@ class FilaController {
     ];
 
     /**
-     * Gera o próximo número de senha formatado para a estação (ex: AC001, EX003).
+     * Busca estações da fila de uma especialidade no banco de dados.
+     * Retorna array de rows com campos: nome, label, cor, icone, prefixo_senha, gera_senha.
+     * Se especialidade_id for null/0, retorna array vazio (usar fallback).
      */
-    public static function gerarSenha(PDO $db, string $estacao, int $tenantId): string {
-        $prefixes = self::$senhaPrefix;
-        $prefix = $prefixes[$estacao] ?? strtoupper(substr($estacao, 0, 2));
+    private static function getEstacoesDinamicas(PDO $db, int $tenantId, ?int $especialidadeId): array {
+        if (!$especialidadeId) return [];
+        $stmt = $db->prepare(
+            'SELECT nome, label, cor, icone, prefixo_senha, gera_senha
+             FROM fila_estacoes
+             WHERE especialidade_id = :eid AND tenant_id = :tid AND ativo = 1
+             ORDER BY ordem ASC'
+        );
+        $stmt->execute([':eid' => $especialidadeId, ':tid' => $tenantId]);
+        return $stmt->fetchAll();
+    }
+
+    /**
+     * Gera o próximo número de senha formatado para a estação (ex: AC001, EX003).
+     * Retorna null para estações configuradas com gera_senha = 0.
+     */
+    public static function gerarSenha(PDO $db, string $estacao, int $tenantId, ?int $especialidadeId = null): ?string {
+        if ($especialidadeId) {
+            $stmt = $db->prepare(
+                'SELECT prefixo_senha, gera_senha FROM fila_estacoes
+                 WHERE nome = :nome AND especialidade_id = :eid AND tenant_id = :tid LIMIT 1'
+            );
+            $stmt->execute([':nome' => $estacao, ':eid' => $especialidadeId, ':tid' => $tenantId]);
+            $row = $stmt->fetch();
+            if ($row && !(int)$row['gera_senha']) return null;
+            $prefix = $row ? $row['prefixo_senha'] : strtoupper(substr($estacao, 0, 2));
+        } else {
+            // Fallback para registros sem especialidade_id
+            if (in_array($estacao, ['altas', 'encaminhamentos'], true)) return null;
+            $prefix = self::$senhaPrefixFallback[$estacao] ?? strtoupper(substr($estacao, 0, 2));
+        }
         $stmt = $db->prepare(
             'SELECT COUNT(*) FROM fila WHERE tenant_id = :tid AND estacao = :estacao AND DATE(created_at) = CURDATE()'
         );
@@ -106,11 +137,21 @@ class FilaController {
         }
         $items = $stmt->fetchAll();
 
-        // Agrupar por estação
+        // Agrupar por estação dinamicamente — sempre retorna Record<string, FilaItem[]>
+        $especialidadeId = isset($_GET['especialidade_id']) ? (int)$_GET['especialidade_id'] : null;
         $filaAgrupada = [];
-        foreach (self::$estacoesOrdem as $estacao) {
-            $filaAgrupada[$estacao] = [];
+
+        if ($especialidadeId) {
+            $estacoesDef = self::getEstacoesDinamicas($db, $tenantId, $especialidadeId);
+            foreach ($estacoesDef as $est) {
+                $filaAgrupada[$est['nome']] = [];
+            }
+        } else {
+            foreach (self::$estacoesOrdemFallback as $estacao) {
+                $filaAgrupada[$estacao] = [];
+            }
         }
+
         foreach ($items as $item) {
             $filaAgrupada[$item['estacao']][] = $item;
         }
@@ -191,20 +232,42 @@ class FilaController {
             $warning = "Paciente já foi atendido hoje ({$resultadoLabel}" . ($horaSaida ? " às {$horaSaida}" : '') . ")";
         }
 
-        $senha = self::gerarSenha($db, 'acuidade', $tenantId);
+        // Determinar especialidade e primeira estação
+        $especialidadeId = !empty($input['especialidade_id']) ? (int)$input['especialidade_id'] : null;
+        $primeiraEstacao = 'acuidade'; // fallback
+
+        if ($especialidadeId) {
+            // Verificar que especialidade pertence ao tenant
+            $stmtEsp = $db->prepare('SELECT id FROM especialidades WHERE id = :id AND tenant_id = :tid AND ativo = 1');
+            $stmtEsp->execute([':id' => $especialidadeId, ':tid' => $tenantId]);
+            if (!$stmtEsp->fetch()) {
+                http_response_code(404);
+                echo json_encode(['error' => 'Especialidade não encontrada']);
+                return;
+            }
+            $stmtEst = $db->prepare(
+                'SELECT nome FROM fila_estacoes WHERE especialidade_id = :eid AND tenant_id = :tid AND ativo = 1 ORDER BY ordem ASC LIMIT 1'
+            );
+            $stmtEst->execute([':eid' => $especialidadeId, ':tid' => $tenantId]);
+            $firstRow = $stmtEst->fetch();
+            if ($firstRow) $primeiraEstacao = $firstRow['nome'];
+        }
+
+        $senha = self::gerarSenha($db, $primeiraEstacao, $tenantId, $especialidadeId);
 
         $stmt = $db->prepare(
-            'INSERT INTO fila (tenant_id, paciente_id, estacao, status, prioridade, observacoes, senha)
-             VALUES (:tid, :paciente_id, :estacao, :status, :prioridade, :observacoes, :senha)'
+            'INSERT INTO fila (tenant_id, paciente_id, especialidade_id, estacao, status, prioridade, observacoes, senha)
+             VALUES (:tid, :paciente_id, :especialidade_id, :estacao, :status, :prioridade, :observacoes, :senha)'
         );
         $stmt->execute([
-            ':tid'        => $tenantId,
-            ':paciente_id'=> $input['paciente_id'],
-            ':estacao'    => 'acuidade',
-            ':status'     => 'em_atendimento',
-            ':prioridade' => (int)($input['prioridade'] ?? 0),
-            ':observacoes'=> $input['observacoes'] ?? null,
-            ':senha'      => $senha,
+            ':tid'            => $tenantId,
+            ':paciente_id'    => $input['paciente_id'],
+            ':especialidade_id'=> $especialidadeId,
+            ':estacao'        => $primeiraEstacao,
+            ':status'         => 'em_atendimento',
+            ':prioridade'     => (int)($input['prioridade'] ?? 0),
+            ':observacoes'    => $input['observacoes'] ?? null,
+            ':senha'          => $senha,
         ]);
 
         $filaId = (int)$db->lastInsertId();
@@ -212,7 +275,7 @@ class FilaController {
         AuditLog::registrar('criar', 'fila', $filaId, "Paciente {$input['paciente_id']} adicionado à fila", $user);
 
         http_response_code(201);
-        $response = ['message' => 'Paciente adicionado à fila', 'id' => $filaId];
+        $response = ['message' => 'Paciente adicionado à fila', 'id' => $filaId, 'estacao' => $primeiraEstacao];
         if ($warning) {
             $response['warning'] = $warning;
         }
@@ -226,7 +289,7 @@ class FilaController {
         $user = Auth::requireAuth();
 
         $db = Database::getInstance();
-        $stmt = $db->prepare('SELECT * FROM fila WHERE id = :id AND tenant_id = :tid');
+        $stmt = $db->prepare('SELECT id, estacao, especialidade_id FROM fila WHERE id = :id AND tenant_id = :tid');
         $stmt->execute([':id' => $id, ':tid' => Tenant::id()]);
         $fila = $stmt->fetch();
 
@@ -236,15 +299,26 @@ class FilaController {
             return;
         }
 
-        // Somente admin/master pode avançar pacientes que estão em altas
-        if ($fila['estacao'] === 'altas' && !Auth::hasTela($user, 'admin')) {
+        $especialidadeId = $fila['especialidade_id'] ? (int)$fila['especialidade_id'] : null;
+
+        // Buscar estações dinâmicas ou fallback
+        if ($especialidadeId) {
+            $estacoesDef = self::getEstacoesDinamicas($db, Tenant::id(), $especialidadeId);
+            $estacoesOrdem = array_column($estacoesDef, 'nome');
+        } else {
+            $estacoesOrdem = self::$estacoesOrdemFallback;
+        }
+
+        // Somente admin/master pode avançar pacientes que estão na última estação confirmada (ex: altas)
+        $ultimaEstacao = end($estacoesOrdem);
+        if ($fila['estacao'] === $ultimaEstacao && !Auth::hasTela($user, 'admin')) {
             http_response_code(403);
-            echo json_encode(['error' => 'Somente administradores podem alterar pacientes em alta']);
+            echo json_encode(['error' => 'Somente administradores podem alterar pacientes na última estação']);
             return;
         }
 
-        $currentIndex = array_search($fila['estacao'], self::$estacoesOrdem);
-        if ($currentIndex === false || $currentIndex >= count(self::$estacoesOrdem) - 1) {
+        $currentIndex = array_search($fila['estacao'], $estacoesOrdem);
+        if ($currentIndex === false || $currentIndex >= count($estacoesOrdem) - 1) {
             // Última estação — marcar como concluído
             $stmt = $db->prepare('UPDATE fila SET status = :status WHERE id = :id');
             $stmt->execute([':status' => 'concluido', ':id' => $id]);
@@ -253,8 +327,8 @@ class FilaController {
             return;
         }
 
-        $nextEstacao = self::$estacoesOrdem[$currentIndex + 1];
-        $novaSenha = self::gerarSenha($db, $nextEstacao, Tenant::id());
+        $nextEstacao = $estacoesOrdem[$currentIndex + 1];
+        $novaSenha = self::gerarSenha($db, $nextEstacao, Tenant::id(), $especialidadeId);
 
         $stmt = $db->prepare(
             'UPDATE fila SET estacao = :estacao, status = :status, senha = :senha, atendente_id = NULL WHERE id = :id'
@@ -320,17 +394,17 @@ class FilaController {
         $user = Auth::requireAuth();
 
         $input = json_decode(file_get_contents('php://input'), true);
+        $db = Database::getInstance();
+        $tid = Tenant::id();
 
-        if (empty($input['estacao']) || !in_array($input['estacao'], self::$estacoesOrdem, true)) {
+        if (empty($input['estacao'])) {
             http_response_code(400);
-            echo json_encode(['error' => 'Estação inválida. Use: ' . implode(', ', self::$estacoesOrdem)]);
+            echo json_encode(['error' => 'Estação é obrigatória']);
             return;
         }
 
-        $db = Database::getInstance();
-
-        $stmt = $db->prepare('SELECT id, estacao FROM fila WHERE id = :id AND tenant_id = :tid');
-        $stmt->execute([':id' => $id, ':tid' => Tenant::id()]);
+        $stmt = $db->prepare('SELECT id, estacao, especialidade_id FROM fila WHERE id = :id AND tenant_id = :tid');
+        $stmt->execute([':id' => $id, ':tid' => $tid]);
         $fila = $stmt->fetch();
         if (!$fila) {
             http_response_code(404);
@@ -338,14 +412,30 @@ class FilaController {
             return;
         }
 
-        // Somente admin/master pode mover pacientes que estão em altas
-        if ($fila['estacao'] === 'altas' && !Auth::hasTela($user, 'admin')) {
-            http_response_code(403);
-            echo json_encode(['error' => 'Somente administradores podem alterar pacientes em alta']);
+        $especialidadeId = $fila['especialidade_id'] ? (int)$fila['especialidade_id'] : null;
+
+        // Validar estação destino
+        if ($especialidadeId) {
+            $estacoesDef = self::getEstacoesDinamicas($db, $tid, $especialidadeId);
+            $estacoesNomes = array_column($estacoesDef, 'nome');
+        } else {
+            $estacoesNomes = self::$estacoesOrdemFallback;
+        }
+
+        if (!in_array($input['estacao'], $estacoesNomes, true)) {
+            http_response_code(400);
+            echo json_encode(['error' => 'Estação inválida. Use: ' . implode(', ', $estacoesNomes)]);
             return;
         }
 
-        $novaSenha = self::gerarSenha($db, $input['estacao'], Tenant::id());
+        $ultimaEstacao = end($estacoesNomes);
+        if ($fila['estacao'] === $ultimaEstacao && !Auth::hasTela($user, 'admin')) {
+            http_response_code(403);
+            echo json_encode(['error' => 'Somente administradores podem alterar pacientes na última estação']);
+            return;
+        }
+
+        $novaSenha = self::gerarSenha($db, $input['estacao'], $tid, $especialidadeId);
 
         $stmt = $db->prepare(
             'UPDATE fila SET estacao = :estacao, status = :status, senha = :senha, atendente_id = NULL WHERE id = :id AND tenant_id = :tid'
@@ -355,7 +445,7 @@ class FilaController {
             ':status'  => 'em_atendimento',
             ':senha'   => $novaSenha,
             ':id'      => $id,
-            ':tid'     => Tenant::id(),
+            ':tid'     => $tid,
         ]);
 
         echo json_encode(['message' => 'Paciente movido para ' . $input['estacao'], 'senha' => $novaSenha]);
@@ -371,7 +461,7 @@ class FilaController {
 
         $db = Database::getInstance();
 
-        $stmt = $db->prepare('SELECT id, estacao FROM fila WHERE id = :id AND tenant_id = :tid');
+        $stmt = $db->prepare('SELECT id, estacao, especialidade_id FROM fila WHERE id = :id AND tenant_id = :tid');
         $stmt->execute([':id' => $id, ':tid' => Tenant::id()]);
         $fila = $stmt->fetch();
         if (!$fila) {
@@ -380,10 +470,17 @@ class FilaController {
             return;
         }
 
-        // Somente admin/master pode remover pacientes que estão em altas
-        if ($fila['estacao'] === 'altas' && !Auth::hasTela($user, 'admin')) {
+        $especialidadeId = $fila['especialidade_id'] ? (int)$fila['especialidade_id'] : null;
+        if ($especialidadeId) {
+            $estacoesDef = self::getEstacoesDinamicas($db, Tenant::id(), $especialidadeId);
+            $ultimaEstacao = !empty($estacoesDef) ? end($estacoesDef)['nome'] : 'encaminhamentos';
+        } else {
+            $ultimaEstacao = 'altas';
+        }
+
+        if ($fila['estacao'] === $ultimaEstacao && !Auth::hasTela($user, 'admin')) {
             http_response_code(403);
-            echo json_encode(['error' => 'Somente administradores podem alterar pacientes em alta']);
+            echo json_encode(['error' => 'Somente administradores podem alterar pacientes na última estação']);
             return;
         }
 
@@ -459,7 +556,7 @@ class FilaController {
      * POST /api/fila/{id}/chamar — Chama paciente no painel de senha.
      */
     public static function chamar(int $id): void {
-        $user = Auth::requireTela('fila');
+        $user = Auth::requireTela('chamar_paciente');
 
         $db = Database::getInstance();
         $stmt = $db->prepare(

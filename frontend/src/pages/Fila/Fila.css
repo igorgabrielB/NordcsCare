@@ -5,6 +5,37 @@
   gap: 16px;
 }
 
+/* ===== Especialidade tabs ===== */
+.fila-esp-tabs {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+}
+
+.fila-esp-tab {
+  padding: 6px 18px;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  color: var(--text-secondary);
+  white-space: nowrap;
+  transition: all 0.18s;
+}
+.fila-esp-tab:hover {
+  border-color: var(--primary);
+  color: var(--text);
+  background: var(--bg-hover);
+}
+.fila-esp-tab--active {
+  font-weight: 600;
+  color: #fff !important;
+  border-color: transparent !important;
+}
+
 .escola-badge-fila {
   display: inline-flex;
   align-items: center;
