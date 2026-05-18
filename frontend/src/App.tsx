@@ -29,6 +29,8 @@ import Clinicas from './pages/Clinicas/Clinicas.tsx'
 import Especialidades from './pages/Especialidades/Especialidades.tsx'
 import EspecialidadeConfigurar from './pages/Especialidades/EspecialidadeConfigurar.tsx'
 import Agendamentos from './pages/Agendamentos/Agendamentos.tsx'
+import Triagem from './pages/Triagem/Triagem.tsx'
+import Internacoes from './pages/Internacoes/Internacoes.tsx'
 import Home from './pages/Home/Home.tsx'
 import DashboardBuilder from './pages/DashboardBuilder/DashboardBuilder.tsx'
 import PainelSenha from './pages/PainelSenha/PainelSenha.tsx'
@@ -96,6 +98,8 @@ export default function App() {
             <Route path="/admin/especialidades" element={<PermissionRoute tela="especialidades"><Especialidades /></PermissionRoute>} />
             <Route path="/admin/especialidades/:id/configurar" element={<PermissionRoute tela="especialidades"><EspecialidadeConfigurar /></PermissionRoute>} />
             <Route path="/agendamentos" element={<PermissionRoute tela="agendamentos"><Agendamentos /></PermissionRoute>} />
+            <Route path="/triagem" element={<PermissionRoute tela="triagem"><Triagem /></PermissionRoute>} />
+            <Route path="/internacoes" element={<PermissionRoute tela="internacoes"><Internacoes /></PermissionRoute>} />
             <Route path="/admin/dashboard-builder" element={<PermissionRoute tela="dashboard_builder"><DashboardBuilder /></PermissionRoute>} />
           </Route>
 

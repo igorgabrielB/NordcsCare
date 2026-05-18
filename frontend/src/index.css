@@ -182,6 +182,17 @@ input, select, textarea {
   border: 1px solid var(--border);
 }
 
+/* ─── iOS-style number inputs: remove browser spinner arrows ── */
+input[type=number] {
+  -moz-appearance: textfield;
+  appearance: textfield;
+}
+input[type=number]::-webkit-inner-spin-button,
+input[type=number]::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
 /* ===== Custom Select ===== */
 select {
   appearance: none;

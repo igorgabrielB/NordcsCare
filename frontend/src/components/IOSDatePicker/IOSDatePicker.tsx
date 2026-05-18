@@ -78,9 +78,11 @@ interface Props {
   value: string           // YYYY-MM-DD or ''
   onChange: (v: string) => void
   error?: boolean
+  label?: string
+  placeholder?: string
 }
 
-export default function IOSDatePicker({ value, onChange, error }: Props) {
+export default function IOSDatePicker({ value, onChange, error, label = 'Data de Nascimento', placeholder = 'Selecionar data de nascimento' }: Props) {
   const [open, setOpen] = useState(false)
   const [dayIdx, setDayIdx] = useState(0)
   const [monthIdx, setMonthIdx] = useState(0)
@@ -198,14 +200,14 @@ export default function IOSDatePicker({ value, onChange, error }: Props) {
         onKeyDown={e => e.key === 'Enter' && openPicker()}
       >
         <CalendarDays size={16} className="ios-date-icon" />
-        <span>{displayValue ?? 'Selecionar data de nascimento'}</span>
+        <span>{displayValue ?? placeholder}</span>
       </div>
 
       {open && (
         <div className="ios-picker-popup">
           <div className="ios-picker-header">
             <button type="button" onClick={() => setOpen(false)}>Cancelar</button>
-            <span>Data de Nascimento</span>
+            <span>{label}</span>
             <button type="button" className="confirm" onClick={handleConfirm}>Confirmar</button>
           </div>
 

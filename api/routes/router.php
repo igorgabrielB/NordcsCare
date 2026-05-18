@@ -22,6 +22,8 @@ require_once __DIR__ . '/../controllers/PermissaoController.php';
 require_once __DIR__ . '/../controllers/PainelController.php';
 require_once __DIR__ . '/../controllers/PerfilController.php';
 require_once __DIR__ . '/../controllers/AgendamentoController.php';
+require_once __DIR__ . '/../controllers/TriagemController.php';
+require_once __DIR__ . '/../controllers/InternacaoController.php';
 
 class Router {
     private array $routes = [];
@@ -247,6 +249,32 @@ $router->add('PUT',    '/api/formularios/campos/reordenar',             [Formula
 $router->add('GET',  '/api/prontuario-dinamico/{id}',           [ProntuarioDinamicoController::class, 'completo']);
 $router->add('POST', '/api/prontuario-dinamico/{id}',           [ProntuarioDinamicoController::class, 'salvar']);
 $router->add('GET',  '/api/prontuario-dinamico/{id}/historico', [ProntuarioDinamicoController::class, 'historico']);
+
+// Triagem
+$router->add('GET',    '/api/triagem',       [TriagemController::class, 'index']);
+$router->add('POST',   '/api/triagem',       [TriagemController::class, 'store']);
+$router->add('GET',    '/api/triagem/{id}',  [TriagemController::class, 'show']);
+$router->add('PUT',    '/api/triagem/{id}',  [TriagemController::class, 'update']);
+$router->add('DELETE', '/api/triagem/{id}',  [TriagemController::class, 'destroy']);
+
+// Leitos
+$router->add('GET',    '/api/leitos',              [InternacaoController::class, 'leitosIndex']);
+$router->add('POST',   '/api/leitos',              [InternacaoController::class, 'leitosStore']);
+$router->add('GET',    '/api/leitos/{id}',         [InternacaoController::class, 'leitosShow']);
+$router->add('PUT',    '/api/leitos/{id}',         [InternacaoController::class, 'leitosUpdate']);
+$router->add('DELETE', '/api/leitos/{id}',         [InternacaoController::class, 'leitosDestroy']);
+
+// Internações
+$router->add('GET',    '/api/internacoes',                       [InternacaoController::class, 'index']);
+$router->add('POST',   '/api/internacoes',                       [InternacaoController::class, 'store']);
+$router->add('GET',    '/api/internacoes/stats',                 [InternacaoController::class, 'stats']);
+$router->add('GET',    '/api/internacoes/{id}',                  [InternacaoController::class, 'show']);
+$router->add('PUT',    '/api/internacoes/{id}',                  [InternacaoController::class, 'update']);
+$router->add('POST',   '/api/internacoes/{id}/alta',             [InternacaoController::class, 'darAlta']);
+$router->add('POST',   '/api/internacoes/{id}/transferir',       [InternacaoController::class, 'transferir']);
+$router->add('GET',    '/api/internacoes/{id}/evolucoes',        [InternacaoController::class, 'evolucoes']);
+$router->add('POST',   '/api/internacoes/{id}/evolucoes',        [InternacaoController::class, 'storeEvolucao']);
+$router->add('DELETE', '/api/evolucoes/{id}',                    [InternacaoController::class, 'destroyEvolucao']);
 
 // Logs (apenas admin)
 $router->add('GET', '/api/logs/fila', function() {

@@ -9,6 +9,7 @@ import {
   Search, Sheet, X, ArrowRight,
   Activity, BookMarked, Layers, MonitorPlay,
   Sun, Sunset, Moon, Sparkles, Bell,
+  BedDouble,
 } from 'lucide-react'
 import './Menu.css'
 
@@ -26,6 +27,7 @@ const ICON_MAP: Record<string, React.ElementType> = {
   CalendarDays, GraduationCap, Upload, Trash2, Stethoscope,
   BookOpen, FileEdit, UserCog, ScrollText, Settings,
   LayoutTemplate, ShieldCheck, Hospital, Eye, Sheet, MonitorPlay, Bell,
+  BedDouble,
 }
 
 const CATEGORIAS: Record<string, { label: string; color: string; bg: string; icon: React.ElementType }> = {
@@ -50,6 +52,8 @@ const ALL_TELAS: TelaItem[] = [
   { codigo: 'fila',                    nome: 'Fila de Atendimento',    descricao: 'Gerencia a fila de pacientes por estação',       icone: 'ListChecks',     categoria: 'operacional', rota: '/fila' },
   { codigo: 'painel_senha',            nome: 'Painel de Senha',        descricao: 'Display de chamada de pacientes',                 icone: 'MonitorPlay',    categoria: 'operacional', rota: '/painel' },
   { codigo: 'agendamentos',            nome: 'Agendamentos',           descricao: 'Agendar consultas, retornos e exames por especialidade', icone: 'CalendarDays', categoria: 'operacional', rota: '/agendamentos' },
+  { codigo: 'triagem',                 nome: 'Triagem',                descricao: 'Registro de sinais vitais e protocolo Manchester',        icone: 'Activity',     categoria: 'operacional', rota: '/triagem' },
+  { codigo: 'internacoes',              nome: 'Internações',            descricao: 'Gerenciamento de leitos e internações hospitalares',       icone: 'BedDouble',    categoria: 'operacional', rota: '/internacoes' },
   { codigo: 'pacientes',               nome: 'Pacientes',              descricao: 'Cadastro e edição de pacientes',                  icone: 'Users',          categoria: 'operacional', rota: '/pacientes' },
   { codigo: 'prontuario',              nome: 'Prontuário',             descricao: 'Atendimento clínico e prontuário',                icone: 'ClipboardList',  categoria: 'operacional', rota: '/pacientes' },
   { codigo: 'dashboard',               nome: 'Dashboard',              descricao: 'Métricas e indicadores em tempo real',            icone: 'BarChart2',      categoria: 'gestao',      rota: '/dashboard' },

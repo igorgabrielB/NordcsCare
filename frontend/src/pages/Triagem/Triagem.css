@@ -1,0 +1,887 @@
+/* ─── Triagem Page ──────────────────────────────────────────────────────────── */
+
+.triagem-page {
+  padding: 24px;
+  max-width: 1280px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+/* ─── Header ─────────────────────────────────────────────────────────────────── */
+
+.triagem-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.triagem-title {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.triagem-title-icon {
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  flex-shrink: 0;
+}
+
+.triagem-title h1 {
+  font-size: 1.3rem;
+  font-weight: 700;
+  color: var(--text);
+  margin: 0;
+}
+
+.triagem-title p {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  margin: 0;
+}
+
+.triagem-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.triagem-search-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 8px 12px;
+  color: var(--text-muted);
+}
+
+.triagem-search-bar input {
+  background: transparent;
+  border: none;
+  outline: none;
+  color: var(--text);
+  font-size: 0.875rem;
+  width: 180px;
+}
+
+.triagem-btn-new {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  background: var(--primary);
+  color: #fff;
+  border: none;
+  border-radius: 10px;
+  padding: 9px 16px;
+  font-size: 0.875rem;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.15s, box-shadow 0.15s;
+}
+
+.triagem-btn-new:hover {
+  background: var(--primary-dark);
+  box-shadow: 0 4px 14px rgba(115,69,214,0.3);
+}
+
+/* ─── Stats ──────────────────────────────────────────────────────────────────── */
+
+.triagem-stats {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.triagem-stat {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 12px 20px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  min-width: 80px;
+  border-top: 3px solid var(--prio-c, var(--border));
+}
+
+.triagem-stat--total {
+  border-top-color: var(--primary);
+}
+
+.ts-value {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--prio-c, var(--primary));
+  line-height: 1;
+}
+
+.triagem-stat--total .ts-value {
+  color: var(--text);
+}
+
+.ts-label {
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+/* ─── List ───────────────────────────────────────────────────────────────────── */
+
+.triagem-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.triagem-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  padding: 60px 20px;
+  color: var(--text-muted);
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  font-size: 0.9rem;
+}
+
+/* ─── Row ────────────────────────────────────────────────────────────────────── */
+
+.triagem-row {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  display: grid;
+  grid-template-columns: 4px 200px auto 1fr 1fr auto auto;
+  align-items: center;
+  gap: 16px;
+  padding: 0 16px 0 0;
+  overflow: hidden;
+  transition: box-shadow 0.15s, transform 0.15s;
+}
+
+.triagem-row:hover {
+  box-shadow: var(--shadow-md);
+  transform: translateY(-1px);
+}
+
+.trow-prio-bar {
+  width: 4px;
+  align-self: stretch;
+  flex-shrink: 0;
+  border-radius: 0;
+}
+
+.trow-patient {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 0;
+}
+
+.trow-avatar {
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.75rem;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+.trow-patient-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.trow-name {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.trow-meta {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.trow-esp {
+  padding: 1px 7px;
+  border-radius: 99px;
+  font-size: 0.7rem;
+  font-weight: 600;
+}
+
+.trow-prio-badge {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border-radius: 99px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.trow-prio-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.trow-vitals {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.trow-vital {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 8px;
+  border-radius: 8px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  background: var(--bg-elevated);
+  color: var(--text-secondary);
+  border: 1px solid var(--border);
+}
+
+.trow-vital--warning {
+  background: rgba(213,160,33,0.12);
+  color: #b7791f;
+  border-color: rgba(213,160,33,0.3);
+}
+
+.trow-vital--danger {
+  background: rgba(229,62,62,0.12);
+  color: #c53030;
+  border-color: rgba(229,62,62,0.3);
+}
+
+body.light-mode .trow-vital--warning { color: #975a16; }
+body.light-mode .trow-vital--danger  { color: #c53030; }
+
+.trow-vital-unit {
+  font-weight: 400;
+  font-size: 0.7rem;
+  color: var(--text-muted);
+}
+
+.trow-queixa {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.trow-queixa-text {
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+  margin: 0;
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+}
+
+.trow-dor {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+}
+
+.trow-time {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 0.78rem;
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+
+.trow-actions {
+  display: flex;
+  gap: 6px;
+}
+
+.trow-btn {
+  width: 30px;
+  height: 30px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--bg-elevated);
+  color: var(--text-secondary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.trow-btn:hover {
+  background: var(--bg-hover);
+  color: var(--text);
+}
+
+.trow-btn--danger:hover {
+  background: rgba(229,62,62,0.12);
+  border-color: rgba(229,62,62,0.4);
+  color: #e53e3e;
+}
+
+/* ─── Modal ──────────────────────────────────────────────────────────────────── */
+
+.triagem-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.55);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 20px;
+  backdrop-filter: blur(4px);
+}
+
+.triagem-modal {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  width: 100%;
+  max-width: 680px;
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.4);
+  overflow: hidden;
+}
+
+.tmodal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 20px 24px 16px;
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+
+.tmodal-header-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.tmodal-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 11px;
+  background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  flex-shrink: 0;
+}
+
+.tmodal-header h2 {
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: var(--text);
+  margin: 0;
+}
+
+.tmodal-header p {
+  font-size: 0.78rem;
+  color: var(--text-muted);
+  margin: 0;
+}
+
+.tmodal-close {
+  width: 34px;
+  height: 34px;
+  border-radius: 9px;
+  border: 1px solid var(--border);
+  background: var(--bg-elevated);
+  color: var(--text-muted);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.tmodal-close:hover {
+  background: var(--bg-hover);
+  color: var(--text);
+}
+
+/* Body scroll */
+.tmodal-body {
+  overflow-y: auto;
+  padding: 20px 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  flex: 1;
+}
+
+/* Sections */
+.tmodal-section {
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.tmodal-section-title {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.tmodal-section-icon {
+  width: 26px;
+  height: 26px;
+  border-radius: 7px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+/* Patient search */
+.tmodal-pac-wrap { display: flex; flex-direction: column; gap: 8px; }
+
+.tmodal-pac-input-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 9px 12px;
+  color: var(--text-muted);
+}
+
+.tmodal-pac-icon { flex-shrink: 0; }
+
+.tmodal-pac-input {
+  flex: 1;
+  background: transparent;
+  border: none !important;
+  outline: none;
+  color: var(--text) !important;
+  font-size: 0.875rem;
+  padding: 0 !important;
+  min-height: unset !important;
+  appearance: none !important;
+  -webkit-appearance: none !important;
+  background-image: none !important;
+}
+
+.tmodal-pac-clear {
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  padding: 2px;
+  border-radius: 4px;
+}
+
+.tmodal-pac-drop {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  right: 0;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.2);
+  z-index: 100;
+  overflow: hidden;
+  padding: 4px;
+}
+
+.tmodal-pac-item {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 10px;
+  border-radius: 8px;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  text-align: left;
+  transition: background 0.1s;
+}
+
+.tmodal-pac-item:hover { background: var(--bg-hover); }
+
+.tmodal-pac-avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  background: linear-gradient(135deg, var(--primary), #9f6ee8);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.7rem;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+.tmodal-pac-info {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.tmodal-pac-nome {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.tmodal-pac-sub {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+}
+
+.tmodal-pac-selected {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 10px;
+  background: rgba(115,69,214,0.08);
+  border: 1px solid rgba(115,69,214,0.2);
+  border-radius: 10px;
+  font-size: 0.875rem;
+  color: var(--text);
+}
+
+/* Priority grid */
+.tmodal-prio-grid {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 8px;
+}
+
+.tmodal-prio-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 10px 6px;
+  border-radius: 10px;
+  border: 2px solid var(--border);
+  background: var(--bg-card);
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.tmodal-prio-btn:hover {
+  border-color: var(--prio-c);
+  background: color-mix(in srgb, var(--prio-c) 8%, transparent);
+}
+
+.tmodal-prio-btn.active {
+  border-color: var(--prio-c);
+  background: color-mix(in srgb, var(--prio-c) 15%, transparent);
+}
+
+.tmodal-prio-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.tmodal-prio-label {
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.tmodal-prio-tempo {
+  font-size: 0.68rem;
+  color: var(--text-muted);
+}
+
+/* Vitals grid */
+.tmodal-vitals-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+}
+
+.tmodal-antro-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+}
+
+.tmodal-vital-group {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.tmodal-vital-group label {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+
+.tmodal-vital-group .unit {
+  font-weight: 400;
+  color: var(--text-muted);
+}
+
+.tmodal-pa-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.tmodal-pa-sep {
+  font-size: 1.1rem;
+  color: var(--text-muted);
+  font-weight: 300;
+}
+
+.tmodal-vital-input {
+  padding: 8px 10px !important;
+  border-radius: 8px !important;
+  border: 1.5px solid var(--border) !important;
+  background: var(--bg-card) !important;
+  color: var(--text) !important;
+  font-size: 0.875rem !important;
+  width: 100%;
+  background-image: none !important;
+  appearance: none;
+  -webkit-appearance: none;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+.tmodal-vital-input:focus {
+  outline: none;
+  border-color: var(--primary) !important;
+  box-shadow: 0 0 0 3px rgba(115,69,214,0.15) !important;
+}
+
+.tmodal-vital-input.status-warning {
+  border-color: rgba(213,160,33,0.6) !important;
+}
+
+.tmodal-vital-input.status-danger {
+  border-color: rgba(229,62,62,0.6) !important;
+}
+
+/* IMC display */
+.tmodal-imc-display {
+  padding: 8px 12px;
+  border-radius: 8px;
+  border: 1.5px solid var(--border);
+  background: var(--bg-card);
+  color: var(--text);
+  font-size: 1rem;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 38px;
+}
+
+.tmodal-imc-display.status-warning { border-color: rgba(213,160,33,0.6); }
+.tmodal-imc-display.status-danger  { border-color: rgba(229,62,62,0.6); }
+
+.tmodal-imc-class {
+  font-size: 0.72rem;
+  font-weight: 500;
+  color: var(--text-muted);
+}
+
+/* Pain scale */
+.tmodal-dor-pills {
+  display: flex;
+  gap: 5px;
+  flex-wrap: wrap;
+}
+
+.tmodal-dor-pill {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  border: 1.5px solid var(--border);
+  background: var(--bg-card);
+  color: var(--text-secondary);
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.12s;
+}
+
+.tmodal-dor-pill:hover {
+  border-color: var(--dor-c);
+  background: color-mix(in srgb, var(--dor-c) 12%, transparent);
+}
+
+.tmodal-dor-pill.active {
+  border-color: var(--dor-c);
+  background: var(--dor-c);
+  color: #fff;
+}
+
+/* Footer */
+.tmodal-footer {
+  padding: 16px 24px;
+  border-top: 1px solid var(--border);
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  flex-shrink: 0;
+}
+
+.tmodal-btn-cancel {
+  padding: 9px 20px;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  background: var(--bg-elevated);
+  color: var(--text-secondary);
+  font-size: 0.875rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.tmodal-btn-cancel:hover {
+  background: var(--bg-hover);
+  color: var(--text);
+}
+
+.tmodal-btn-save {
+  padding: 9px 20px;
+  border-radius: 10px;
+  border: none;
+  background: var(--primary);
+  color: #fff;
+  font-size: 0.875rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s, box-shadow 0.15s;
+}
+
+.tmodal-btn-save:hover:not(:disabled) {
+  background: var(--primary-dark);
+  box-shadow: 0 4px 14px rgba(115,69,214,0.3);
+}
+
+.tmodal-btn-save:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* ─── form-group overrides inside modal ────────────────────────────────────── */
+
+.tmodal-section .form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.tmodal-section .form-group label {
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+
+.tmodal-section .form-group textarea {
+  background: var(--bg-card);
+  border: 1.5px solid var(--border);
+  border-radius: 10px;
+  color: var(--text);
+  font-size: 0.875rem;
+  padding: 9px 12px;
+  resize: vertical;
+  font-family: inherit;
+  transition: border-color 0.15s;
+}
+
+.tmodal-section .form-group textarea:focus {
+  outline: none;
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px rgba(115,69,214,0.15);
+}
+
+.tmodal-section .form-group select {
+  width: 100%;
+}
+
+/* ─── Responsive ─────────────────────────────────────────────────────────────── */
+
+@media (max-width: 900px) {
+  .triagem-row {
+    grid-template-columns: 4px 1fr auto auto;
+    grid-template-rows: auto auto;
+  }
+  .trow-vitals   { grid-column: 2 / -1; }
+  .trow-queixa   { grid-column: 2 / -1; }
+  .trow-prio-badge { justify-self: start; }
+  .tmodal-vitals-grid { grid-template-columns: repeat(2, 1fr); }
+  .tmodal-antro-grid  { grid-template-columns: repeat(2, 1fr); }
+  .tmodal-prio-grid   { grid-template-columns: repeat(3, 1fr); }
+}
+
+@media (max-width: 600px) {
+  .triagem-page { padding: 16px; }
+  .triagem-stats { overflow-x: auto; flex-wrap: nowrap; padding-bottom: 4px; }
+  .tmodal-vitals-grid { grid-template-columns: 1fr 1fr; }
+  .tmodal-prio-grid   { grid-template-columns: repeat(2, 1fr); }
+}
